@@ -1,0 +1,42 @@
+// Global installations
+npm install -g express-generator
+npm install -g localtunnel 
+
+
+// Creating Node.js project
+express 
+npm install express jsonwebtoken bcrypt nodemailer pg dotenv passport passport-local passport-jwt cors, twilio
+
+npm install sequelize-cli --save-dev
+
+//Setting up sequelize for Creating models
+npx sequelize-cli init
+npx sequelize-cli model:generate --name Department --attributes name:string,description:text,hodId:integer
+npx sequelize-cli model:generate --name User --attributes userName:string,firstName:string,lastName:string,email:string,phone:string,address:string,role:string,staffID:string,dob:Date,gender:string,password:string,resetToken:string,resetTokenExpiration:Date,isPasswordReset:boolean,dp:string,departmentId:integer
+npx sequelize-cli model:generate --name Student --attributes userName:string,firstName:string,lastName:string,email:string,phone:string,address:string,role:string,studentID:string,dob:Date,gender:string,password:string,resetToken:string,resetTokenExpiration:Date,isPasswordReset:boolean,dp:string,departmentId:integer 
+npx sequelize-cli model:generate --name ResetRequest --attributes isPasswordReset:boolean,userId:integer,studentId:integer 
+npx sequelize-cli model:generate --name Class --attributes name:string,grade:integer,headTeacherId:integer
+npx sequelize-cli model:generate --name Section --attributes name:string,capacity:integer,classId:integer
+npx sequelize-cli db:migrate 
+
+
+sequelize db:migrate:undo --name 20240309134846-create-user.js 
+sequelize db:migrate --name 20240309134846-create-user.js  
+
+
+// Installing nodemon
+npm install -g nodemon
+
+// Running projects
+npm start 
+nodemon start
+
+//nodemon failure
+Get-ExecutionPolicy
+Set-ExecutionPolicy RemoteSigned
+Set-ExecutionPolicy <original_policy>  //reverse changes
+
+// Exposing local server on the net
+lt --port 3000
+
+
