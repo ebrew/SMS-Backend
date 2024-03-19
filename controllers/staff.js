@@ -211,7 +211,7 @@ exports.adminResetPassword = async (req, res) => {
     
     const { id, role } = extractIdAndRoleFromToken(token) || { id: null, role: null };
 
-    // console.log(id, role, token)
+    console.log(id, role, token)
 
     // find the user requesting password reset
     const user = await User.findOne({
