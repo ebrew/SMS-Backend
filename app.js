@@ -9,6 +9,7 @@ var initialRouter= require('./routes/index');
 var staffRouter = require('./routes/staff');
 var departmentRouter = require('./routes/departments');
 var classRouter = require('./routes/class');
+var subjectRouter = require('./routes/subject');
 
 var app = express();
 
@@ -25,11 +26,11 @@ app.use(cors());  // Enable CORS for all origins
 
 
 // Routes
-
 app.use('/', initialRouter);
 app.use('/api/v1/staff', staffRouter);
 app.use('/api/v1/department', departmentRouter);
 app.use('/api/v1/class', classRouter);
+app.use('/api/v1/subject', subjectRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

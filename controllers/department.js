@@ -12,7 +12,7 @@ exports.allDepartments = async (req, res) => {
     try {
       const departments = await Department.findAll({
         attributes: ['id', 'name', 'description'],
-        order: [['name', 'ASC']],
+        order: [['createdAt', 'DESC']],
         include: {
           model: User,
           as: 'hod',
@@ -39,7 +39,7 @@ exports.addDepartment = async (req, res) => {
       if (!name)
         return res.status(400).json({ message: 'Department name is required!' });
 
-      const alreadyExist = await Department.findOne({ where: { name: { [Op.iLike]: name } } }); // Use case-insensitive comparison
+      const alreadyExist = await Department.findOne({ where: { name: { [Op.iLike]: name } } });
 
       if (alreadyExist)
         return res.status(400).json({ message: 'Department already exit!' });
@@ -49,7 +49,7 @@ exports.addDepartment = async (req, res) => {
       if (savedDept) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: 'Cannot create department at the moment!' });
+      return res.status(500).json({ message: 'Cannot create department at the moment!' });
     }
   })
 };

@@ -86,16 +86,17 @@ exports.allClasses = async (req, res) => {
     try {
       const classes = await Section.findAll({
         attributes: ['id', 'name', 'capacity'],
-        // order: [['name', 'ASC']],
         include: {
           model: Class,
           attributes: ['id', 'name', 'grade'],
+          order: [['grade', 'ASC']], 
           include: {
             model: User,
             attributes: ['id', 'firstName', 'lastName'],
           },
         },
-      })
+      });
+      
       return res.status(200).json({ 'classes': classes });
     } catch (error) {
       console.error('Error:', error.message);

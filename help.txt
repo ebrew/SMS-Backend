@@ -17,6 +17,7 @@ npx sequelize-cli model:generate --name Student --attributes userName:string,fir
 npx sequelize-cli model:generate --name ResetRequest --attributes isPasswordReset:boolean,userId:integer,studentId:integer 
 npx sequelize-cli model:generate --name Class --attributes name:string,grade:integer,headTeacherId:integer
 npx sequelize-cli model:generate --name Section --attributes name:string,capacity:integer,classId:integer
+npx sequelize-cli model:generate --name Subject --attributes name:string,code:string,description:text
 npx sequelize-cli db:migrate 
 
 

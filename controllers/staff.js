@@ -7,7 +7,7 @@ const passport = require('../db/config/passport')
 const { User, Student, ResetRequest } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
-const { normalizeGhPhone, extractJsonFromToken} = require('../utility/cleaning');
+const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
 
 // Login
 exports.login = async (req, res) => {
@@ -206,17 +206,18 @@ exports.passwordResetRequest = async (req, res) => {
 // Admin resetting password with email link request or from Admin requests' list
 exports.adminResetPassword = async (req, res) => {
   try {
-    //  resetToken or "{id:id, role:role}"
+    //  resetToken or "id:1, role:'Admin'"
     const token = req.params.token;
     
-    // checking if token is a json Object
-    const { id, role } = extractJsonFromToken(token) || { id: null, role: null };
+    const { id, role } = extractIdAndRoleFromToken(token) || { id: null, role: null };
+
+    // console.log(id, role, token)
 
     // find the user requesting password reset
     const user = await User.findOne({
       where: {
         [Op.or]: [
-          { id: id, role:role },
+          { id: id, role: role },
           { resetToken: token, resetTokenExpiration: { [Op.gt]: Date.now() } }
         ],
       },
@@ -225,7 +226,7 @@ exports.adminResetPassword = async (req, res) => {
     const student = await Student.findOne({
       where: {
         [Op.or]: [
-          { id: id, role:role },
+          { id: id, role: role },
           { resetToken: token, resetTokenExpiration: { [Op.gt]: Date.now() } }
         ],
       },
@@ -234,65 +235,65 @@ exports.adminResetPassword = async (req, res) => {
     if (!user && !student)
       return res.status(400).json({ message: 'Invalid username or expired token!' });
 
-  if (user) {
+    if (user) {
 
-    // Check if request has been attended to or it's pending
-    const validRequest = await ResetRequest.findOne({ where: { userId: user.id } });
-    if (!validRequest)
-      return res.status(400).json({ message: 'No request placed for password reset!' });
+      // Check if request has been attended to or it's pending
+      const validRequest = await ResetRequest.findOne({ where: { userId: user.id } });
+      if (!validRequest)
+        return res.status(400).json({ message: 'No request placed for password reset!' });
 
-    // Check if request has been attended to by admin using a link
-    if (validRequest.isPasswordReset === true)
-      return res.status(400).json({ message: 'Password has already been reset by an Admin!' });
+      // Check if request has been attended to by admin using a link
+      if (validRequest.isPasswordReset === true)
+        return res.status(400).json({ message: 'Password has already been reset by an Admin!' });
 
-    // Resetting user password
-    user.password = await bcrypt.hash(process.env.DEFAULT_PASSWORD, 10); // Use await
-    user.isPasswordReset = false;
-    user.resetToken = null;
-    user.resetTokenExpiration = null;
-    validRequest.isPasswordReset = true;
-    await user.save();
-    await validRequest.save();
+      // Resetting user password
+      user.password = await bcrypt.hash(process.env.DEFAULT_PASSWORD, 10); // Use await
+      user.isPasswordReset = false;
+      user.resetToken = null;
+      user.resetTokenExpiration = null;
+      validRequest.isPasswordReset = true;
+      await user.save();
+      await validRequest.save();
 
-    if (user.email === null)
-      return res.status(200).json({ message: 'Password reset successfully' });
+      if (user.email === null)
+        return res.status(200).json({ message: 'Password reset successfully' });
 
-    const message = `Click the link below to login and reset your own password:`;
-    const salutation = user.gender === 'Male' ? `Hello Sir ${user.firstName},` : `Hello Madam ${user.firstName},`;
-    const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
-    if (send === false)
-      return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+      const message = `Click the link below to login and reset your own password:`;
+      const salutation = user.gender === 'Male' ? `Hello Sir ${user.firstName},` : `Hello Madam ${user.firstName},`;
+      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
+      if (send === false)
+        return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
 
-    return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
-  } else{
-    // Check if request has been attended to or it's pending
-    const validRequest = await ResetRequest.findOne({ where: { studentId: student.id } });
-    if (!validRequest)
-      return res.status(400).json({ message: 'No request placed for password reset!' });
+      return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
+    } else {
+      // Check if request has been attended to or it's pending
+      const validRequest = await ResetRequest.findOne({ where: { studentId: student.id } });
+      if (!validRequest)
+        return res.status(400).json({ message: 'No request placed for password reset!' });
 
-    // Check if request has been attended to by admin using a link
-    if (validRequest.isPasswordReset === true)
-      return res.status(400).json({ message: 'Password has already been reset by an Admin!' });
-    // Resetting user password
-    student.password = await bcrypt.hash(process.env.DEFAULT_PASSWORD, 10); 
-    student.isPasswordReset = false;
-    student.resetToken = null;
-    student.resetTokenExpiration = null;
-    validRequest.isPasswordReset = true;
-    await student.save();
-    await validRequest.save();
+      // Check if request has been attended to by admin using a link
+      if (validRequest.isPasswordReset === true)
+        return res.status(400).json({ message: 'Password has already been reset by an Admin!' });
+      // Resetting user password
+      student.password = await bcrypt.hash(process.env.DEFAULT_PASSWORD, 10);
+      student.isPasswordReset = false;
+      student.resetToken = null;
+      student.resetTokenExpiration = null;
+      validRequest.isPasswordReset = true;
+      await student.save();
+      await validRequest.save();
 
-    if (user.email === null)
-      return res.status(200).json({ message: 'Password reset successfully' });
+      if (user.email === null)
+        return res.status(200).json({ message: 'Password reset successfully' });
 
-    const message = `Click the link below to login and reset your own password:`;
-    const salutation = `Hello ${student.firstName},`
-    const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
-    if (send === false)
-      return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+      const message = `Click the link below to login and reset your own password:`;
+      const salutation = `Hello ${student.firstName},`
+      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
+      if (send === false)
+        return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
 
-    return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
-  }
+      return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
+    }
   } catch (error) {
     return res.status(400).json({ error: 'Cannot reset password at the moment!' });
   }
@@ -344,7 +345,7 @@ exports.allStaff = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const staff = await User.findAll({ 
+      const staff = await User.findAll({
         order: [['firstName', 'ASC']],
         attributes: ['id', 'userName', 'firstName', 'lastName', 'role'],
       })
