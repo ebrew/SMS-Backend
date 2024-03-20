@@ -97,6 +97,9 @@ exports.defaultReset = async (req, res) => {
       if (!user)
         return res.status(400).json({ message: 'Invalid credentials!' });
 
+      if (password===process.env.DEFAULT_PASSWORD)  
+        return req.status(400).json({message: "You must use a new password!"})
+
       const token = jwt.sign({ id: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
       user.password = await bcrypt.hash(password, 10);
       user.isPasswordReset = true

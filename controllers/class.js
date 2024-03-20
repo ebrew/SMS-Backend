@@ -3,6 +3,7 @@ const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Class, Section, User } = require("../db/models/index");
 
+
 // Create a new class with sections
 exports.addClass = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -11,8 +12,10 @@ exports.addClass = async (req, res) => {
 
     try {
       const { className, grade, headTeacherId, sections } = req.body;
-
-      if (!className || !grade || !headTeacherId || !sections)
+      
+      console.log('Request body:', req.body);
+      
+      if (!className || !grade || !sections)
         return res.status(400).json({ message: 'Incomplete field!' });
 
       const alreadyExist = await Class.findOne({
@@ -33,15 +36,6 @@ exports.addClass = async (req, res) => {
         if (!name || !capacity)
           return res.status(400).json({ message: 'Invalid section data' });
       }
-
-      // // Validate that headTeacherId exists in the Users table
-      // const headTeacherExists = await User.findOne({
-      //   where: { id: headTeacherId }
-      // });
-
-      // if (!headTeacherExists) {
-      //   return res.status(400).json({ message: 'Invalid headTeacherId' });
-      // }
 
       // Create the Class
       const newClass = await Class.create({
