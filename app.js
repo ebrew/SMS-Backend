@@ -10,6 +10,7 @@ var staffRouter = require('./routes/staff');
 var departmentRouter = require('./routes/departments');
 var classRouter = require('./routes/class');
 var subjectRouter = require('./routes/subject');
+var teacherRouter = require('./routes/teacher')
 
 var app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/v1/staff', staffRouter);
 app.use('/api/v1/department', departmentRouter);
 app.use('/api/v1/class', classRouter);
 app.use('/api/v1/subject', subjectRouter);
+app.use('/api/v1/teacher', teacherRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

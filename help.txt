@@ -1,5 +1,6 @@
 // Global installations
 npm install -g express-generator
+npm install -g nodemon
 npm install -g localtunnel 
 
 
@@ -7,9 +8,10 @@ npm install -g localtunnel
 express 
 npm install express jsonwebtoken bcrypt nodemailer pg dotenv passport passport-local passport-jwt cors, twilio
 
+
 npm install sequelize-cli --save-dev
 
-//Setting up sequelize for Creating models
+// Setting up sequelize for Creating models
 npx sequelize-cli init
 npx sequelize-cli model:generate --name Department --attributes name:string,description:text,hodId:integer
 npx sequelize-cli model:generate --name User --attributes userName:string,firstName:string,lastName:string,email:string,phone:string,address:string,role:string,staffID:string,dob:Date,gender:string,password:string,resetToken:string,resetTokenExpiration:Date,isPasswordReset:boolean,dp:string,departmentId:integer
@@ -21,18 +23,17 @@ npx sequelize-cli model:generate --name Subject --attributes name:string,code:st
 npx sequelize-cli db:migrate 
 
 
-sequelize db:migrate:undo --name 20240309134846-create-user.js 
-sequelize db:migrate --name 20240309134846-create-user.js  
+// Migration and Model updates
+npx sequelize-cli model:generate --name User --attributes <attributes> --force
+sequelize db:migrate:undo --name <Migration file name with the extension> 
+sequelize db:migrate --name <Migration file name with the extension>  
 
-
-// Installing nodemon
-npm install -g nodemon
 
 // Running projects
 npm start 
 nodemon start
 
-//nodemon failure
+// nodemon failure
 Get-ExecutionPolicy
 Set-ExecutionPolicy RemoteSigned
 Set-ExecutionPolicy <original_policy>  //reverse changes
