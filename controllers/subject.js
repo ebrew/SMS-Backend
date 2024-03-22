@@ -10,14 +10,7 @@ exports.allSubjects = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const subjects = await Subject.findAll({
-        order: [['name', 'ASC']],
-        // include: {
-        //   model: Class,
-        //   as: 'hod',
-        //   attributes: ['id', 'name'],
-        // },
-      })
+      const subjects = await Subject.findAll({ order: [['name', 'ASC']] })
       return res.status(200).json({ 'subjects': subjects });
     } catch (error) {
       console.error('Error:', error.message);
@@ -48,14 +41,14 @@ exports.addSubject = async (req, res) => {
       })
 
       if (alreadyExist)
-        return res.status(400).json({ message: 'Subject already exit!' });
+        return res.status(400).json({ message: 'Subject already exist!' });
 
       const savedSubject = await new Subject({ name, code, description }).save()
 
-      if (savedSubject) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });
+      if (savedSubject) res.status(200).json({ message: 'Saved successfully!', 'Subject': savedSubject });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: 'Cannot create department at the moment!' });
+      return res.status(500).json({ Error: 'Cannot create subject at the moment!' });
     }
   })
 };

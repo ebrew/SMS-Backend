@@ -37,6 +37,16 @@ exports.addClass = async (req, res) => {
           return res.status(400).json({ message: 'Invalid section data' });
       }
 
+      if(headTeacherId){  
+        const isExist = await User.findOne({ where: { id: headTeacherId} });
+
+        if (!isExist)
+          return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
+
+        if(isExist && isExist.role !== 'Teacher')
+          return res.status(400).json({message: "Selected staff isn't a teacher" })  
+      }
+
       // Create the Class
       const newClass = await Class.create({
         name: className,
@@ -73,61 +83,6 @@ exports.addClass = async (req, res) => {
 
 // Get all Classes
 exports.allClasses = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const classes = await Section.findAll({
-        attributes: ['id', 'name', 'capacity'],
-        include: {
-          model: Class,
-          attributes: ['id', 'name', 'grade'],
-          order: [['grade', 'ASC']],
-          include: {
-            model: User,
-            attributes: ['id', 'firstName', 'lastName'],
-          },
-        },
-      });
-
-      const classWithSections = await Class.findAll({
-        // where: { id: classId },
-        order: [['grade', 'ASC']],
-        include: {
-          model: Section,
-          attributes: ['id', 'name', 'capacity'],
-        },
-        include: {
-          model: User,
-          attributes: ['id', 'firstName', 'lastName'],
-        },
-      });
-
-      // Extract relevant data for response
-      const {id, name, grade, headTeacher, createdAt, updatedAt, Sections} = classWithSections.toJSON();
-
-      // Format the response
-      const formattedResponse = {id, name, grade, headTeacher, createdAt, updatedAt,
-        sections: Sections.map(section => ({
-          name: section.name,
-          capacity: section.capacity,
-        })),
-      };
-
-      return formattedResponse;
-
-      return res.status(200).json({ 'classes': classes });
-    } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
-    }
-  });
-};
-
-
-// Get all Classes
-exports.allClasses1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });

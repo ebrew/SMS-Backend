@@ -44,6 +44,13 @@ exports.addDepartment = async (req, res) => {
       if (alreadyExist)
         return res.status(400).json({ message: 'Department already exit!' });
 
+      if(hodId){  
+        const isHODexist = await User.findOne({ where: { id: hodId} });
+
+        if (!isHODexist)
+          return res.status(400).json({ message: `Seleected HOD doesn't exist!` });
+      }
+
       const savedDept = await new Department({ name, description, hodId }).save()
 
       if (savedDept) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });

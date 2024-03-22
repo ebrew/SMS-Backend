@@ -9,6 +9,40 @@ const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
 
+
+// Developer registering Admin
+exports.admin = async (req, res) => {
+  try {
+    const { userName, firstName, lastName, email, phone, gender} = req.body;
+
+    if (!userName || !firstName || !lastName || !email || !phone || !gender)
+      return res.status(400).json({ message: 'Incomplete fields!' });
+
+    const uPhone = normalizeGhPhone(phone)
+    const alreadyExist = await User.findOne({
+      where: {
+        [Op.or]: [
+          { userName: userName },
+          { email: email.toLowerCase() },
+          { phone: uPhone },
+        ],
+      },
+    })
+
+
+    if (alreadyExist)
+      return res.status(400).json({ message: 'Admin already exist!' });
+
+    const password = process.env.DEFAULT_PASSWORD;
+    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role:'Admin', gender, password });
+    await newStaff.save()
+    return res.status(200).json({ message: 'Admin created successfully!' });
+  } catch (error) {
+    console.error('Error:', error.message);
+    return res.status(500).json({ Error: 'Cannot create Admin at the moment!' });
+  }
+}
+
 // Login
 exports.login = async (req, res) => {
   try {
@@ -68,12 +102,12 @@ exports.register = async (req, res) => {
 
 
       if (alreadyExist)
-        return res.status(400).json({ message: 'Staff already exit!' });
+        return res.status(400).json({ message: 'Staff already exist!' });
 
       const password = process.env.DEFAULT_PASSWORD;
       const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role, staffID, gender, password, departmentId });
       await newStaff.save()
-      return res.status(200).json({ message: 'Staff created successfully!', 'staff': newStaff });
+      return res.status(200).json({ message: 'Staff created successfully!' });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ Error: 'Cannot register at the moment!' });
@@ -97,8 +131,8 @@ exports.defaultReset = async (req, res) => {
       if (!user)
         return res.status(400).json({ message: 'Invalid credentials!' });
 
-      if (password===process.env.DEFAULT_PASSWORD)  
-        return req.status(400).json({message: "You must use a new password!"})
+      if (password === process.env.DEFAULT_PASSWORD)
+        return req.status(400).json({ message: "You must use a new password!" })
 
       const token = jwt.sign({ id: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
       user.password = await bcrypt.hash(password, 10);
@@ -211,7 +245,7 @@ exports.adminResetPassword = async (req, res) => {
   try {
     //  resetToken or "id:1, role:'Admin'"
     const token = req.params.token;
-    
+
     const { id, role } = extractIdAndRoleFromToken(token) || { id: null, role: null };
 
     console.log(id, role, token)

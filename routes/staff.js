@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const staffController = require('../controllers/staff');
 
+// Developer registering admin
+router.post('/admin', staffController.admin);
+
 // Login
 router.post('/login', staffController.login);
 
