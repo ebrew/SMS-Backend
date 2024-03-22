@@ -1,0 +1,100 @@
+Exposed server: https://violet-wombats-draw.loca.lt
+IP:154.160.25.85
+
+1. // Staff Login
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/login
+Content: userID(phone/userName/email) and password
+
+2. // Resetting staff DEFAULT PASSWORD after Login
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/default-reset
+Content: userName and password
+Authorization: Bearer <token from login>
+
+3. // Creating a new department
+API: http://localhost:3000/api/v1/department/create
+Content: name, department and hodId
+Authorization: Bearer <token from login>
+
+4. // List of departments
+API: https://violet-wombats-draw.loca.lt/api/v1/department/all
+Authorization: Bearer <token from login>
+
+5. // Creating a new class with sections
+API: http://localhost:3000/api/v1/class/create
+Content: name, grade, headTeacherId, sections
+Authorization: Bearer <token from login>
+
+6. // List of classes
+API: https://violet-wombats-draw.loca.lt/api/v1/class/all
+Authorization: Bearer <token from login>
+
+7. // List of Teachers for hod and headTeacher dropdown options
+API: https://violet-wombats-draw.loca.lt/api/v1/teacher/all
+Authorization: Bearer <token from login>
+
+
+
+
+
+8. // Creating a new subject
+API: http://localhost:3000/api/v1/subject/create
+Content: name, code and description
+Authorization: Bearer <token from login>
+
+9. // List of subjects
+API: https://violet-wombats-draw.loca.lt/api/v1/subject/all
+Authorization: Bearer <token from login>
+
+10. // Creating a new academic year
+API: http://localhost:3000/api/v1/academic_year/create
+Content: name, startDate, endDate
+Authorization: Bearer <token from login>
+
+11. // Fetching the active academic year
+API: http://localhost:3000/api/v1/academic_year/active
+Authorization: Bearer <token from login>
+
+12. // List of all academic years
+API: https://violet-wombats-draw.loca.lt/api/v1/academic_year/all
+Authorization: Bearer <token from login>
+
+13. // Creating a new academic term
+API: http://localhost:3000/api/v1/academic_term/create
+Content: name, startDate, endDate, academicYearId
+Authorization: Bearer <token from login>
+
+14. // Fetching the active academic term
+API: http://localhost:3000/api/v1/academic_term/active
+Authorization: Bearer <token from login>
+
+15. // List of all academic terms
+API: https://violet-wombats-draw.loca.lt/api/v1/academic_term/all
+Authorization: Bearer <token from login>
+
+
+
+// Staff Requesting Password Reset from Admin
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/password-reset-request
+Content: userID(phone/userName/email) as a post request
+
+// Admin resetting password with email link request or from Admin requests' list
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/admin-reset-password/"{id:id, role:role}" 
+NB: resetToken or "id:id, role:role"
+
+// List of pending Password reset requests
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/pending-password-reset-requests
+Authorization: Bearer <token from login>
+
+// Staff Registration by Admin
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/register
+Content: Required - (userName, firstName, lastName, role, email, phone, gender)
+Update/Optional fields - (userName, firstName, lastName, email, phone, address, role,          staffID, dob, gender, departmentId)
+Authorization: Bearer <token from login>
+
+
+
+
+
+
+
+
