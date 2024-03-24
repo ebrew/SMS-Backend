@@ -3,7 +3,6 @@ const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Class, Section, User } = require("../db/models/index");
 
-
 // Create a new class with sections
 exports.addClass = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -36,9 +35,9 @@ exports.addClass = async (req, res) => {
         if (!name || !capacity)
           return res.status(400).json({ message: 'Invalid section data' });
       }
-
+      let isExist;
       if(headTeacherId){  
-        const isExist = await User.findOne({ where: { id: headTeacherId} });
+        isExist = await User.findOne({ where: { id: headTeacherId} });
 
         if (!isExist)
           return res.status(400).json({ message: `Seleected teacher doesn't exist!` });

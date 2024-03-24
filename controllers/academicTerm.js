@@ -19,7 +19,7 @@ exports.allAcademicTerms = async (req, res) => {
         order: [['createdAt', 'DESC']],
       });
 
-      res.status(200).json({ 'Academic years': all });
+      res.status(200).json({ 'Academic terms': all });
 
     } catch (error) {
       console.error('Error fetching academic year:', error);
@@ -62,11 +62,11 @@ exports.addAcademicTerm = async (req, res) => {
 
       const isActive = await AcademicYear.findOne({ where: { id: academicYearId } });
 
-      if (!isActive)
-        return res.status(400).json({ message: `Academic year could not be found!` });
+        if (!isActive)
+          return res.status(400).json({ message: `Academic year could not be found!` });
 
-      if (isActive && isActive.status === 'Inactive')
-        return res.status(400).json({ message: `${isActive.name} has already ended!` });
+        if (isActive && isActive.status === 'Inactive')
+          return res.status(400).json({ message: `${isActive.name} has already ended!` });
 
       // Create a new instance of Academic term
       await AcademicTerm.create({ name, startDate, endDate, academicYearId });

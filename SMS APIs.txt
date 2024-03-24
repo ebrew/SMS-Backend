@@ -23,6 +23,15 @@ Authorization: Bearer <token from login>
 API: http://localhost:3000/api/v1/class/create
 Content: name, grade, headTeacherId, sections
 Authorization: Bearer <token from login>
+eg: {
+  "className": "Primary 6",
+  "grade": 6,
+  "headTeacherId": 3,
+  "sections": [
+    { "name": "A", "capacity": 30 },
+    { "name": "B", "capacity": 25 }
+  ]
+}
 
 6. // List of classes
 API: https://violet-wombats-draw.loca.lt/api/v1/class/all
@@ -33,7 +42,7 @@ API: https://violet-wombats-draw.loca.lt/api/v1/teacher/all
 Authorization: Bearer <token from login>
 
 
-
+<<Frontend tests ended here>>
 
 
 8. // Creating a new subject
@@ -54,24 +63,45 @@ Authorization: Bearer <token from login>
 API: http://localhost:3000/api/v1/academic_year/active
 Authorization: Bearer <token from login>
 
-12. // List of all academic years
-API: https://violet-wombats-draw.loca.lt/api/v1/academic_year/all
-Authorization: Bearer <token from login>
-
-13. // Creating a new academic term
+12. // Creating a new academic term
 API: http://localhost:3000/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
 Authorization: Bearer <token from login>
 
-14. // Fetching the active academic term
+13. // Fetching the active academic term
 API: http://localhost:3000/api/v1/academic_term/active
 Authorization: Bearer <token from login>
 
-15. // List of all academic terms
-API: https://violet-wombats-draw.loca.lt/api/v1/academic_term/all
+14. // Assign classes and subjects to teachers
+API: http://localhost:3000/api/v1/assigning/classes_subjects
+Content: academicTermId, teacherId, classes, subjects
+Authorization: Bearer <token from login>
+NB: classes and subjects are arrays of their selections
+eg: {
+  "teacherId": 3,
+  "classes": [
+    { "classId": 1 }
+  ],
+  "subjects": [
+    { "subjectId": 1 }
+  ]
+}
+
+15. // Get a teacher's assigned classes
+API: https://violet-wombats-draw.loca.lt/api/v1/assigning/all/id
 Authorization: Bearer <token from login>
 
+16. // Get all assigned teachers
+API: https://violet-wombats-draw.loca.lt/api/v1/assigning/all
+Authorization: Bearer <token from login>
 
+17. // List of all academic years
+API: https://violet-wombats-draw.loca.lt/api/v1/academic_year/all
+Authorization: Bearer <token from login>
+
+18. // List of all academic terms
+API: https://violet-wombats-draw.loca.lt/api/v1/academic_term/all
+Authorization: Bearer <token from login>
 
 // Staff Requesting Password Reset from Admin
 API: https://violet-wombats-draw.loca.lt/api/v1/staff/password-reset-request
@@ -88,7 +118,7 @@ Authorization: Bearer <token from login>
 // Staff Registration by Admin
 API: https://violet-wombats-draw.loca.lt/api/v1/staff/register
 Content: Required - (userName, firstName, lastName, role, email, phone, gender)
-Update/Optional fields - (userName, firstName, lastName, email, phone, address, role,          staffID, dob, gender, departmentId)
+Update/Optional fields - (userName, firstName, lastName, email, phone, address, role, staffID, dob, gender, departmentId)
 Authorization: Bearer <token from login>
 
 

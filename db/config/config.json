@@ -2,7 +2,7 @@
   "development": {
     "username": "postgres",
     "password": "ebrew",
-    "database": "TEST",
+    "database": "SMS",
     "host": "localhost",
     "dialect": "postgres"
   },
