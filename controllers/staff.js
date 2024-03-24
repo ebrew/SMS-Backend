@@ -13,7 +13,7 @@ const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/clea
 // Developer registering Admin
 exports.admin = async (req, res) => {
   try {
-    const { userName, firstName, lastName, email, phone, gender} = req.body;
+    const { userName, firstName, lastName, email, phone, gender } = req.body;
 
     if (!userName || !firstName || !lastName || !email || !phone || !gender)
       return res.status(400).json({ message: 'Incomplete fields!' });
@@ -34,7 +34,7 @@ exports.admin = async (req, res) => {
       return res.status(400).json({ message: 'Admin already exist!' });
 
     const password = process.env.DEFAULT_PASSWORD;
-    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role:'Admin', gender, password });
+    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role: 'Admin', gender, password });
     await newStaff.save()
     return res.status(200).json({ message: 'Admin created successfully!' });
   } catch (error) {
@@ -154,7 +154,7 @@ exports.passwordResetRequest = async (req, res) => {
 
     try {
       const { userID } = req.body;
-      // const userData = data.user ? data.user.toJSON() : null;
+
       if (!userID)
         return res.status(400).json({ message: 'Email/Username/Phone number is required! to send a request!' });
 
@@ -228,8 +228,8 @@ exports.passwordResetRequest = async (req, res) => {
         const link = `${process.env.APP_URL}/staff/admin-reset-password/${resetToken}`;
         const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);
 
-        if (!send)
-          return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+        // if (!send)
+        //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
       }
 
       return res.status(200).json({ message: "Request sent! Admin will act soon!" });
@@ -248,7 +248,7 @@ exports.adminResetPassword = async (req, res) => {
 
     const { id, role } = extractIdAndRoleFromToken(token) || { id: null, role: null };
 
-    console.log(id, role, token)
+    // console.log(id, role, token)
 
     // find the user requesting password reset
     const user = await User.findOne({
@@ -297,7 +297,7 @@ exports.adminResetPassword = async (req, res) => {
 
       const message = `Click the link below to login and reset your own password:`;
       const salutation = user.gender === 'Male' ? `Hello Sir ${user.firstName},` : `Hello Madam ${user.firstName},`;
-      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
+      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, message);
       if (send === false)
         return res.status(200).json({ message: 'Password reset successfully' });
 
@@ -359,15 +359,29 @@ exports.pendingResetRequest = async (req, res) => {
         ],
       })
 
-      // Merging student and staff requests into single JSON array
-      const mergedData = pending.map((data) => {
-        const jsonData = data.toJSON();
-        const userData = data.user ? data.user.toJSON() : null;
-        const studentData = data.student ? data.student.toJSON() : null;
-        return { ...jsonData, userData, studentData };
-      });
+      // Mapping the result to the desired format
+      const formattedResult = pending.map(data => {
+        let student = data.Student ? true : false;
+        if (student)
+          return {
+            updatedAt: data.updatedAt,
+            id: data.Student.id,
+            userName: data.Student.userName,
+            firstName: data.Studentr.firstName,
+            lastName: data.Student.lastName,
+            role: data.Student.role
+          }
+        return {
+          updatedAt: data.updatedAt,
+          id: data.User.id,
+          userName: data.User.userName,
+          firstName: data.User.firstName,
+          lastName: data.User.lastName,
+          role: data.User.role
+        }
+      })
 
-      res.status(200).json({ 'pending requests': mergedData });
+      res.status(200).json({ 'pending requests': formattedResult });
     } catch (error) {
       console.error('Error fetching resetRequests:', error);
       return res.status(500).json({ error: 'Sorry, request failed!' })
@@ -384,7 +398,7 @@ exports.allStaff = async (req, res) => {
     try {
       const staff = await User.findAll({
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role'],
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone'],
       })
       return res.status(200).json({ 'staff': staff });
     } catch (error) {

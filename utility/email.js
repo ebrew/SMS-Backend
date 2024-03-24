@@ -19,7 +19,7 @@ exports.sendPasswordResetSucessEmail = async (userEmail, salutation, message) =>
     to: userEmail,
     subject: 'Password Reset',
     html: `
-      <p>Hello ${salutation},</p>
+      <p>${salutation}</p>
       <p>Your password has been reset by your Admin.</p>
       <p>${message}</p>
       <a href="${process.env.FRONTEND_URL}">Login</a>

@@ -36,14 +36,14 @@ exports.addClass = async (req, res) => {
           return res.status(400).json({ message: 'Invalid section data' });
       }
       let isExist;
-      if(headTeacherId){  
-        isExist = await User.findOne({ where: { id: headTeacherId} });
+      if (headTeacherId) {
+        isExist = await User.findOne({ where: { id: headTeacherId } });
 
         if (!isExist)
           return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
 
-        if(isExist && isExist.role !== 'Teacher')
-          return res.status(400).json({message: "Selected staff isn't a teacher" })  
+        if (isExist && isExist.role !== 'Teacher')
+          return res.status(400).json({ message: "Selected staff isn't a teacher" })
       }
 
       // Create the Class
@@ -93,17 +93,39 @@ exports.allClasses = async (req, res) => {
           model: Class,
           attributes: ['id', 'name', 'grade'],
           order: [['grade', 'ASC']],
-          include: {
+          include:  {
             model: User,
             attributes: ['id', 'firstName', 'lastName'],
           },
         },
+        
       });
 
-      return res.status(200).json({ 'classes': classes });
-    } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
-    }
+  // Mapping the result to the desired format
+  const formattedResult = classes.map(data => {
+    return {
+      id: data.id,
+      name: `${data.Class.name} ${data.name}`,
+      capacity: data.capacity,
+      grade: data.Class.grade,
+      headTeacher: `${data.Class.User.firstName} ${data.Class.User.lastName}`,
+      class: {
+        id: data.Class.id,
+        name: data.Class.name,
+        grade: data.Class.grade,
+        headTeacher: {
+          id: data.Class.User.id,
+          firstName: data.Class.User.firstName,
+          lastName: data.Class.User.lastName
+        },
+      },
+    };
+  });
+
+  return res.status(200).json({ 'classes':  formattedResult });
+} catch (error) {
+  console.error('Error:', error.message);
+  return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+}
   });
 };

@@ -74,7 +74,7 @@ Authorization: Bearer <token from login>
 
 14. // Assign classes and subjects to teachers
 API: http://localhost:3000/api/v1/assigning/classes_subjects
-Content: academicTermId, teacherId, classes, subjects
+Content: teacherId, classes, subjects
 Authorization: Bearer <token from login>
 NB: classes and subjects are arrays of their selections
 eg: {
@@ -108,7 +108,7 @@ API: https://violet-wombats-draw.loca.lt/api/v1/staff/password-reset-request
 Content: userID(phone/userName/email) as a post request
 
 // Admin resetting password with email link request or from Admin requests' list
-API: https://violet-wombats-draw.loca.lt/api/v1/staff/admin-reset-password/"{id:id, role:role}" 
+API: https://violet-wombats-draw.loca.lt/api/v1/staff/admin-reset-password/"id:id, role:role" 
 NB: resetToken or "id:id, role:role"
 
 // List of pending Password reset requests
