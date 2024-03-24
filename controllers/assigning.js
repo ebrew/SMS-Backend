@@ -4,7 +4,7 @@ const passport = require('../db/config/passport')
 const { Class, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
 
 
-// Assign classes and subjects to teachers one time
+// Assign classes and subjects to teachers (one time)
 exports.assignClassesAndSubjects = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
