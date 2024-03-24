@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Class, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
-
+const Mail = require('../utility/email');
 
 // Assign classes and subjects to teachers (one time)
 exports.assignClassesAndSubjects = async (req, res) => {
@@ -13,6 +13,8 @@ exports.assignClassesAndSubjects = async (req, res) => {
     try {
       const { teacherId, classes, subjects } = req.body;
       let userInfo = [];
+      let classList = []
+      let subjectList = []
 
       // Validate the request body
       if (!teacherId || !Array.isArray(classes) || !Array.isArray(subjects))
@@ -34,8 +36,15 @@ exports.assignClassesAndSubjects = async (req, res) => {
         // If not, create a new assigned teacher record
         if (!existingTeacher)
           existingTeacher = await AssignedTeacher.create({ teacherId, classId });
+          const newClass = await Section.findOne({
+            where: { id: classId },
+            include: { model: Class, attributes: ['name'] }
+          });
 
-        const assignedId = existingTeacher.id; 
+          const combinedClassName = `${newClass.Class.name} - ${newClass.name}`;
+          classList.push(combinedClassName)
+
+        const assignedId = existingTeacher.id;
 
         // Loop through the subjects list
         for (const subjectData of subjects) {
@@ -50,19 +59,24 @@ exports.assignClassesAndSubjects = async (req, res) => {
             userInfo.push(`${subjectName} has already been assigned to the selected teacher in class ${className}`);
           } else {
             // If not, create a new assigned subject record
-            try {
-              await AssignedSubject.create({ assignedTeacherId: assignedId, subjectId });
-            } catch (error) {
-              console.error('Error creating assigned subject:', error);
-            }
+            await AssignedSubject.create({ assignedTeacherId: assignedId, subjectId });
+            const newSubject = await Subject.findOne({ where: { id: classId } }).name
+            newSubject.push(newSubject)
           }
         }
       }
 
-      const message = 'Assignment executed successfully!';
-      const note = userInfo.length > 0 ? `Take note of the following: ${userInfo.join(', ')}` : '';
+      // Email prompt to the teacher
+      const needed = (classList.length === 0 && subjectList.length === 0) ? false : true;
+      if (needed === true) {
+        const message = classList.length === 0 ? `You have been assigned to the following subjects in your already assigned class(s): ${subjectList.join(', ')}` : `You have been assigned to the following classes: ${classList.join(', ')} with the following subjects: ${subjectList.join(', ')}`;
+        const salutation = isExist.gender === 'Male' ? `Hello Sir ${isExist.firstName},` : `Hello Madam ${isExist.firstName},`;
+        await Mail.classAssignmentPromptEmail(isExist.email, salutation, message);
+      }
 
-      res.status(200).json({ message: `${message}. ${note}` });
+      const msg = 'Assignment executed successfully!';
+      const note = userInfo.length > 0 ? `Take note of the following: ${userInfo.join(', ')}` : '';
+      res.status(200).json({ message: `${msg}. ${note}` });
 
     } catch (error) {
       console.error('Error assigning classes and subjects:', error);
@@ -83,7 +97,7 @@ exports.assignedTeachers = async (req, res) => {
           {
             model: User,
             attributes: ['firstName', 'lastName'],
-          }, 
+          },
           {
             model: Section,
             attributes: ['name', 'capacity'],
@@ -118,12 +132,12 @@ exports.assignedTeacher = async (req, res) => {
         return res.status(400).json({ message: `Teacher could not be found!` });
 
       const activeAssignedTeachers = await AssignedTeacher.findAll({
-        where: { teacherId: teacherId},
+        where: { teacherId: teacherId },
         include: [
           {
             model: User,
             attributes: ['firstName', 'lastName'],
-          }, 
+          },
           {
             model: Section,
             attributes: ['name', 'capacity'],
@@ -235,7 +249,7 @@ exports.activeAssignedTeachers = async (req, res) => {
           {
             model: User,
             attributes: ['firstName', 'lastName'],
-          }, 
+          },
           {
             model: Section,
             attributes: ['name', 'capacity'],
@@ -293,17 +307,17 @@ exports.activeAssignedTeacher = async (req, res) => {
         return res.status(400).json({ message: `Teacher could not be found!` });
 
       const activeAssignedTeachers = await AssignedTeacher.findAll({
-        where: { teacherId: teacherId},
+        where: { teacherId: teacherId },
         include: [
           {
             model: AcademicTerm,
-            where: { status: 'Active'},
+            where: { status: 'Active' },
             attributes: ['name', 'status'],
           },
           {
             model: User,
             attributes: ['firstName', 'lastName'],
-          }, 
+          },
           {
             model: Section,
             attributes: ['name', 'capacity'],

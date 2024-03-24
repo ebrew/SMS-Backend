@@ -299,7 +299,7 @@ exports.adminResetPassword = async (req, res) => {
       const salutation = user.gender === 'Male' ? `Hello Sir ${user.firstName},` : `Hello Madam ${user.firstName},`;
       const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
       if (send === false)
-        return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+        return res.status(200).json({ message: 'Password reset successfully' });
 
       return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
     } else {

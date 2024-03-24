@@ -12,29 +12,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// when user needs to reset his/her own password with a link
-exports.sendPasswordResetEmail = async (userEmail, resetToken) => {
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: userEmail,
-    subject: 'Password Reset',
-    html: `
-      <p>Hello,</p>
-      <p>We received a request to reset your password. Click the link below to reset your password:</p>
-      <a href="${process.env.APP_URL}/reset-password/${resetToken}">Reset Password</a>
-      <p>If you didn't request a password reset, please ignore this email.</p>
-    `,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Failed to send reset email.' });
-    }
-    res.status(200).json({ message: 'Reset email sent.' });
-  });
-} 
-
 // this is sent to user after Admin has rest the password
 exports.sendPasswordResetSucessEmail = async (userEmail, salutation, message) => {
   mailOptions = {
@@ -60,6 +37,7 @@ exports.sendPasswordResetSucessEmail = async (userEmail, salutation, message) =>
   });
 } 
 
+// this is to prompt Admins with a link to reset user's password to default
 exports.sendRequestMailToAdmin = async (userEmail, link, message, salutation) => {
   mailOptions = {
     from: process.env.EMAIL,
@@ -83,6 +61,30 @@ exports.sendRequestMailToAdmin = async (userEmail, link, message, salutation) =>
       }
   });
 } 
+
+// this is sent to teacher for being assigned to classes with subjects
+exports.classAssignmentPromptEmail = async (userEmail, salutation, message) => {
+  mailOptions = {
+    from: process.env.EMAIL,
+    to: userEmail,
+    subject: 'Class/Subjects Assignment',
+    html: `
+      <p>Hello ${salutation},</p>
+      <p>${message}</p>
+      <p>Click the link below to login for more details of the classes or subjects you're assigned to: </p>
+      <a href="${process.env.FRONTEND_URL}">Login</a>
+      <p>If you are not the intended recipient, please ignore this email. Acting on it may cause a severe action to be taken against you!!!</p>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+        console.error(error);
+        // When email fails
+        return false;
+      }
+  });
+}
 
 // Forgot Password
 exports.forgotPassword = async (req, res) => {
@@ -143,3 +145,26 @@ exports.resetPassword = async (req, res) => {
 
   if(savedUser) res.status(200).json({message: 'Password reset successful'});   
 };
+
+// when user needs to reset his/her own password with a link
+exports.sendPasswordResetEmail = async (userEmail, resetToken) => {
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to: userEmail,
+    subject: 'Password Reset',
+    html: `
+      <p>Hello,</p>
+      <p>We received a request to reset your password. Click the link below to reset your password:</p>
+      <a href="${process.env.APP_URL}/reset-password/${resetToken}">Reset Password</a>
+      <p>If you didn't request a password reset, please ignore this email.</p>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Failed to send reset email.' });
+    }
+    res.status(200).json({ message: 'Reset email sent.' });
+  });
+} 
