@@ -320,16 +320,16 @@ exports.adminResetPassword = async (req, res) => {
       await student.save();
       await validRequest.save();
 
-      if (user.email === null)
+      if (!user.email)
         return res.status(200).json({ message: 'Password reset successfully' });
 
       const message = `Click the link below to login and reset your own password:`;
       const salutation = `Hello ${student.firstName},`
-      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, 'Password Reset', message);
-      if (send === false)
-        return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+      const send = await Mail.sendPasswordResetSucessEmail(user.email, salutation, message);
+      // if (send === false)
+      //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
 
-      return res.status(200).json({ message: 'Password reset successfully, mail notification sent' });
+      return res.status(200).json({ message: 'Password reset successfully!' });
     }
   } catch (error) {
     return res.status(400).json({ error: 'Cannot reset password at the moment!' });

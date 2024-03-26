@@ -8,13 +8,7 @@ router.get('/all', assignController.assignedTeachers);
 // Assign classes and subjects to teachers
 router.post('/classes_subjects', assignController.assignClassesAndSubjects);
 
-// Get a teacher's active assigned classes
+// Get a specific teacher's active assigned classes
 router.get('/all/:id', assignController.assignedTeacher);
-
-// // Get all active assigned teachers
-// router.get('/all_active', assignController.activeAssignedTeachers);
-
-// // Get a teacher's active assigned classes
-// router.get('/all_active/:id', assignController.activeAssignedTeacher);
 
 module.exports = router;

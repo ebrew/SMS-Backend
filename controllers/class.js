@@ -104,8 +104,8 @@ exports.allClasses = async (req, res) => {
   // Mapping the result to the desired format
   const formattedResult = classes.map(data => {
     return {
-      id: data.id,
-      name: `${data.Class.name} ${data.name}`,
+      classSectionId: data.id,
+      classSection: `${data.Class.name} ${data.name}`,
       capacity: data.capacity,
       grade: data.Class.grade,
       headTeacher: `${data.Class.User.firstName} ${data.Class.User.lastName}`,
