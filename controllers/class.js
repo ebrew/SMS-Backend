@@ -87,7 +87,7 @@ exports.allClasses = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const classes = await Section.findAll({
+      const classSections = await Section.findAll({
         attributes: ['id', 'name', 'capacity'],
         include: {
           model: Class,
@@ -102,7 +102,7 @@ exports.allClasses = async (req, res) => {
       });
 
   // Mapping the result to the desired format
-  const formattedResult = classes.map(data => {
+  const formattedResult2 = classSections.map(data => {
     return {
       classSectionId: data.id,
       classSection: `${data.Class.name} ${data.name}`,
@@ -122,7 +122,33 @@ exports.allClasses = async (req, res) => {
     };
   });
 
-  return res.status(200).json({ 'classes':  formattedResult });
+  const classes = await Class.findAll({ order: [['grade', 'ASC']], include:  { model: User, attributes: ['id', 'firstName', 'lastName'] }, });
+
+  // Map through activeAssignedTeachers and create promises to fetch subjects
+  const promises = classes.map(async (data) => {
+    const sections = await Section.findAll({
+      where: { classId: data.id },
+      attributes: ['id', 'name', 'capacity'],  
+    });
+  
+    // Return the formatted data along with the subjects
+    return {
+      id: data.id,
+      name: data.name,
+      grade: data.grade,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      headTeacher: data.User,
+      // headTeacherId: data.User.id,
+      // headTeacher: `${data.User.firstName} ${data.User.lastName}`,
+      classSections: sections,
+    };
+  });
+  
+  // Execute all promises concurrently and await their results
+  const formattedResult1 = await Promise.all(promises);
+
+  return res.status(200).json({ 'class - option 1': formattedResult1, 'classes - option 2':  formattedResult2 });
 } catch (error) {
   console.error('Error:', error.message);
   return res.status(500).json({ Error: "Can't fetch data at the moment!" });
