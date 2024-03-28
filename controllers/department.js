@@ -51,6 +51,7 @@ exports.addDepartment = async (req, res) => {
           return res.status(400).json({ message: `Seleected HOD doesn't exist!` });
       }
 
+      // name = name.toUpperCase()
       const savedDept = await new Department({ name, description, hodId }).save()
 
       if (savedDept) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });
