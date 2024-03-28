@@ -14,7 +14,16 @@
     "dialect": "postgres"
   },
   "production": {
-    "use_env_variable": "DATABASE_URL",
-    "dialect": "postgres"
+    "username": "ebrew",
+    "password": "cnZdWmNJ8HjCFbFUL1fPv41zH83PBQRb",
+    "database": "sms_db_1wgj",
+    "host": "dpg-co2nn5sf7o1s73cmhftg-a.oregon-postgres.render.com",
+    "dialect": "postgres",
+    "port" : 5432,
+    "dialectOptions": {
+    "ssl": {
+      "rejectUnauthorized": false
+    }
   }
+}
 }
