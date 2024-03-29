@@ -27,6 +27,7 @@ exports.addSubject = async (req, res) => {
 
     try {
       const { name, code, description } = req.body;
+      console.log('PLS check here: ', req.body)
 
       if (!name || !code)
         return res.status(400).json({ message: 'Incomplete fields!' });
