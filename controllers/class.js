@@ -206,7 +206,7 @@ exports.allClasses = async (req, res) => {
         let headTeacher = "Unknown"; // Default value in case head teacher is null
 
         // Check if the user object exists before accessing its properties
-        if (data.Class.User) {
+        if (data.Class.User && data.Class.User.firstName && data.Class.User.lastName) {
           headTeacher = `${data.Class.User.firstName} ${data.Class.User.lastName}`;
         }
 
@@ -260,3 +260,4 @@ exports.allClasses = async (req, res) => {
     }
   });
 };
+
