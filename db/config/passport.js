@@ -13,13 +13,14 @@ passport.use(
       secretOrKey: process.env.SECRET_KEY,
     }, 
     function (jwtPayload, done) {
-      // return User.findOne({ where: {id: jwtPayload.id}})
-      return User.findOne({ where: {email: jwtPayload.id}})
+      return User.findOne({ where: {id: jwtPayload.id}})
+      // return User.findOne({ where: {email: jwtPayload.id}})
       .then((user) => {
         return done(null, user);
       }).catch((err) => {
         return done(err);
       }); 
 }));
+
 
 module.exports = passport;

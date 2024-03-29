@@ -68,7 +68,7 @@ exports.login = async (req, res) => {
     if (!isPasswordValid)
       return res.status(400).json({ message: 'Invalid Credentials!' });
 
-    const token = jwt.sign({ id: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
     return res.status(200).json({ message: 'Logged in successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
   } catch (error) {
@@ -122,29 +122,32 @@ exports.defaultReset = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { userName, password } = req.body;
-      if (!userName || !password)
-        return res.status(400).json({ message: 'Incomplete fields' });
+      const userId = req.user.id; 
+      const { password } = req.body;
 
-      const user = await User.findOne({ where: { userName } })
+      if (!password)
+        return res.status(400).json({ message: 'New password is required' });
+
+      const user = await User.findOne({ where: { id: userId } });
 
       if (!user)
         return res.status(400).json({ message: 'Invalid credentials!' });
 
       if (password === process.env.DEFAULT_PASSWORD)
-        return req.status(400).json({ message: "You must use a new password!" })
+        return res.status(400).json({ message: "You must use a new password!" });
 
-      const token = jwt.sign({ id: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
+      const token = jwt.sign({ id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
       user.password = await bcrypt.hash(password, 10);
-      user.isPasswordReset = true
-      await user.save()
+      user.isPasswordReset = true;
+      await user.save();
       return res.status(200).json({ message: 'Password reset successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ Error: 'Cannot reset password at the moment!' });
     }
-  })
-}
+  });
+};
+
 
 // Request Password Reset from Admin
 exports.passwordResetRequest = async (req, res) => {
