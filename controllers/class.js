@@ -102,7 +102,7 @@ exports.allClasses = async (req, res) => {
       });
 
   // Mapping the result to the desired format
-  const formattedResult2 = classSections.map(data => {
+  const formattedResult3 = classSections.map(data => {
     return {
       classSectionId: data.id,
       classSection: `${data.Class.name} ${data.name}`,
@@ -121,6 +121,33 @@ exports.allClasses = async (req, res) => {
       },
     };
   });
+  const formattedResult2 = classSections.map(data => {
+    let headTeacher = "Unknown"; // Default value in case head teacher is null
+    
+    // Check if the user object exists before accessing its properties
+    if (data.Class.User) {
+      headTeacher = `${data.Class.User.firstName} ${data.Class.User.lastName}`;
+    }
+    
+    return {
+      classSectionId: data.id,
+      classSection: `${data.Class.name} ${data.name}`,
+      capacity: data.capacity,
+      grade: data.Class.grade,
+      headTeacher: headTeacher,
+      class: {
+        id: data.Class.id,
+        name: data.Class.name,
+        grade: data.Class.grade,
+        headTeacher: {
+          id: data.Class.User ? data.Class.User.id : null,
+          firstName: data.Class.User ? data.Class.User.firstName : null,
+          lastName: data.Class.User ? data.Class.User.lastName : null
+        },
+      },
+    };
+  });
+  
 
   const classes = await Class.findAll({ order: [['grade', 'ASC']], include:  { model: User, attributes: ['id', 'firstName', 'lastName'] } });
 
