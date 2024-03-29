@@ -84,7 +84,7 @@ exports.register = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId } = req.body;
+      const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId, address } = req.body;
 
       if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
         return res.status(400).json({ message: 'Incomplete fields!' });
@@ -105,7 +105,7 @@ exports.register = async (req, res) => {
         return res.status(400).json({ message: 'Staff already exist!' });
 
       const password = process.env.DEFAULT_PASSWORD;
-      const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role, staffID, gender, password, departmentId });
+      const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role, staffID, gender, password, departmentId, address });
       await newStaff.save()
       return res.status(200).json({ message: 'Staff created successfully!' });
     } catch (error) {

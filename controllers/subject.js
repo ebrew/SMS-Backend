@@ -48,8 +48,8 @@ exports.addSubject = async (req, res) => {
 
       if (savedSubject) res.status(200).json({ message: 'Saved successfully!', 'Subject': savedSubject });
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ Error: 'Cannot create subject at the moment!' });
+      console.error('Error:', error);
+      return res.status(500).json({ message: 'Cannot create subject at the moment!' });
     }
   })
 };
