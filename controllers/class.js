@@ -122,7 +122,7 @@ exports.allClasses = async (req, res) => {
     };
   });
 
-  const classes = await Class.findAll({ order: [['grade', 'ASC']], include:  { model: User, attributes: ['id', 'firstName', 'lastName'] }, });
+  const classes = await Class.findAll({ order: [['grade', 'ASC']], include:  { model: User, attributes: ['id', 'firstName', 'lastName'] } });
 
   // Map through activeAssignedTeachers and create promises to fetch subjects
   const promises = classes.map(async (data) => {
@@ -150,8 +150,8 @@ exports.allClasses = async (req, res) => {
 
   return res.status(200).json({ 'class - option 1': formattedResult1, 'classes - option 2':  formattedResult2 });
 } catch (error) {
-  console.error('Error:', error.message);
-  return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+  console.error('Error:', error);
+  return res.status(500).json({ message: "Can't fetch data at the moment!" });
 }
   });
 };

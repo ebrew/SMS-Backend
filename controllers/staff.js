@@ -401,7 +401,7 @@ exports.allStaff = async (req, res) => {
     try {
       const staff = await User.findAll({
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone'],
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address'],
       })
       return res.status(200).json({ 'staff': staff });
     } catch (error) {
