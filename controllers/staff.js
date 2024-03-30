@@ -10,39 +10,6 @@ const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
 
 
-// Developer registering Admin
-exports.admin = async (req, res) => {
-  try {
-    const { userName, firstName, lastName, email, phone, gender } = req.body;
-
-    if (!userName || !firstName || !lastName || !email || !phone || !gender)
-      return res.status(400).json({ message: 'Incomplete fields!' });
-
-    const uPhone = normalizeGhPhone(phone)
-    const alreadyExist = await User.findOne({
-      where: {
-        [Op.or]: [
-          { userName: userName },
-          { email: email.toLowerCase() },
-          { phone: uPhone },
-        ],
-      },
-    })
-
-
-    if (alreadyExist)
-      return res.status(400).json({ message: 'Admin already exist!' });
-
-    const password = process.env.DEFAULT_PASSWORD;
-    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role: 'Admin', gender, password });
-    await newStaff.save()
-    return res.status(200).json({ message: 'Admin created successfully!' });
-  } catch (error) {
-    console.error('Error:', error.message);
-    return res.status(500).json({ Error: 'Cannot create Admin at the moment!' });
-  }
-}
-
 // Login
 exports.login = async (req, res) => {
   try {
@@ -147,7 +114,6 @@ exports.defaultReset = async (req, res) => {
     }
   });
 };
-
 
 // Request Password Reset from Admin
 exports.passwordResetRequest = async (req, res) => {
@@ -411,4 +377,37 @@ exports.allStaff = async (req, res) => {
   });
 
 };
+
+// Developer registering Admin
+exports.admin = async (req, res) => {
+  try {
+    const { userName, firstName, lastName, email, phone, gender } = req.body;
+
+    if (!userName || !firstName || !lastName || !email || !phone || !gender)
+      return res.status(400).json({ message: 'Incomplete fields!' });
+
+    const uPhone = normalizeGhPhone(phone)
+    const alreadyExist = await User.findOne({
+      where: {
+        [Op.or]: [
+          { userName: userName },
+          { email: email.toLowerCase() },
+          { phone: uPhone },
+        ],
+      },
+    })
+
+
+    if (alreadyExist)
+      return res.status(400).json({ message: 'Admin already exist!' });
+
+    const password = process.env.DEFAULT_PASSWORD;
+    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role: 'Admin', gender, password });
+    await newStaff.save()
+    return res.status(200).json({ message: 'Admin created successfully!' });
+  } catch (error) {
+    console.error('Error:', error.message);
+    return res.status(500).json({ Error: 'Cannot create Admin at the moment!' });
+  }
+}
 

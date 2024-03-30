@@ -41,10 +41,6 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/teacher/all
 Authorization: Bearer <token from login>
 
-
-<<Frontend tests ended here>>
-
-
 8. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
@@ -59,6 +55,12 @@ API: << server >>/api/v1/staff/register
 Content: Required - (userName, firstName, lastName, role, email, phone, gender)
 Update/Optional fields - (userName, firstName, lastName, email, phone, address, role, staffID, dob, gender, departmentId)
 Authorization: Bearer <token from login>
+
+
+
+<<Frontend tests ended here>>
+
+
 
 11. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
