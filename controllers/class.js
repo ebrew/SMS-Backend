@@ -119,3 +119,35 @@ exports.allClasses = async (req, res) => {
   });
 };
 
+// Get all Class Sections in different formats
+exports.allClassSections = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const classSections = await Section.findAll({
+        attributes: ['id', 'name', 'capacity'],
+        include: {
+          model: Class,
+          attributes: ['name'],
+          order: [['grade', 'ASC']],
+        },
+      });
+
+      // Mapping the result to the desired format
+      const formattedResult = classSections.map(data => {
+        return {
+          classSectionId: data.id,
+          classSection: `${data.Class.name} ${data.name}`,
+          capacity: data.capacity,
+        };
+      });
+
+      return res.status(200).json({ 'class sections': formattedResult });
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};

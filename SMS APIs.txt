@@ -37,20 +37,24 @@ eg: {
 API: << server >>/api/v1/class/all
 Authorization: Bearer <token from login>
 
-7. // List of Teachers for hod and headTeacher dropdown options
+7. // Get all class sections for multi select when assigning teachers
+API: << server >>/api/v1/class/sections
+Authorization: Bearer <token from login>
+
+8. // List of Teachers for hod and headTeacher dropdown options
 API: << server >>/api/v1/teacher/all
 Authorization: Bearer <token from login>
 
-8. // Creating a new subject
+9. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
 Authorization: Bearer <token from login>
 
-9. // List of subjects
+10. // List of subjects
 API: << server >>/api/v1/subject/all
 Authorization: Bearer <token from login>
 
-10. // Staff Registration by Admin
+11. // Staff Registration by Admin
 API: << server >>/api/v1/staff/register
 Content: Required - (userName, firstName, lastName, role, email, phone, gender)
 Update/Optional fields - (userName, firstName, lastName, email, phone, address, role, staffID, dob, gender, departmentId)
@@ -62,25 +66,25 @@ Authorization: Bearer <token from login>
 
 
 
-11. // Creating a new academic year
+12. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
 Content: name, startDate, endDate
 Authorization: Bearer <token from login>
 
-12. // Fetching the active academic year
+13. // Fetching the active academic year
 API: << server >>/api/v1/academic_year/active
 Authorization: Bearer <token from login>
 
-13. // Creating a new academic term
+14. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
 Authorization: Bearer <token from login>
 
-14. // Fetching the active academic term
+15. // Fetching the active academic term
 API: << server >>/api/v1/academic_term/active
 Authorization: Bearer <token from login>
 
-15. // Assign classes and subjects to teachers
+16. // Assign classes and subjects to teachers
 API: << server >>/api/v1/assigning/classes_subjects
 Content: teacherId, classes, subjects
 Authorization: Bearer <token from login>
@@ -95,19 +99,19 @@ eg: {
   ]
 }
 
-16. // Get a teacher's assigned classes
+17. // Get a teacher's assigned classes
 API: << server >>/api/v1/assigning/all/id
 Authorization: Bearer <token from login>
 
-17. // Get all assigned teachers
+18. // Get all assigned teachers
 API: << server >>/api/v1/assigning/all
 Authorization: Bearer <token from login>
 
-18. // List of all academic years
+19. // List of all academic years
 API: << server >>/api/v1/academic_year/all
 Authorization: Bearer <token from login>
 
-19. // List of all academic terms
+20. // List of all academic terms
 API: << server >>/api/v1/academic_term/all
 Authorization: Bearer <token from login>
 
