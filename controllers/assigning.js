@@ -290,6 +290,9 @@ exports.assignedTeacher = async (req, res) => {
         // Check if the class ID already exists in the formatted result
         if (formattedResult[data.Section.Class.id]) {
           // If the class ID exists, find the section index or add a new one
+          if (!formattedResult[data.Section.Class.id].sections) {
+            formattedResult[data.Section.Class.id].sections = [];
+          }
           const existingSectionIndex = formattedResult[data.Section.Class.id].sections.findIndex(section => section.id === data.Section.id);
           if (existingSectionIndex !== -1) {
             // If the section exists, push subjects to it
@@ -332,7 +335,3 @@ exports.assignedTeacher = async (req, res) => {
     }
   });
 };
-
-
-
-
