@@ -37,7 +37,7 @@ exports.assignClassesAndSubjects = async (req, res) => {
         if (!existingTeacher)
           existingTeacher = await AssignedTeacher.create({ teacherId, classId });
 
-        const newClass = await Section.findOne({ where: { id: classId }, include: { model: Class, attributes: ['name'] }  });
+        const newClass = await Section.findOne({ where: { id: classId }, include: { model: Class, attributes: ['name'] } });
         const combinedClassName = `${newClass.Class.name} - ${newClass.name}`;
         classList.push(combinedClassName)
 
@@ -109,7 +109,7 @@ exports.assignedTeachers = async (req, res) => {
           }
         ],
       });
-      
+
       // Map through activeAssignedTeachers and create promises to fetch subjects
       const promises = activeAssignedTeachers.map(async (data) => {
         const assignedSubjects = await AssignedSubject.findAll({
@@ -121,7 +121,7 @@ exports.assignedTeachers = async (req, res) => {
             attributes: ['id', 'name'],
           }
         });
-      
+
         // Return the formatted data along with the subjects
         return {
           id: data.id,
@@ -138,101 +138,11 @@ exports.assignedTeachers = async (req, res) => {
           classStudents: 'Will add a list of the associated students in this class so you cache them for ur use without reaching the server for only the students.'
         };
       });
-      
+
       // Execute all promises concurrently and await their results
       const formattedResult = await Promise.all(promises);
-      
+
       return res.status(200).json({ 'all active assigned teachers': formattedResult });
-    } catch (error) {
-      console.error('Error fetching active assigned teachers:', error);
-      return res.status(500).json({ message: "Can't fetch data at the moment!" });
-    }
-  });
-};
-
-// Get a specific teacher's assigned classes
-exports.assignedTeacher1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const teacherId = req.params.id;
-
-      const isExist = await User.findByPk(teacherId);
-      if (!isExist)
-        return res.status(400).json({ message: `Teacher could not be found!` });
-
-      const activeAssignedTeachers = await AssignedTeacher.findAll({
-        where: { teacherId },
-        include: [
-          {
-            model: User,
-            attributes: ['firstName', 'lastName'],
-          },
-          {
-            model: Section,
-            attributes: ['id', 'name', 'capacity'],
-            include: {
-              model: Class,
-              attributes: ['id', 'name', 'grade'],
-              order: [['grade', 'DESC']],
-            }
-          }
-        ]
-      });
-
-      // Array to store the formatted data
-      const formattedResult = [];
-
-      // Looping through activeAssignedTeachers and creating promises to fetch subjects
-      for (const data of activeAssignedTeachers) {
-        const assignedSubjects = await AssignedSubject.findAll({
-          where: { assignedTeacherId: data.id },
-          attributes: [], // not interested in any attributes
-          order: [['createdAt', 'DESC']],
-          include: {
-            model: Subject,
-            attributes: ['id', 'name'],
-          }
-        });
-
-        // Check if the class ID already exists in the formatted result
-        const existingClassIndex = formattedResult.findIndex(item => item.classId === data.Section.Class.id);
-
-        if (existingClassIndex !== -1) {
-          // If the class ID exists, push the section to its classes array
-          formattedResult[existingClassIndex].classes.push({
-            classId: data.Section.Class.id,
-            sections: [{
-              id: data.Section.id,
-              name: data.Section.name,
-              capacity: data.Section.capacity,
-              subjects: assignedSubjects,
-            }]
-          });
-        } else {
-          // If the class ID doesn't exist, add the class and its section to the formatted result
-          formattedResult.push({
-            id: data.id,
-            teacherId: data.teacherId,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            teacher: `${data.User.firstName} ${data.User.lastName}`,
-            classes: [{
-              class: data.Section.Class,
-              sections: [{
-                id: data.Section.id,
-                name: data.Section.name,
-                capacity: data.Section.capacity,
-                subjects: assignedSubjects,
-              }]
-            }],
-          });
-        }
-      }
-
-      return res.status(200).json({ "all active assigned teachers": formattedResult });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -253,12 +163,12 @@ exports.assignedTeacher = async (req, res) => {
       if (!isExist)
         return res.status(400).json({ message: `Teacher could not be found!` });
 
-      const activeAssignedTeachers = await AssignedTeacher.findAll({
+      const activeAssignedTeacher = await AssignedTeacher.findAll({
         where: { teacherId },
         include: [
           {
             model: User,
-            attributes: ['firstName', 'lastName'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
           {
             model: Section,
@@ -272,11 +182,8 @@ exports.assignedTeacher = async (req, res) => {
         ]
       });
 
-      // Object to store the formatted data
-      const formattedResult = {};
-
-      // Looping through activeAssignedTeachers and creating promises to fetch subjects
-      for (const data of activeAssignedTeachers) {
+      // Map through activeAssignedTeachers and create promises to fetch subjects
+      const promises = activeAssignedTeacher.map(async (data) => {
         const assignedSubjects = await AssignedSubject.findAll({
           where: { assignedTeacherId: data.id },
           attributes: [], // not interested in any attributes
@@ -287,51 +194,46 @@ exports.assignedTeacher = async (req, res) => {
           }
         });
 
-        // Check if the class ID already exists in the formatted result
-        if (formattedResult[data.Section.Class.id]) {
-          // If the class ID exists, find the section index or add a new one
-          if (!formattedResult[data.Section.Class.id].sections) {
-            formattedResult[data.Section.Class.id].sections = [];
-          }
-          const existingSectionIndex = formattedResult[data.Section.Class.id].sections.findIndex(section => section.id === data.Section.id);
-          if (existingSectionIndex !== -1) {
-            // If the section exists, push subjects to it
-            formattedResult[data.Section.Class.id].sections[existingSectionIndex].subjects.push(...assignedSubjects);
-          } else {
-            // If the section doesn't exist, add it
-            formattedResult[data.Section.Class.id].sections.push({
-              id: data.Section.id,
-              name: data.Section.name,
-              capacity: data.Section.capacity,
-              subjects: assignedSubjects,
-            });
-          }
+        // Return the formatted data along with the subjects in a class
+        return {
+          classId: data.Section.Class.id,
+          name: data.Section.Class.name,
+          grade: data.Section.Class.grade,
+          section: {
+            assignedTeacherId: data.id,
+            sectionId: data.Section.id,
+            name: data.Section.name,
+            subjects: assignedSubjects,
+          },
+          teacher: data.User
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+
+      const classes = []
+      for (const data of formattedResult) {
+        const exists = classes.some(cls => cls.classId === data.classId);
+        if (exists) {
+          const existingClass = classes.find(cls => cls.classId === data.classId);
+          existingClass.sections.push(data.section);
         } else {
-          // If the class ID doesn't exist, add the class and its section to the formatted result
-          formattedResult[data.Section.Class.id] = {
-            teacherId: data.teacherId,
-            teacher: `${data.User.firstName} ${data.User.lastName}`,
-            classes: [{
-              classId: data.Section.Class.id,
-              class: data.Section.Class,
-              sections: [{
-                id: data.Section.id,
-                name: data.Section.name,
-                capacity: data.Section.capacity,
-                subjects: assignedSubjects,
-              }]
-            }],
-          };
+          classes.push({
+            classId: data.classId,
+            name: data.name,
+            grade: data.grade,
+            teacher: data.teacher,
+            sections: [data.section]
+          });
         }
       }
-
-      // Convert the formatted result to an array of objects
-      const resultArray = Object.values(formattedResult);
-
-      return res.status(200).json({ "all active assigned teachers": resultArray });
+      return res.status(200).json({ "Teacher's assigned classes and subjects": classes });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
+
+
