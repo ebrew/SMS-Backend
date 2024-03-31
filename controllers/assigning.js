@@ -291,23 +291,24 @@ exports.assignedTeacher = async (req, res) => {
         const existingClassIndex = formattedResult.findIndex(item => item.classId === data.Section.Class.id);
 
         if (existingClassIndex !== -1) {
-          // If the class ID exists, push the section to its sections array
-          formattedResult[existingClassIndex].classes.push({
-            classId: data.Section.Class.id,
-            sections: [{
+          // If the class ID exists, find the section index or add a new one
+          const existingSectionIndex = formattedResult[existingClassIndex].classes.findIndex(section => section.id === data.Section.id);
+          if (existingSectionIndex !== -1) {
+            // If the section exists, push subjects to it
+            formattedResult[existingClassIndex].classes[existingSectionIndex].subjects.push(...assignedSubjects);
+          } else {
+            // If the section doesn't exist, add it
+            formattedResult[existingClassIndex].classes.push({
               id: data.Section.id,
               name: data.Section.name,
               capacity: data.Section.capacity,
               subjects: assignedSubjects,
-            }]
-          });
+            });
+          }
         } else {
           // If the class ID doesn't exist, add the class and its section to the formatted result
           formattedResult.push({
-            id: data.id,
             teacherId: data.teacherId,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
             teacher: `${data.User.firstName} ${data.User.lastName}`,
             classes: [{
               classId: data.Section.Class.id,
@@ -330,5 +331,6 @@ exports.assignedTeacher = async (req, res) => {
     }
   });
 };
+
 
 
