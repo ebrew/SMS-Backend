@@ -8,4 +8,10 @@ router.get('/all', departmentController.allDepartments);
 // Create a new department
 router.post('/create', departmentController.addDepartment);
 
+// Update an existing department
+router.post('/update/:id', departmentController.updateDepartment)
+
+// Delete an existing department
+router.get('/delete/:id', departmentController.deleteDepartment)
+
 module.exports = router;

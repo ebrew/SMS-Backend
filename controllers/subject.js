@@ -54,6 +54,63 @@ exports.addSubject = async (req, res) => {
   })
 };
 
+// Update an existing subject
+exports.updateSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, code, description } = req.body;
+      const subjectId = req.params.id; 
+
+      if (!name || !code)
+        return res.status(400).json({ message: 'Class name or grade cannot be blank!' });
+
+      const subject = await Subject.findByPk(subjectId); 
+
+      if (!subject)
+        return res.status(404).json({ message: 'Subject not found!' });
+
+      // Update subject attributes
+      subject.name = name;
+      subject.code = code;
+      subject.description = description;
+
+      await subject.save(); 
+
+      return res.status(200).json({ message: 'Subject updated successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update subject at the moment!' });
+    }
+  });
+};
+
+// Delete a subject
+exports.deleteSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const subjectId = req.params.id; 
+
+      const name = await Subject.findByPk(subjectId); 
+
+      if (!name)
+        return res.status(404).json({ message: 'Subject not found!' });
+
+      await name.destroy(); 
+
+      return res.status(200).json({ message: 'Subject deleted successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot delete subject at the moment!' });
+    }
+  });
+};
+
 
 
 

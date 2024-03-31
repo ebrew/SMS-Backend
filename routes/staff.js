@@ -11,6 +11,12 @@ router.post('/login', staffController.login);
 // Staff Registration
 router.post('/register', staffController.register);
 
+// Update an existing staff
+router.post('/update/:id', staffController.updateStaff)
+
+// Delete an existing staff
+router.get('/delete/:id', staffController.deleteStaff)
+
 // Reset staff account DEFAULT PASSWORD after account creation
 router.post('/default-reset', staffController.defaultReset);
 
@@ -22,7 +28,6 @@ router.get('/admin-reset-password/:token', staffController.adminResetPassword)
 
 // List of pending Password reset requests
 router.get('/pending-password-reset-requests', staffController.pendingResetRequest)
-
 
 // Get all staff
 router.get('/all', staffController.allStaff)

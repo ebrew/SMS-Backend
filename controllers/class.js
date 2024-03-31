@@ -12,8 +12,6 @@ exports.addClass = async (req, res) => {
     try {
       const { className, grade, headTeacherId, sections } = req.body;
 
-      console.log('Request body:', req.body);
-
       if (!className || !grade || !sections)
         return res.status(400).json({ message: 'Incomplete field!' });
 
@@ -36,8 +34,8 @@ exports.addClass = async (req, res) => {
           return res.status(400).json({ message: 'Invalid section data' });
       }
       let isExist;
-      if (headTeacherId) {
-        isExist = await User.findOne({ where: { id: headTeacherId } });
+      if(headTeacherId && headTeacherId !== 0){
+        isExist = await User.findByPk(headTeacherId);
 
         if (!isExist)
           return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
@@ -47,11 +45,7 @@ exports.addClass = async (req, res) => {
       }
 
       // Create the Class
-      const newClass = await Class.create({
-        name: className,
-        grade: grade,
-        headTeacherId: headTeacherId,
-      });
+      let newClass = headTeacherId === 0 ? await Class.create({name: className, grade, headTeacherId: null}) : await Class.create({name: className, grade, headTeacherId});
 
       const classId = newClass.id;
 
@@ -148,6 +142,74 @@ exports.allClassSections = async (req, res) => {
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Update an existing class
+exports.updateClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { className, grade, headTeacherId } = req.body;
+      const classId = req.params.id; 
+
+      if (!className || !grade)
+        return res.status(400).json({ message: 'Class name or grade cannot be blank!' });
+
+      const name = await Class.findByPk(classId); 
+
+      if (!name)
+        return res.status(404).json({ message: 'Class not found!' });
+
+      if(headTeacherId && headTeacherId !== 0) {  
+        const isHodExist = await User.findByPk(headTeacherId); 
+
+        if (!isHodExist)
+          return res.status(400).json({ message: `Selected Teacher doesn't exist!` });
+      }
+
+      // const alreadyExist = await Class.findOne({ where: { name: className } });
+      // if (alreadyExist)
+      //   return res.status(400).json({ message: `${className} already exist!` });
+
+      // Update department attributes
+      name.name = className;
+      name.grade = grade;
+      name.headTeacherId = headTeacherId;
+
+      await name.save(); 
+
+      return res.status(200).json({ message: 'Class updated successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update class at the moment!' });
+    }
+  });
+};
+
+// Delete a department
+exports.deleteClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const classId = req.params.id; 
+
+      const name = await Class.findByPk(classId); 
+
+      if (!name)
+        return res.status(404).json({ message: 'Class not found!' });
+
+      await name.destroy(); 
+
+      return res.status(200).json({ message: 'Class deleted successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot delete class at the moment!' });
     }
   });
 };

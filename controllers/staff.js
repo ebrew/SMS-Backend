@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, ResetRequest } = require("../db/models/index")
+const { User, Student, ResetRequest, Department } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -82,6 +82,77 @@ exports.register = async (req, res) => {
   })
 }
 
+// Update an existing staff
+exports.updateStaff = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId, address, dob } = req.body;
+      const staffId = req.params.id;
+
+      if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
+        return res.status(400).json({ message: 'Important fields cannot be left blank!' });
+
+      const user = await User.findByPk(staffId);
+
+      if (!user)
+        return res.status(404).json({ message: 'Staff not found!' });
+
+      if (departmentId && departmentId !== 0) {
+        const isHodExist = await Department.findByPk(departmentId);
+
+        if (!isHodExist)
+          return res.status(400).json({ message: `Selected Department doesn't exist!` });
+      }
+
+      // Update department attributes
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.email = email.toLowerCase();
+      user.phone = normalizeGhPhone(phone);
+      user.role = role;
+      user.staffID = staffID
+      user.gender = gender;
+      user.departmentId = departmentId === 0 ? null : departmentId
+      user.address = address
+      user.dob = dob
+
+      await user.save();
+
+      return res.status(200).json({ message: 'Staff updated successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update staff at the moment!' });
+    }
+  });
+};
+
+// Delete a staff
+exports.deleteStaff = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const staffId = req.params.id;
+
+      const user = await User.findByPk(staffId);
+
+      if (!user)
+        return res.status(404).json({ message: 'Staff not found!' });
+
+      await user.destroy();
+
+      return res.status(200).json({ message: 'Staff deleted successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot delete staff at the moment!' });
+    }
+  });
+};
+
 // Reset staff account DEFAULT PASSWORD after account creation
 exports.defaultReset = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -89,7 +160,7 @@ exports.defaultReset = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const userId = req.user.id; 
+      const userId = req.user.id;
       const { password } = req.body;
 
       if (!password)
@@ -117,96 +188,91 @@ exports.defaultReset = async (req, res) => {
 
 // Request Password Reset from Admin
 exports.passwordResetRequest = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const { userID } = req.body;
 
-    try {
-      const { userID } = req.body;
+    if (!userID)
+      return res.status(400).json({ message: 'Email/Username/Phone number is required! to send a request!' });
 
-      if (!userID)
-        return res.status(400).json({ message: 'Email/Username/Phone number is required! to send a request!' });
-
-      const user = await User.findOne({
-        where: {
-          [Op.or]: [
-            { userName: userID },
-            { email: userID.toLowerCase() },
-            { phone: normalizeGhPhone(userID) },
-          ],
-        }
-      })
-
-      if (!user)
-        return res.status(400).json({ message: 'Staff not found!' });
-
-      // Check if user has requested before
-      const validRequest = await ResetRequest.findOne({ where: { userId: user.id } });
-      if (validRequest) {
-        // Check if request already exit or it's pending
-        if (validRequest.isPasswordReset === false)
-          return res.status(400).json({ message: 'Password reset already requested, Admin will soon act on it!' });
-
-        // Rerequesting reset  
-        validRequest.isPasswordReset = false;
-        await validRequest.save();
-      } else {
-        // First time requester
-        const newRequest = new ResetRequest({ userId: user.id });
-        await newRequest.save();
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { userName: userID },
+          { email: userID.toLowerCase() },
+          { phone: normalizeGhPhone(userID) },
+        ],
       }
+    })
 
-      // Find Admins with non-null emails
-      const adminsWithEmails = await User.findAll({
-        where: {
-          role: 'Admin',
-          email: { [Op.not]: null }
-        },
-        // Only fetch the email field
-        attributes: ['email', 'gender', 'firstName'],
-      });
+    if (!user)
+      return res.status(400).json({ message: 'Staff not found!' });
 
-      // Extract emails from the result as a list/array
-      const emails = adminsWithEmails.map(admin => admin.email);
+    // Check if user has requested before
+    const validRequest = await ResetRequest.findOne({ where: { userId: user.id } });
+    if (validRequest) {
+      // Check if request already exit or it's pending
+      if (validRequest.isPasswordReset === false)
+        return res.status(400).json({ message: 'Password reset already requested, Admin will soon act on it!' });
 
-      // when admin does not have email to be prompted
-      if (emails.length === 0)
-        return res.status(200).json({ message: "Request sent! Admin will act soon!" });
-
-      // token generation for the requester
-      const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const resetTokenExpiration = Date.now() + 3600000; // Token valid for 1 hour
-
-      user.resetTokenExpiration = resetTokenExpiration;
-      user.resetToken = resetToken;
-      await user.save();
-
-      // Proceed with sending emails
-      for (const email of emails) {
-        const admin = adminsWithEmails.find(admin => admin.email === email);
-        const male_gender = admin.gender === 'Male';
-        const salutation = male_gender ? `Hello Sir ${admin.firstName},` : `Hello Madam ${admin.firstName},`;
-
-        let message;
-        if (male_gender) {
-          message = `Sir ${user.firstName} ${user.lastName} with ${user.role} role is humbly requesting you to reset his password. Click the link below to reset his password or log in to reset:`;
-        } else {
-          message = `Madam ${user.firstName} ${user.lastName} with ${user.role} role is humbly requesting you to reset her password. Click the link below to reset her password or log in to reset:`;
-        }
-
-        const link = `${process.env.APP_URL}/staff/admin-reset-password/${resetToken}`;
-        const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);
-
-        // if (!send)
-        //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
-      }
-
-      return res.status(200).json({ message: "Request sent! Admin will act soon!" });
-    } catch (error) {
-      console.log('Error:', error);
-      return res.status(500).json({ error: 'Cannot send request to Admin at the moment!' });
+      // Rerequesting reset  
+      validRequest.isPasswordReset = false;
+      await validRequest.save();
+    } else {
+      // First time requester
+      const newRequest = new ResetRequest({ userId: user.id });
+      await newRequest.save();
     }
-  })
+
+    // Find Admins with non-null emails
+    const adminsWithEmails = await User.findAll({
+      where: {
+        role: 'Admin',
+        email: { [Op.not]: null }
+      },
+      // Only fetch the email field
+      attributes: ['email', 'gender', 'firstName'],
+    });
+
+    // Extract emails from the result as a list/array
+    const emails = adminsWithEmails.map(admin => admin.email);
+
+    // when admin does not have email to be prompted
+    if (emails.length === 0)
+      return res.status(200).json({ message: "Request sent! Admin will act soon!" });
+
+    // token generation for the requester
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const resetTokenExpiration = Date.now() + 3600000; // Token valid for 1 hour
+
+    user.resetTokenExpiration = resetTokenExpiration;
+    user.resetToken = resetToken;
+    await user.save();
+
+    // Proceed with sending emails
+    for (const email of emails) {
+      const admin = adminsWithEmails.find(admin => admin.email === email);
+      const male_gender = admin.gender === 'Male';
+      const salutation = male_gender ? `Hello Sir ${admin.firstName},` : `Hello Madam ${admin.firstName},`;
+
+      let message;
+      if (male_gender) {
+        message = `Sir ${user.firstName} ${user.lastName} with ${user.role} role is humbly requesting you to reset his password. Click the link below to reset his password or log in to reset:`;
+      } else {
+        message = `Madam ${user.firstName} ${user.lastName} with ${user.role} role is humbly requesting you to reset her password. Click the link below to reset her password or log in to reset:`;
+      }
+
+      const link = `${process.env.APP_URL}/staff/admin-reset-password/${resetToken}`;
+      const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);
+
+      // if (!send)
+      //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
+    }
+
+    return res.status(200).json({ message: "Request sent! Admin will act soon!" });
+  } catch (error) {
+    console.log('Error:', error);
+    return res.status(500).json({ error: 'Cannot send request to Admin at the moment!' });
+  }
 }
 
 // Admin resetting password with email link request or from Admin requests' list
@@ -217,7 +283,7 @@ exports.adminResetPassword = async (req, res) => {
 
     const { id, role } = extractIdAndRoleFromToken(token) || { id: null, role: null };
 
-    // console.log(id, role, token)
+    console.log(id, role, token)
 
     // find the user requesting password reset
     const user = await User.findOne({
@@ -367,7 +433,7 @@ exports.allStaff = async (req, res) => {
     try {
       const staff = await User.findAll({
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address'],
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
       })
       return res.status(200).json({ 'staff': staff });
     } catch (error) {

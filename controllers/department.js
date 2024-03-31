@@ -44,15 +44,14 @@ exports.addDepartment = async (req, res) => {
       if (alreadyExist)
         return res.status(400).json({ message: 'Department already exit!' });
 
-      if(hodId){  
-        const isHODexist = await User.findOne({ where: { id: hodId} });
+      if(hodId && hodId !== 0){  
+        const isHODexist = await User.findByPk(hodId); 
 
         if (!isHODexist)
           return res.status(400).json({ message: `Seleected HOD doesn't exist!` });
       }
 
-      // name = name.toUpperCase()
-      const savedDept = await new Department({ name, description, hodId }).save()
+      let savedDept = hodId === 0 ? await new Department({ name, description, hodId: null }).save() : await new Department({ name, description, hodId }).save();
 
       if (savedDept) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });
     } catch (error) {
@@ -61,6 +60,75 @@ exports.addDepartment = async (req, res) => {
     }
   })
 };
+
+// Update an existing department
+exports.updateDepartment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, description, hodId } = req.body;
+      const departmentId = req.params.id; 
+
+      if (!name)
+        return res.status(400).json({ message: 'Department name is required!' });
+
+      const department = await Department.findByPk(departmentId); 
+
+      if (!department)
+        return res.status(404).json({ message: 'Department not found!' });
+
+      if(hodId && hodId !== 0) {  
+        const isHodExist = await User.findByPk(hodId); 
+
+        if (!isHodExist)
+          return res.status(400).json({ message: `Selected HOD doesn't exist!` });
+      }
+
+      // const alreadyExist = await Department.findOne({ where: { name } });
+      // if (alreadyExist)
+      //   return res.status(400).json({ message: `${name} already exist!` });
+
+      // Update department attributes
+      department.name = name;
+      department.description = description;
+      department.hodId = hodId;
+
+      await department.save(); // Save updated department
+
+      return res.status(200).json({ message: 'Department updated successfully!', department });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update department at the moment!' });
+    }
+  });
+};
+
+// Delete a department
+exports.deleteDepartment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const departmentId = req.params.id; 
+
+      const department = await Department.findByPk(departmentId); 
+
+      if (!department)
+        return res.status(404).json({ message: 'Department not found!' });
+
+      await department.destroy(); 
+
+      return res.status(200).json({ message: 'Department deleted successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot delete department at the moment!' });
+    }
+  });
+};
+
 
 
 

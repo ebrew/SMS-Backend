@@ -11,4 +11,10 @@ router.get('/sections', classController.allClassSections);
 // Create a new class with sections
 router.post('/create', classController.addClass);
 
+// Update an existing class
+router.post('/update/:id', classController.updateClass)
+
+// Delete an existing class
+router.get('/delete/:id', classController.deleteClass)
+
 module.exports = router;

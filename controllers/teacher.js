@@ -20,7 +20,7 @@ exports.allTeachers = async (req, res) => {
       const teachers = await User.findAll({
         where: { role: 'Teacher' },
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address'],
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
       })
       return res.status(200).json({ 'teachers': teachers });
     } catch (error) {
