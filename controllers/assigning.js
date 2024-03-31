@@ -272,8 +272,8 @@ exports.assignedTeacher = async (req, res) => {
         ]
       });
 
-      // Array to store the formatted data
-      const formattedResult = [];
+      // Object to store the formatted data
+      const formattedResult = {};
 
       // Looping through activeAssignedTeachers and creating promises to fetch subjects
       for (const data of activeAssignedTeachers) {
@@ -288,17 +288,15 @@ exports.assignedTeacher = async (req, res) => {
         });
 
         // Check if the class ID already exists in the formatted result
-        const existingClassIndex = formattedResult.findIndex(item => item.classId === data.Section.Class.id);
-
-        if (existingClassIndex !== -1) {
+        if (formattedResult[data.Section.Class.id]) {
           // If the class ID exists, find the section index or add a new one
-          const existingSectionIndex = formattedResult[existingClassIndex].classes.findIndex(section => section.id === data.Section.id);
+          const existingSectionIndex = formattedResult[data.Section.Class.id].sections.findIndex(section => section.id === data.Section.id);
           if (existingSectionIndex !== -1) {
             // If the section exists, push subjects to it
-            formattedResult[existingClassIndex].classes[existingSectionIndex].subjects.push(...assignedSubjects);
+            formattedResult[data.Section.Class.id].sections[existingSectionIndex].subjects.push(...assignedSubjects);
           } else {
             // If the section doesn't exist, add it
-            formattedResult[existingClassIndex].classes.push({
+            formattedResult[data.Section.Class.id].sections.push({
               id: data.Section.id,
               name: data.Section.name,
               capacity: data.Section.capacity,
@@ -307,7 +305,7 @@ exports.assignedTeacher = async (req, res) => {
           }
         } else {
           // If the class ID doesn't exist, add the class and its section to the formatted result
-          formattedResult.push({
+          formattedResult[data.Section.Class.id] = {
             teacherId: data.teacherId,
             teacher: `${data.User.firstName} ${data.User.lastName}`,
             classes: [{
@@ -320,17 +318,21 @@ exports.assignedTeacher = async (req, res) => {
                 subjects: assignedSubjects,
               }]
             }],
-          });
+          };
         }
       }
 
-      return res.status(200).json({ "all active assigned teachers": formattedResult });
+      // Convert the formatted result to an array of objects
+      const resultArray = Object.values(formattedResult);
+
+      return res.status(200).json({ "all active assigned teachers": resultArray });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
+
 
 
 
