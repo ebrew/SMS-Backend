@@ -5,7 +5,7 @@ const { Class, Section, Subject, User, AssignedTeacher, AssignedSubject, Academi
 const Mail = require('../utility/email');
 
 // Assign classes and subjects to teachers (one time)
-exports.assignClassesAndSubjects = async (req, res) => {
+exports.assignClassesAndSubjects1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
@@ -59,6 +59,84 @@ exports.assignClassesAndSubjects = async (req, res) => {
             await AssignedSubject.create({ assignedTeacherId: assignedId, subjectId });
             const newSubject = await Subject.findOne({ where: { id: classId } }).name
             newSubject.push(newSubject)
+          }
+        }
+      }
+
+      // Email prompt to the teacher
+      const needed = (classList.length === 0 && subjectList.length === 0) ? false : true;
+      if (needed) {
+        const message = classList.length === 0 ? `You have been assigned to the following subjects in your already assigned class(s): ${subjectList.join(', ')}` : `You have been assigned to the following classes: ${classList.join(', ')} with the following subjects: ${subjectList.join(', ')}`;
+        const salutation = isExist.gender === 'Male' ? `Hello Sir ${isExist.firstName},` : `Hello Madam ${isExist.firstName},`;
+        await Mail.classAssignmentPromptEmail(isExist.email, salutation, message);
+      }
+
+      const msg = 'Assignment executed successfully!';
+      const note = userInfo.length > 0 ? `Take note of the following: ${userInfo.join(', ')}` : '';
+      res.status(200).json({ message: `${msg}. ${note}` });
+
+    } catch (error) {
+      console.error('Error assigning classes and subjects:', error);
+      res.status(500).json({ message: "Can't assign classes and subjects at the moment!" });
+    }
+  });
+};
+
+// Assign classes and subjects to teachers (one time)
+exports.assignClassesAndSubjects = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { teacherId, classes, subjects } = req.body;
+      let userInfo = [];
+      let classList = []
+      let subjectList = []
+
+      // Validate the request body
+      if (!teacherId || !Array.isArray(classes) || !Array.isArray(subjects))
+        return res.status(400).json({ message: 'Invalid request body!' });
+
+      // Verifying foreign keys
+      const isExist = await User.findOne({ where: { id: teacherId } });
+
+      if (!isExist || isExist.role !== 'Teacher')
+        return res.status(400).json({ message: `Selected teacher doesn't exist or isn't a teacher` });
+
+      // Validating classes and subjects existence before assigning to teacher
+      for (const data of classes) {
+        const { classId } = data;
+
+        // Check if the assigned teacher record already exists for this class
+        let existingTeacher = await AssignedTeacher.findOne({ where: { teacherId, classId } });
+
+        // If not, create a new assigned teacher record
+        if (!existingTeacher)
+          existingTeacher = await AssignedTeacher.create({ teacherId, classId });
+
+        const newClass = await Section.findOne({ where: { id: classId }, include: { model: Class, attributes: ['name'] }  });
+        const combinedClassName = `${newClass.Class.name} - ${newClass.name}`;
+        classList.push(combinedClassName)
+
+        const assignedId = existingTeacher.id;
+
+        // Loop through the subjects list
+        for (const subjectData of subjects) {
+          const { subjectId } = subjectData;
+
+          // Check if the assigned subject record already exists for this subject
+          const existingSubject = await AssignedSubject.findOne({ where: { subjectId, assignedTeacherId: assignedId } });
+
+          if (existingSubject) {
+            const subjectName = (await Subject.findOne({ where: { id: subjectId } })).name;
+            const className = (await Section.findOne({ where: { id: classId } })).name;
+            userInfo.push(`${subjectName} has already been assigned to the selected teacher in class ${className}`);
+          } else {
+            // If not, create a new assigned subject record
+            await AssignedSubject.create({ assignedTeacherId: assignedId, subjectId });
+            const newSubject = await Subject.findOne({ where: { id: subjectId } }).name;
+            subjectList.push(newSubject);
           }
         }
       }

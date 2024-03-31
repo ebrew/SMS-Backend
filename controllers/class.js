@@ -132,9 +132,9 @@ exports.allClassSections = async (req, res) => {
       // Mapping the result to the desired format
       const formattedResult = classSections.map(data => {
         return {
-          classSectionId: data.id,
+          classId: data.id,
           classSection: `${data.Class.name} ${data.name}`,
-          capacity: data.capacity,
+          // capacity: data.capacity,
         };
       });
 
