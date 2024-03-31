@@ -150,7 +150,7 @@ exports.assignedTeachers = async (req, res) => {
   });
 };
 
-// Get a specific teacher's assigned classes
+// Get a specific teacher's assigned classes and subject
 exports.assignedTeacher = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -223,7 +223,7 @@ exports.assignedTeacher = async (req, res) => {
             classId: data.classId,
             name: data.name,
             grade: data.grade,
-            teacher: data.teacher,
+            teacherId: data.teacher.id,
             sections: [data.section]
           });
         }
