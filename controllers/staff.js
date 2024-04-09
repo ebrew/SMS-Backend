@@ -37,10 +37,26 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
+    // let oldTokens = user.tokens || [];
+    // if (oldTokens.length) {
+    //   oldTokens = oldTokens.filter(t => {
+    //     const tokenCreationTime = parseInt(t.signedAt);
+    //     const currentTime = Date.now();
+    //     const timeDiff = (currentTime - tokenCreationTime) / 1000; // Difference in seconds
+    //     return timeDiff < 3600; // Filter out tokens created within the last hour
+    //   });
+    // }
+
+    // // Update the user document with the new tokens (filtered old tokens + new token)
+    // await User.update(
+    //   { tokens: [...oldTokens, { token, signedAt: Date.now().toString() }] },
+    //   { where: { id: user.id } }
+    // );
+
     return res.status(200).json({ message: 'Logged in successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
   } catch (error) {
     console.error('Error:', error.message);
-    return res.status(500).json({ Error: "Can't login at the moment!" });
+    return res.status(500).json({ message: "Can't login at the moment!" });
   }
 }
 
@@ -85,46 +101,54 @@ exports.register = async (req, res) => {
 // Update an existing staff
 exports.updateStaff = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId, address, dob } = req.body;
       const staffId = req.params.id;
 
-      if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
+      // Validate request body
+      if (!userName || !firstName || !lastName || !role || !email || !phone || !gender) 
         return res.status(400).json({ message: 'Important fields cannot be left blank!' });
 
+      // Find the staff by ID
       const user = await User.findByPk(staffId);
 
       if (!user)
         return res.status(404).json({ message: 'Staff not found!' });
 
+      // Check if the selected department exists
       if (departmentId && departmentId !== 0) {
-        const isHodExist = await Department.findByPk(departmentId);
+        const isDepartmentExist = await Department.findByPk(departmentId);
 
-        if (!isHodExist)
-          return res.status(400).json({ message: `Selected Department doesn't exist!` });
+        if (!isDepartmentExist) {
+          return res.status(400).json({ message: `Selected department doesn't exist!` });
+        }
       }
 
-      // Update department attributes
+      // Update staff attributes
+      user.userName = userName;
       user.firstName = firstName;
       user.lastName = lastName;
       user.email = email.toLowerCase();
       user.phone = normalizeGhPhone(phone);
       user.role = role;
-      user.staffID = staffID
+      user.staffID = staffID;
       user.gender = gender;
-      user.departmentId = departmentId === 0 ? null : departmentId
-      user.address = address
-      user.dob = dob
+      user.departmentId = departmentId === 0 ? null : departmentId;
+      user.address = address;
+      user.dob = dob;
 
+      // Save the updated staff
       await user.save();
 
+      // Respond with success message
       return res.status(200).json({ message: 'Staff updated successfully!' });
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot update staff at the moment!' });
+      console.error('Error updating staff:', error);
+      return res.status(500).json({ message: 'Unable to update staff at the moment!' });
     }
   });
 };

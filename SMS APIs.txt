@@ -1,5 +1,4 @@
-Exposed server << server >>: https://sms-backend-8vd4.onrender.com
-IP:154.160.25.85
+Server << server >>: https://sms-backend-8vd4.onrender.com
 
 1. // Staff Login
 API: << server >>/api/v1/staff/login

@@ -82,74 +82,6 @@ exports.assignClassesAndSubjects = async (req, res) => {
   });
 };
 
-// Get all assigned teachers
-exports.assignedTeachers = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const activeAssignedTeachers = await AssignedTeacher.findAll({
-        include: [
-          // model: AcademicTerm,
-          //   where: { status: 'Active' },
-          //   attributes: ['name', 'status'],
-          {
-            model: User,
-            attributes: ['firstName', 'lastName'],
-          },
-          {
-            model: Section,
-            attributes: ['id', 'name', 'capacity'],
-            include: {
-              model: Class,
-              attributes: ['id', 'name', 'grade'],
-              order: ['grade', 'DESC']
-            }
-          }
-        ],
-      });
-
-      // Map through activeAssignedTeachers and create promises to fetch subjects
-      const promises = activeAssignedTeachers.map(async (data) => {
-        const assignedSubjects = await AssignedSubject.findAll({
-          where: { assignedTeacherId: data.id },
-          attributes: [], // not inetrested in any attributes
-          order: [['createdAt', 'DESC']],
-          include: {
-            model: Subject,
-            attributes: ['id', 'name'],
-          }
-        });
-
-        // Return the formatted data along with the subjects
-        return {
-          id: data.id,
-          teacherId: data.teacherId,
-          classSectionId: data.Section.id,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-          teacher: `${data.User.firstName} ${data.User.lastName}`,
-          classSection: `${data.Section.Class.name} ${data.Section.name}`,
-          capacity: data.Section.capacity,
-          grade: data.Section.Class.grade,
-          classId: data.Section.Class.id,
-          subjects: assignedSubjects,
-          classStudents: 'Will add a list of the associated students in this class so you cache them for ur use without reaching the server for only the students.'
-        };
-      });
-
-      // Execute all promises concurrently and await their results
-      const formattedResult = await Promise.all(promises);
-
-      return res.status(200).json({ 'all active assigned teachers': formattedResult });
-    } catch (error) {
-      console.error('Error fetching active assigned teachers:', error);
-      return res.status(500).json({ message: "Can't fetch data at the moment!" });
-    }
-  });
-};
-
 // Get a specific teacher's assigned classes and subject
 exports.assignedTeacher = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -229,6 +161,74 @@ exports.assignedTeacher = async (req, res) => {
         }
       }
       return res.status(200).json({ "Teacher's assigned classes and subjects": classes });
+    } catch (error) {
+      console.error('Error fetching active assigned teachers:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Get all assigned teachers
+exports.assignedTeachers = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const activeAssignedTeachers = await AssignedTeacher.findAll({
+        include: [
+          // model: AcademicTerm,
+          //   where: { status: 'Active' },
+          //   attributes: ['name', 'status'],
+          {
+            model: User,
+            attributes: ['firstName', 'lastName'],
+          },
+          {
+            model: Section,
+            attributes: ['id', 'name', 'capacity'],
+            include: {
+              model: Class,
+              attributes: ['id', 'name', 'grade'],
+              order: ['grade', 'DESC']
+            }
+          }
+        ],
+      });
+
+      // Map through activeAssignedTeachers and create promises to fetch subjects
+      const promises = activeAssignedTeachers.map(async (data) => {
+        const assignedSubjects = await AssignedSubject.findAll({
+          where: { assignedTeacherId: data.id },
+          attributes: [], // not inetrested in any attributes
+          order: [['createdAt', 'DESC']],
+          include: {
+            model: Subject,
+            attributes: ['id', 'name'],
+          }
+        });
+
+        // Return the formatted data along with the subjects
+        return {
+          id: data.id,
+          teacherId: data.teacherId,
+          classSectionId: data.Section.id,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          teacher: `${data.User.firstName} ${data.User.lastName}`,
+          classSection: `${data.Section.Class.name} ${data.Section.name}`,
+          capacity: data.Section.capacity,
+          grade: data.Section.Class.grade,
+          classId: data.Section.Class.id,
+          subjects: assignedSubjects,
+          classStudents: 'Will add a list of the associated students in this class so you cache them for ur use without reaching the server for only the students.'
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+
+      return res.status(200).json({ 'all active assigned teachers': formattedResult });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });

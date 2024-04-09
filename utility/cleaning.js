@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { User, Student } = require("../db/models/index")
 
 // Function to normalize db phone numbers
 exports.normalizeGhPhone = (phone) => {
@@ -49,13 +50,22 @@ exports.extractIdAndRoleFromToken = (token) => {
   }
 }
 
-
-// Decoding jwt token
-exports.decodeToken = (token) => {
+// Decode token
+exports.isAuth = async (token, role) => {
   try {
-    const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-    return { status: true, decodedToken };
+    const decode = jwt.verify(token, process.env.SECRET_KEY);
+    const user = role === 'Staff' ? await User.findById(decode.id) : await Student.findById(decode.id);
+    
+    if (!user)
+      return false;
+
+    //  // Populate the tokens property if it exists in the user object
+    // if (!user.tokens) {
+    //   user.tokens = []; // Initialize tokens array if it doesn't exist
+    // } 
+      
+    return user;
   } catch (err) {
-    return { status: false, error: err };
+    return false;
   }
 }

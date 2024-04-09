@@ -53,7 +53,7 @@ exports.addDepartment = async (req, res) => {
 
       let savedDept = hodId === 0 ? await new Department({ name, description, hodId: null }).save() : await new Department({ name, description, hodId }).save();
 
-      if (savedDept) res.status(200).json({ message: 'Saved successfully!', 'department': savedDept });
+      if (savedDept) res.status(200).json({ message: 'Saved successfully!' });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot create department at the moment!' });

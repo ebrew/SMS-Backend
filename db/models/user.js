@@ -31,7 +31,8 @@ module.exports = (sequelize, DataTypes) => {
     resetTokenExpiration: DataTypes.DATE,
     isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     dp: { type: DataTypes.STRING, allowNull: true },
-    departmentId: { type: DataTypes.INTEGER, allowNull: true }
+    departmentId: { type: DataTypes.INTEGER, allowNull: true },
+    // tokens: [{ type: Object}]
   }, {
     sequelize,
     modelName: 'User',

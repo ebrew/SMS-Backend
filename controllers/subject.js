@@ -46,7 +46,7 @@ exports.addSubject = async (req, res) => {
 
       const savedSubject = await new Subject({ name, code, description }).save()
 
-      if (savedSubject) res.status(200).json({ message: 'Saved successfully!', 'Subject': savedSubject });
+      if (savedSubject) res.status(200).json({ message: 'Saved successfully!' });
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ message: 'Cannot create subject at the moment!' });
@@ -57,32 +57,37 @@ exports.addSubject = async (req, res) => {
 // Update an existing subject
 exports.updateSubject = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { name, code, description } = req.body;
       const subjectId = req.params.id; 
 
-      if (!name || !code)
-        return res.status(400).json({ message: 'Class name or grade cannot be blank!' });
-
+      // Validate request body
+      if (!name || !code) 
+        return res.status(400).json({ message: 'Subject name or code cannot be blank!' });
+      
+      // Find the subject by ID
       const subject = await Subject.findByPk(subjectId); 
 
-      if (!subject)
+      if (!subject) 
         return res.status(404).json({ message: 'Subject not found!' });
-
+      
       // Update subject attributes
       subject.name = name;
       subject.code = code;
       subject.description = description;
 
+      // Save the updated subject
       await subject.save(); 
 
+      // Respond with success message
       return res.status(200).json({ message: 'Subject updated successfully!' });
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot update subject at the moment!' });
+      console.error('Error updating subject:', error);
+      return res.status(500).json({ message: 'Unable to update subject at the moment!' });
     }
   });
 };
