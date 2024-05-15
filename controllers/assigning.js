@@ -160,7 +160,7 @@ exports.assignedTeacher = async (req, res) => {
           });
         }
       }
-      return res.status(200).json({ "Teacher's assigned classes and subjects": classes });
+      return res.status(200).json({ "Classes and Subjects": classes });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -228,7 +228,7 @@ exports.assignedTeachers = async (req, res) => {
       // Execute all promises concurrently and await their results
       const formattedResult = await Promise.all(promises);
 
-      return res.status(200).json({ 'all active assigned teachers': formattedResult });
+      return res.status(200).json({ 'Assigned teachers': formattedResult });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });

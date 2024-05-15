@@ -43,6 +43,7 @@ exports.sendRequestMailToAdmin = async (userEmail, link, message, salutation) =>
     from: process.env.EMAIL,
     to: userEmail,
     subject: 'Password Reset Request',
+    // Latif has to redirect if mail link is used
     html: `
       <p>${salutation}</p>
       <p>${message}</p>

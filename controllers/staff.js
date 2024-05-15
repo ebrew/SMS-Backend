@@ -285,8 +285,9 @@ exports.passwordResetRequest = async (req, res) => {
         message = `Madam ${user.firstName} ${user.lastName} with ${user.role} role is humbly requesting you to reset her password. Click the link below to reset her password or log in to reset:`;
       }
 
+      // Latif has to redirect if mail link is used
       const link = `${process.env.APP_URL}/staff/admin-reset-password/${resetToken}`;
-      const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);
+      const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);  
 
       // if (!send)
       //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });
