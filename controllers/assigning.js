@@ -128,39 +128,17 @@ exports.assignedTeacher = async (req, res) => {
 
         // Return the formatted data along with the subjects in a class
         return {
-          classId: data.Section.Class.id,
-          name: data.Section.Class.name,
-          grade: data.Section.Class.grade,
-          section: {
-            assignedTeacherId: data.id,
-            sectionId: data.Section.id,
-            name: data.Section.name,
-            subjects: assignedSubjects,
-          },
-          teacher: data.User
+          assignedTeacherId: data.id,
+          classSection: `${data.Section.Class.name} (${data.Section.name})`,
+          // sectionId: data.Section.id,
+          subjects: assignedSubjects,
         };
       });
 
       // Execute all promises concurrently and await their results
       const formattedResult = await Promise.all(promises);
 
-      const classes = []
-      for (const data of formattedResult) {
-        const exists = classes.some(cls => cls.classId === data.classId);
-        if (exists) {
-          const existingClass = classes.find(cls => cls.classId === data.classId);
-          existingClass.sections.push(data.section);
-        } else {
-          classes.push({
-            classId: data.classId,
-            name: data.name,
-            grade: data.grade,
-            teacherId: data.teacher.id,
-            sections: [data.section]
-          });
-        }
-      }
-      return res.status(200).json({ "Classes and Subjects": classes });
+      return res.status(200).json({ "Classes and Subjects": formattedResult });
     } catch (error) {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
