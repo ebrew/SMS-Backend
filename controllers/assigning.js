@@ -4,7 +4,7 @@ const passport = require('../db/config/passport')
 const { Class, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
 const Mail = require('../utility/email');
 
-// Assign classes and subjects to teachers (one time)
+// Assign classes and subjects to teachers (one time) - Not being used
 exports.assignClassesAndSubjects = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -82,7 +82,159 @@ exports.assignClassesAndSubjects = async (req, res) => {
   });
 };
 
-// Get a specific teacher's assigned classes and subject
+// Get a specific teacher's assigned classes and subject - Not being used
+exports.assignedTeacher1 = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const teacherId = req.params.id;
+
+      const isExist = await User.findByPk(teacherId);
+      if (!isExist)
+        return res.status(400).json({ message: `Teacher could not be found!` });
+
+      const activeAssignedTeacher = await AssignedTeacher.findAll({
+        where: { teacherId },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'firstName', 'lastName'],
+          },
+          {
+            model: Section,
+            attributes: ['id', 'name', 'capacity'],
+            include: {
+              model: Class,
+              attributes: ['id', 'name', 'grade'],
+              order: [['grade', 'DESC']],
+            }
+          }
+        ]
+      });
+
+      // Map through activeAssignedTeachers and create promises to fetch subjects
+      const promises = activeAssignedTeacher.map(async (data) => {
+        const assignedSubjects = await AssignedSubject.findAll({
+          where: { assignedTeacherId: data.id },
+          attributes: [], // not interested in any attributes
+          order: [['createdAt', 'DESC']],
+          include: {
+            model: Subject,
+            attributes: ['id', 'name'],
+          }
+        });
+
+        // Return the formatted data along with the subjects in a class
+        return {
+          classId: data.Section.Class.id,
+          name: data.Section.Class.name,
+          grade: data.Section.Class.grade,
+          section: {
+            assignedTeacherId: data.id,
+            sectionId: data.Section.id,
+            name: data.Section.name,
+            subjects: assignedSubjects,
+          },
+          teacher: data.User
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+
+      const classes = []
+      for (const data of formattedResult) {
+        const exists = classes.some(cls => cls.classId === data.classId);
+        if (exists) {
+          const existingClass = classes.find(cls => cls.classId === data.classId);
+          existingClass.sections.push(data.section);
+        } else {
+          classes.push({
+            classId: data.classId,
+            name: data.name,
+            grade: data.grade,
+            teacherId: data.teacher.id,
+            sections: [data.section]
+          });
+        }
+      }
+      return res.status(200).json({ "Classes and Subjects": classes });
+    } catch (error) {
+      console.error('Error fetching active assigned teachers:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Assign a class to a teacher
+exports.assignClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { teacherId, classSectionId } = req.body;
+
+      if (!teacherId || !classSectionId)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      if (teacherId === 0 || classSectionId === 0)
+        return res.status(400).json({ message: 'You must select the necessary fields!' });
+
+      // Check if the assigned teacher record already exists for this class
+      const isExist = await AssignedTeacher.findOne({ where: { teacherId, classId: classSectionId } });
+
+      if (isExist)
+        return res.status(400).json({ message: 'Selected class already assigned to the specified teacher!' });
+
+      // Create the Section
+      await AssignedTeacher.create({ teacherId, classId: classSectionId });
+
+      res.status(200).json({ message: 'Specified class assigned successfully!' });
+
+    } catch (error) {
+      console.error('Error creating class:', error);
+      res.status(500).json({ error: "Can't assign the class at the moment!" });
+    }
+  });
+};
+
+// Assign a subject to a teacher
+exports.assignSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { assignedTeacherId, subjectId } = req.body;
+
+      if (!assignedTeacherId || !subjectId)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      if (assignedTeacherId === 0 || subjectId === 0)
+        return res.status(400).json({ message: 'You must select the necessary fields!' });
+
+      // Check if the assigned teacher record already exists for this class
+      const isExist = await AssignedSubject.findOne({ where: { subjectId, assignedTeacherId } });
+
+      if (isExist)
+        return res.status(400).json({ message: 'Selected subject already assigned to the specified teacher!' });
+
+      // Create the subject
+      await AssignedSubject.create({ assignedTeacherId, subjectId });
+
+      res.status(200).json({ message: 'Specified subject assigned successfully!' });
+
+    } catch (error) {
+      console.error('Error creating class:', error);
+      res.status(500).json({ error: "Can't assign the subject at the moment!" });
+    }
+  });
+};
+
+// Get a specific teacher's assigned classes and subjects
 exports.assignedTeacher = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -130,7 +282,6 @@ exports.assignedTeacher = async (req, res) => {
         return {
           assignedTeacherId: data.id,
           classSection: `${data.Section.Class.name} (${data.Section.name})`,
-          // sectionId: data.Section.id,
           subjects: assignedSubjects,
         };
       });

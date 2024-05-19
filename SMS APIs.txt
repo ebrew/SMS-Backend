@@ -95,29 +95,18 @@ Authorization: Bearer <token from login>
 
 <<Frontend tests ended here>>
 
-
-
-20. // Assign classes and subjects to teachers
-API: << server >>/api/v1/assigning/classes_subjects
-Content: teacherId, classes, subjects
+20. // Assign a class to a teacher
+API: << server >>/api/v1/assigning/class
+Content: teacherId, classSectionId
 Authorization: Bearer <token from login>
-NB: classes and subjects are arrays of their selections
-eg: {
-  "teacherId": 3,
-  "classes": [
-    { "classId": 1 }
-  ],
-  "subjects": [
-    { "subjectId": 1 }
-  ]
-}
 
-21. // Get a teacher's assigned classes
+21. // Assign a subject to a teacher
+API: << server >>/api/v1/assigning/subject
+Content: assignedTeacherId, subjectId
+Authorization: Bearer <token from login>
+
+22. // Get a teacher's assigned classes with subjects
 API: << server >>/api/v1/assigning/all/id
-Authorization: Bearer <token from login>
-
-22. // Get all assigned teachers
-API: << server >>/api/v1/assigning/all
 Authorization: Bearer <token from login>
 
 23. // Creating a new academic year
