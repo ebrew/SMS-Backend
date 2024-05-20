@@ -180,7 +180,7 @@ exports.assignClass = async (req, res) => {
       if (!teacherId || !classSectionId)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      if (teacherId === 0 || classSectionId === 0)
+      if (teacherId === '0' || classSectionId === '0')
         return res.status(400).json({ message: 'You must select the necessary fields!' });
 
       // Check if the assigned teacher record already exists for this class
@@ -213,7 +213,7 @@ exports.assignSubject = async (req, res) => {
       if (!assignedTeacherId || !subjectId)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      if (assignedTeacherId === 0 || subjectId === 0)
+      if (assignedTeacherId === '0' || subjectId === '0')
         return res.status(400).json({ message: 'You must select the necessary fields!' });
 
       // Check if the assigned teacher record already exists for this class

@@ -34,7 +34,7 @@ exports.addClass = async (req, res) => {
           return res.status(400).json({ message: 'Invalid section data' });
       }
       let isExist;
-      if(headTeacherId && headTeacherId !== 0){
+      if(headTeacherId && headTeacherId !== '0'){
         isExist = await User.findByPk(headTeacherId);
 
         if (!isExist)
