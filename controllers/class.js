@@ -45,7 +45,7 @@ exports.addClass = async (req, res) => {
       }
 
       // Create the Class
-      let newClass = headTeacherId === 0 ? await Class.create({name: className, grade, headTeacherId: null}) : await Class.create({name: className, grade, headTeacherId});
+      let newClass = headTeacherId === '0' ? await Class.create({name: className, grade, headTeacherId: null}) : await Class.create({name: className, grade, headTeacherId});
 
       const classId = newClass.id;
 
@@ -132,8 +132,9 @@ exports.allClassSections = async (req, res) => {
       // Mapping the result to the desired format
       const formattedResult = classSections.map(data => {
         return {
-          classId: data.id,
-          classSection: `${data.Class.name} (${data.name})`,
+          classSectionId: data.id,
+          class: `${data.Class.name}`,
+          classSection: `${data.name}`,
           capacity: data.capacity,
         };
       });
