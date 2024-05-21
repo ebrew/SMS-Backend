@@ -111,7 +111,7 @@ exports.getUser = async (req, res) => {
 
       const user = await ModelToUse.findOne({
         where: { id },
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
+        // attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
       })
 
       if (!user) 
