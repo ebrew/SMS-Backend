@@ -91,10 +91,6 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/staff/delete/id
 Authorization: Bearer <token from login>
 
-
-
-<<Frontend tests ended here>>
-
 20. // Assign a class to a teacher
 API: << server >>/api/v1/assigning/class
 Content: teacherId, classSectionId
@@ -109,29 +105,37 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/assigning/all/id
 Authorization: Bearer <token from login>
 
-23. // Creating a new academic year
+
+
+<<Frontend tests ended here>>
+
+23. // Get student or staff details
+API: << server >>/api/v1/staff/details/id/role
+Authorization: Bearer <token from login>
+
+24. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
 Content: name, startDate, endDate
 Authorization: Bearer <token from login>
 
-24. // Fetching the active academic year
+25. // Fetching the active academic year
 API: << server >>/api/v1/academic_year/active
 Authorization: Bearer <token from login>
 
-25. // Creating a new academic term
+26. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
 Authorization: Bearer <token from login>
 
-26. // Fetching the active academic term
+27. // Fetching the active academic term
 API: << server >>/api/v1/academic_term/active
 Authorization: Bearer <token from login>
 
-27. // List of all academic years
+28. // List of all academic years
 API: << server >>/api/v1/academic_year/all
 Authorization: Bearer <token from login>
 
-28. // List of all academic terms
+29. // List of all academic terms
 API: << server >>/api/v1/academic_term/all
 Authorization: Bearer <token from login>
 

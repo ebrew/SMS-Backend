@@ -98,6 +98,33 @@ exports.register = async (req, res) => {
   })
 }
 
+// Get all teachers
+exports.getUser = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { id, role } = req.params;
+
+      const ModelToUse = role === 'Student' ? Student : User;
+
+      const user = await ModelToUse.findOne({
+        where: { id },
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
+      })
+
+      if (!user) 
+        return res.status(404).json({ message: 'Invalid request!' });
+
+      return res.status(200).json({ 'user': user });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
 // Update an existing staff
 exports.updateStaff = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

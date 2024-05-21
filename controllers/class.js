@@ -139,7 +139,7 @@ exports.allClassSections = async (req, res) => {
         };
       });
 
-      return res.status(200).json({ 'class sections': formattedResult });
+      return res.status(200).json({ 'classSections': formattedResult });
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -191,7 +191,7 @@ exports.updateClass = async (req, res) => {
   });
 };
 
-// Delete a department
+// Delete a class
 exports.deleteClass = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
