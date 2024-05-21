@@ -12,7 +12,7 @@ router.post('/login', staffController.login);
 router.post('/register', staffController.register);
 
 // Fetch student or staff details
-router.post('/details/:id/:role', staffController.getUser)
+router.get('/details/:id/:role', staffController.getUser)
 
 // Update an existing staff
 router.post('/update/:id', staffController.updateStaff)
