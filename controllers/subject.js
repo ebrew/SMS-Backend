@@ -35,8 +35,8 @@ exports.addSubject = async (req, res) => {
       const alreadyExist = await Subject.findOne({
         where: {
           [Op.or]: [
-            { name: {[Op.iLike]: name} },
-            { code: {[Op.iLike]: code} }
+            { name: { [Op.iLike]: name } },
+            { code: { [Op.iLike]: code } }
           ],
         },
       })
@@ -63,25 +63,25 @@ exports.updateSubject = async (req, res) => {
 
     try {
       const { name, code, description } = req.body;
-      const subjectId = req.params.id; 
+      const subjectId = req.params.id;
 
       // Validate request body
-      if (!name || !code) 
+      if (!name || !code)
         return res.status(400).json({ message: 'Subject name or code cannot be blank!' });
-      
-      // Find the subject by ID
-      const subject = await Subject.findByPk(subjectId); 
 
-      if (!subject) 
+      // Find the subject by ID
+      const subject = await Subject.findByPk(subjectId);
+
+      if (!subject)
         return res.status(404).json({ message: 'Subject not found!' });
-      
+
       // Update subject attributes
       subject.name = name;
       subject.code = code;
       subject.description = description;
 
       // Save the updated subject
-      await subject.save(); 
+      await subject.save();
 
       // Respond with success message
       return res.status(200).json({ message: 'Subject updated successfully!' });
@@ -99,23 +99,25 @@ exports.deleteSubject = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const subjectId = req.params.id; 
+      const subjectId = req.params.id;
 
-      const name = await Subject.findByPk(subjectId); 
+      const result = await Subject.destroy({ where: { id: subjectId } });
 
-      if (!name)
+      if (result === 0) {
         return res.status(404).json({ message: 'Subject not found!' });
-
-      await name.destroy(); 
+      }
 
       return res.status(200).json({ message: 'Subject deleted successfully!' });
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot delete subject at the moment!' });
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
+      }
+
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete subject at the moment' });
     }
   });
 };
-
 
 
 

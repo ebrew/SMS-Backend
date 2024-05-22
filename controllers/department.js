@@ -69,6 +69,52 @@ exports.updateDepartment = async (req, res) => {
 
     try {
       const { name, description, hodId } = req.body;
+      const departmentId = req.params.id;
+
+      // Parse hodId to integer
+      const parsedHodId = parseInt(hodId);
+
+      const department = await Department.findByPk(departmentId); 
+
+      if (!department)
+        return res.status(404).json({ message: 'Department not found!' });
+
+      // Ensure hodId is either undefined, null, or a valid integer
+      if (hodId && parsedHodId !== 0) {
+        if (isNaN(parsedHodId)) 
+          return res.status(400).json({ message: 'Invalid HOD ID!' });
+        
+        const isHodExist = await User.findByPk(parsedHodId);
+
+        if (!isHodExist) 
+          return res.status(400).json({ message: 'Selected HOD does not exist!' });
+        
+        department.hodId = parsedHodId;
+      } else {
+        department.hodId = null; // If hodId is 0 or undefined, set it to null
+      }
+
+      department.name = name;
+      department.description = description;
+
+      await department.save(); // Save updated department
+
+      return res.status(200).json({ message: 'Department updated successfully!', department });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update department at the moment!' });
+    }
+  });
+};
+
+// Update an existing department
+exports.updateDepartmentOld = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, description, hodId } = req.body;
       const departmentId = req.params.id; 
 
       if (!name)
