@@ -21,5 +21,11 @@ router.get('/delete_assigned_subject/:assignedTeacherId/:subjectId', assignContr
 // Deleting an assigned class for a particular teacher
 router.get('/delete_assigned_class/:assignedTeacherId', assignController.deleteAssignedClass)
 
+// Assign a subject to a class
+router.post('/class_subject', assignController.assignClassSubject);
+
+// Deleting an assigned subject to a class
+router.get('/delete_class_subject/:classId/:subjectId', assignController.deleteAssignedClassSubject)
+
 
 module.exports = router;

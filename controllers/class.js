@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Class, Section, User, AssignedTeacher } = require("../db/models/index");
+const { Class, ClassSubject, Subject, Section, User, AssignedTeacher } = require("../db/models/index");
 
 // Create a new class with sections
 exports.addClass = async (req, res) => {
@@ -217,32 +217,36 @@ exports.getClassWithSections = async (req, res) => {
     try {
       const classId = req.params.id;
 
-      const result = await Class.findAll({ 
-        where: {id: classId},
-        include: { model: User, attributes: ['id', 'firstName', 'lastName'] } 
+      const data = await Class.findOne({
+        where: { id: classId },
+        include: { model: User, attributes: ['id', 'firstName', 'lastName'] }
       });
 
-      // Map through section and create promises to fetch sections
-      const promises = result.map(async (data) => {
-        const sections = await Section.findAll({
-          where: { classId },
-          attributes: ['id', 'name', 'capacity'],
-        });
+      if (!data) {
+        return res.status(404).json({ message: 'Class not found!' });
+      }
 
-        // Return the formatted data along with the subjects
-        return {
-          id: data.id,
-          name: data.name,
-          grade: data.grade,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-          headTeacher: data.User ? `${data.User.firstName} ${data.User.lastName}` : null,
-          classSections: sections,
-        };
+      const sections = await Section.findAll({
+        where: { classId },
+        attributes: ['id', 'name', 'capacity'],
       });
 
-      // Execute all promises concurrently and await their results
-      const formattedResult = await Promise.all(promises);
+      const subjects = await ClassSubject.findAll({
+        where: { classId },
+        include: { model: Subject, attributes: ['id', 'name', 'code'] }
+      });
+
+      // Return the formatted data 
+      const formattedResult = {
+        id: data.id,
+        name: data.name,
+        grade: data.grade,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        headTeacher: data.User ? `${data.User.firstName} ${data.User.lastName}` : null,
+        classSections: sections,
+        classSubjects: subjects
+      };
 
       return res.status(200).json({ 'class': formattedResult });
     } catch (error) {

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Class, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
+const { Class, ClassSubject, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
 const Mail = require('../utility/email');
 
 
@@ -257,4 +257,66 @@ exports.assignedTeachers = async (req, res) => {
   });
 };
 
+// Assign a subject to a class
+exports.assignClassSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { classId, subjectId } = req.body;
+
+      if (!classId || !subjectId)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      // Check if the assigned teacher record already exists for this class
+      const isExist = await ClassSubject.findOne({ where: { classId, subjectId } });
+
+      if (isExist)
+        return res.status(400).json({ message: 'Subject already assigned to the specified class!' });
+
+      // Create the subject
+      await ClassSubject.create({ classId, subjectId });
+
+      res.status(200).json({ message: 'Subject assigned successfully!' });
+
+    } catch (error) {
+      console.error('Error creating class:', error);
+      res.status(500).json({ error: "Can't assign the subject at the moment!" });
+    }
+  });
+};
+
+// Deleting an assigned suject to class 
+exports.deleteAssignedClassSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const {classId, subjectId } = req.params;
+
+      // Check if the subject is assigned to any teachers
+      const assignments = await AssignedSubject.findAll({ where: { subjectId } });
+
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete assigned subject as it is assigned to one or more classes!' });
+      }
+
+      // If no assignments, proceed to delete 
+      const result = await AssignedTeacher.destroy({ where: { classId, subjectId } });
+
+      if (result === 0) {
+        return res.status(404).json({ message: 'Assigned class not found!' });
+      }
+    } catch (error) {
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ message: 'Cannot delete assigned teacher as it is assigned to one or more subject!' });
+      }
+
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete at the moment' });
+    }
+  });
+};
 
