@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Subject } = require("../db/models/index");
+const { Subject, AssignedSubject } = require("../db/models/index");
 
 // Get all departments
 exports.allSubjects = async (req, res) => {
@@ -101,13 +101,19 @@ exports.deleteSubject = async (req, res) => {
     try {
       const subjectId = req.params.id;
 
+      // Check if the subject is assigned to any teachers
+      const assignments = await AssignedSubject.findAll({ where: { subjectId } });
+
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
+      }
+
+      // If no assignments, proceed to delete the subject
       const result = await Subject.destroy({ where: { id: subjectId } });
 
       if (result === 0) {
         return res.status(404).json({ message: 'Subject not found!' });
       }
-
-      return res.status(200).json({ message: 'Subject deleted successfully!' });
     } catch (error) {
       if (error.name === 'SequelizeForeignKeyConstraintError') {
         return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
