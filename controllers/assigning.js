@@ -71,6 +71,61 @@ exports.assignSubject = async (req, res) => {
   });
 };
 
+// Deleting an assigned class for a particular teacher
+exports.deleteAssignedClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const assignedTeacherId = req.params.assignedTeacherId;
+
+      // Check if the subject is assigned to any teachers
+      const assignments = await AssignedSubject.findAll({ where: { assignedTeacherId } });
+
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete assigned class as it is assigned to one or more subject!' });
+      }
+
+      // If no assignments, proceed to delete 
+      const result = await AssignedTeacher.destroy({ where: { id: assignedTeacherId } });
+
+      if (result === 0) {
+        return res.status(404).json({ message: 'Assigned class not found!' });
+      }
+    } catch (error) {
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ message: 'Cannot delete assigned teacher as it is assigned to one or more subject!' });
+      }
+
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot assigned class at the moment' });
+    }
+  });
+};
+
+
+// Deleting an assigned subject for a particular teacher
+exports.deleteAssignedSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { assignedTeacherId, subjectId } = req.params;
+
+      const result = await AssignedSubject.destroy({ where: { assignedTeacherId, subjectId } });
+
+      if (result === 0) {
+        return res.status(404).json({ message: 'Assigned subject not found!' });
+      }
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete assigned subject at the moment' });
+    }
+  });
+};
+
 // Get a specific teacher's assigned classes and subjects
 exports.assignedTeacher = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

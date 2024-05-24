@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { Op, or, and } = require('sequelize');
+const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Class, Section, User } = require("../db/models/index");
+const { Class, Section, User, AssignedTeacher } = require("../db/models/index");
 
 // Create a new class with sections
 exports.addClass = async (req, res) => {
@@ -34,7 +34,7 @@ exports.addClass = async (req, res) => {
           return res.status(400).json({ message: 'Invalid section data' });
       }
       let isExist;
-      if(headTeacherId && headTeacherId !== '0'){
+      if (headTeacherId && headTeacherId !== '0') {
         isExist = await User.findByPk(headTeacherId);
 
         if (!isExist)
@@ -45,7 +45,7 @@ exports.addClass = async (req, res) => {
       }
 
       // Create the Class
-      let newClass = headTeacherId === '0' ? await Class.create({name: className, grade, headTeacherId: null}) : await Class.create({name: className, grade, headTeacherId});
+      let newClass = headTeacherId === '0' ? await Class.create({ name: className, grade, headTeacherId: null }) : await Class.create({ name: className, grade, headTeacherId });
 
       const classId = newClass.id;
 
@@ -74,6 +74,101 @@ exports.addClass = async (req, res) => {
   });
 };
 
+// Add a class section to a class
+exports.addClassSection = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { classId, name, capacity } = req.body;
+
+      if (!classId || !name || !capacity)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      // Check if the section already exists for this class
+      const isExist = await Section.findOne({
+        where: {
+          [Op.or]: [
+            { name: { [Op.iLike]: name } },
+            { grade },
+            { classId }
+          ],
+        },
+      });
+
+      if (isExist)
+        return res.status(400).json({ message: 'Section already created for the specified class!' });
+
+      // Create the Section
+      await Section.create({ classId, name, capacity });
+
+      res.status(200).json({ message: 'Section created successfully!' });
+
+    } catch (error) {
+      console.error('Error creating class:', error);
+      res.status(500).json({ error: "Can't create class section at the moment!" });
+    }
+  });
+};
+
+// Update an existing class section
+exports.updateClassSection = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, grade } = req.body;
+      const { classId, sectionId } = req.params;
+
+      if (!name || !grade)
+        return res.status(400).json({ message: 'Incomplete fields!' });
+
+      const result = await Section.findOne({ where: { classId, sectionId } });
+
+      if (!result)
+        return res.status(404).json({ message: 'Section not found!' });
+
+      result.name = className;
+      result.grade = grade;
+      await result.save();
+
+      return res.status(200).json({ message: 'Class section updated successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update class section at the moment!' });
+    }
+  });
+};
+
+// Deleting a class section 
+exports.deleteClassSection = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { classId, sectionId } = req.params;
+
+      // Check if the section is assigned to any teachers
+      const assignments = await AssignedTeacher.findAll({ where: { classId: sectionId } });
+
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete class section as it is assigned to one or more teachers!' });
+      }
+      const result = await Section.destroy({ where: { classId, sectionId } });
+
+      if (result === 0) {
+        return res.status(404).json({ message: 'Class section not found!' });
+      }
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete at the moment' });
+    }
+  });
+};
+
 // Get all Classes
 exports.allClasses = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -81,15 +176,15 @@ exports.allClasses = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const classes = await Class.findAll({ order: [['grade', 'ASC']], include:  { model: User, attributes: ['id', 'firstName', 'lastName'] } });
+      const classes = await Class.findAll({ order: [['grade', 'ASC']], include: { model: User, attributes: ['id', 'firstName', 'lastName'] } });
 
       // Map through activeAssignedTeachers and create promises to fetch subjects...yet to be executed
       const promises = classes.map(async (data) => {
         const sections = await Section.findAll({
           where: { classId: data.id },
-          attributes: ['id', 'name', 'capacity'],  
+          attributes: ['id', 'name', 'capacity'],
         });
-      
+
         // Return the formatted data along with the subjects
         return {
           id: data.id,
@@ -101,11 +196,55 @@ exports.allClasses = async (req, res) => {
           classSections: sections.length,
         };
       });
-      
+
       // Execute all promises concurrently and await their results
       const formattedResult = await Promise.all(promises);
 
       return res.status(200).json({ 'classes': formattedResult });
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Get a particular class with its sections   
+exports.getClassWithSections = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const classId = req.params.id;
+
+      const result = await Class.findAll({ 
+        where: {id: classId},
+        include: { model: User, attributes: ['id', 'firstName', 'lastName'] } 
+      });
+
+      // Map through section and create promises to fetch sections
+      const promises = result.map(async (data) => {
+        const sections = await Section.findAll({
+          where: { classId },
+          attributes: ['id', 'name', 'capacity'],
+        });
+
+        // Return the formatted data along with the subjects
+        return {
+          id: data.id,
+          name: data.name,
+          grade: data.grade,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          headTeacher: data.User ? `${data.User.firstName} ${data.User.lastName}` : null,
+          classSections: sections,
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+
+      return res.status(200).json({ 'class': formattedResult });
     } catch (error) {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -155,18 +294,18 @@ exports.updateClass = async (req, res) => {
 
     try {
       const { className, grade, headTeacherId } = req.body;
-      const classId = req.params.id; 
+      const classId = req.params.id;
 
       if (!className || !grade)
         return res.status(400).json({ message: 'Class name or grade cannot be blank!' });
 
-      const name = await Class.findByPk(classId); 
+      const name = await Class.findByPk(classId);
 
       if (!name)
         return res.status(404).json({ message: 'Class not found!' });
 
-      if(headTeacherId && headTeacherId !== 0) {  
-        const isHodExist = await User.findByPk(headTeacherId); 
+      if (headTeacherId && headTeacherId !== 0) {
+        const isHodExist = await User.findByPk(headTeacherId);
 
         if (!isHodExist)
           return res.status(400).json({ message: `Selected Teacher doesn't exist!` });
@@ -181,7 +320,7 @@ exports.updateClass = async (req, res) => {
       name.grade = grade;
       name.headTeacherId = headTeacherId;
 
-      await name.save(); 
+      await name.save();
 
       return res.status(200).json({ message: 'Class updated successfully!' });
     } catch (error) {
@@ -191,26 +330,35 @@ exports.updateClass = async (req, res) => {
   });
 };
 
-// Delete a class
+// Deleting a class
 exports.deleteClass = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const classId = req.params.id; 
+      const classId = req.params.id;
 
-      const name = await Class.findByPk(classId); 
+      // Check if a class is assigned to a teacher
+      const assignments = await Section.findAll({ where: { classId } });
 
-      if (!name)
-        return res.status(404).json({ message: 'Class not found!' });
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete class as one or more of its sections has/have been assigned to one or more teachers!' });
+      }
 
-      await name.destroy(); 
+      // If no assignments, proceed to delete 
+      const result = await User.destroy({ where: { id: staffId } });
 
-      return res.status(200).json({ message: 'Class deleted successfully!' });
+      if (result === 0) {
+        return res.status(404).json({ message: 'Staff not found!' });
+      }
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot delete class at the moment!' });
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ message: 'Cannot delete class as one or more of its sections has/have been assigned to one or more teachers!' });
+      }
+
+      console.error('Error deleting class:', error);
+      return res.status(500).json({ message: 'Cannot delete class at the moment' });
     }
   });
 };

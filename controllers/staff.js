@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, ResetRequest, Department } = require("../db/models/index")
+const { User, Student, ResetRequest, Department, AssignedTeacher } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -180,7 +180,7 @@ exports.updateStaff = async (req, res) => {
   });
 };
 
-// Delete a staff
+// Deleting an existing staff
 exports.deleteStaff = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -189,17 +189,26 @@ exports.deleteStaff = async (req, res) => {
     try {
       const staffId = req.params.id;
 
-      const user = await User.findByPk(staffId);
+      // Check if a class is assigned to the staff
+      const assignments = await AssignedTeacher.findAll({ where: { teacherId: staffId } });
 
-      if (!user)
+      if (assignments.length > 0) {
+        return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
+      }
+
+      // If no assignments, proceed to delete 
+      const result = await User.destroy({ where: { id: staffId} });
+
+      if (result === 0) {
         return res.status(404).json({ message: 'Staff not found!' });
-
-      await user.destroy();
-
-      return res.status(200).json({ message: 'Staff deleted successfully!' });
+      }
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot delete staff at the moment!' });
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
+      }
+
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot assigned class at the moment' });
     }
   });
 };
