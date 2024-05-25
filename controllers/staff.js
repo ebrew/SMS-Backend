@@ -202,6 +202,7 @@ exports.deleteStaff = async (req, res) => {
       if (result === 0) {
         return res.status(404).json({ message: 'Staff not found!' });
       }
+      return res.status(201).json({ message: 'Staff has being deleted successfully!' });
     } catch (error) {
       if (error.name === 'SequelizeForeignKeyConstraintError') {
         return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
