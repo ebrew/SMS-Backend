@@ -197,18 +197,13 @@ exports.deleteStaff = async (req, res) => {
       }
 
       // If no assignments, proceed to delete 
-      const result = await User.destroy({ where: { id: staffId} });
+      const result =  await User.destroy({ where: { id: staffId} });
 
-      if (result === 0) {
-        return res.status(404).json({ message: 'Staff not found!' });
-      }
-      
-      return res.status(201).json({ message: 'Staff has being deleted successfully!' });
+      if(result === 0)
+        return res.status(400).json({ message: 'Staff already deleted!' });
+
+      return res.status(200).json({ message: 'Staff has being deleted successfully!' });
     } catch (error) {
-      if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
-      }
-
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot assigned class at the moment' });
     }

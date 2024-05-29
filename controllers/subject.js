@@ -1,9 +1,9 @@
 require('dotenv').config();
-const { Op, or, and } = require('sequelize');
+const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Subject, AssignedSubject } = require("../db/models/index");
+const { ClassSubject, Subject, AssignedSubject, Class } = require("../db/models/index");
 
-// Get all departments
+// Get all subjects
 exports.allSubjects = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -19,7 +19,49 @@ exports.allSubjects = async (req, res) => {
   });
 };
 
-// Create a new department
+// Get all class subjects
+exports.allClassSubjects = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const classId = req.params.id;
+      let formated = []
+
+      const subjects = await ClassSubject.findAll({ 
+        where: { classId },
+        include: [
+          {
+            model: Subject,
+            attributes: ['id', 'name'],
+            order: [['name', 'ASC']] 
+          },
+          {
+            model: Class,
+            attributes: ['id', 'name', 'grade'],
+            }
+        ],        
+      })
+
+      for (const data of subjects) {
+        formated.push({
+          subjectId: data.Subject.id,
+          subjectName: data.Subject.name,
+          classId: data.Class.id,
+          className: data.Class.name
+        });
+      }
+
+      return res.status(200).json({ 'ClassSubjects': formated });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Create a new subject
 exports.addSubject = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -112,13 +154,10 @@ exports.deleteSubject = async (req, res) => {
       const result = await Subject.destroy({ where: { id: subjectId } });
 
       if (result === 0) {
-        return res.status(404).json({ message: 'Subject not found!' });
+        return res.status(400).json({ message: 'Subject already deleted!' });
       }
+      return res.status(200).json({ message: 'Subject deleted successfully!' });
     } catch (error) {
-      if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
-      }
-
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete subject at the moment' });
     }

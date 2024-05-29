@@ -160,6 +160,7 @@ exports.deleteClassSection = async (req, res) => {
       if (result === 0) {
         return res.status(404).json({ message: 'Class section not found!' });
       }
+      return res.status(200).json({ message: 'Class section deleted successfully!' });
     } catch (error) {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete at the moment' });
@@ -340,26 +341,30 @@ exports.deleteClass = async (req, res) => {
 
     try {
       const classId = req.params.id;
+      let used = false
 
-      // Check if a class is assigned to a teacher
-      const assignments = await Section.findAll({ where: { classId } });
+      // Check if a class is assigned to a teacher   
+      const checks = await Section.findAll({ where: { classId } });
 
-      if (assignments.length > 0) {
-        return res.status(400).json({ message: 'Cannot delete class as one or more of its sections has/have been assigned to one or more teachers!' });
+      for (const data of checks) {
+        const check = await AssignedTeacher.findOne({ where: { classId: data.id } });
+        if (check) {
+          used = true;
+          break; // exit the loop as soon as we find a section with an assigned teacher
+        }
       }
 
+      if (used) 
+        return res.status(400).json({ message: 'Cannot delete class as one or more of its sections been assigned to one or more teachers!' });
+
       // If no assignments, proceed to delete 
-      const result = await User.destroy({ where: { id: staffId } });
+      const result = await Class.destroy({ where: { id: classId} });
 
       if (result === 0) {
         return res.status(404).json({ message: 'Class not found!' });
       }
       return res.status(200).json({ message: 'Class deleted successfully!' });
     } catch (error) {
-      if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({ message: 'Cannot delete class as one or more of its sections has/have been assigned to one or more teachers!' });
-      }
-
       console.error('Error deleting class:', error);
       return res.status(500).json({ message: 'Cannot delete class at the moment' });
     }

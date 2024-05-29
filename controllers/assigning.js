@@ -80,7 +80,7 @@ exports.deleteAssignedClass = async (req, res) => {
     try {
       const assignedTeacherId = req.params.assignedTeacherId;
 
-      // Check if the subject is assigned to any teachers
+      // Check if the subject is assigned to any teacher
       const assignments = await AssignedSubject.findAll({ where: { assignedTeacherId } });
 
       if (assignments.length > 0) {
@@ -90,11 +90,10 @@ exports.deleteAssignedClass = async (req, res) => {
       // If no assignments, proceed to delete 
       const result = await AssignedTeacher.destroy({ where: { id: assignedTeacherId } });
 
-      if (result === 0) {
-        return res.status(404).json({ message: 'Assigned class not found!' });
-      }
+      if(result === 0)
+        return res.status(400).json({ message: 'Assigned class already deleted!' });
 
-      return res.status(201).json({ message: 'Assigned class removed successfully!' });
+      return res.status(200).json({ message: 'Assigned class removed successfully!' });
 
     } catch (error) {
       if (error.name === 'SequelizeForeignKeyConstraintError') {
@@ -107,7 +106,6 @@ exports.deleteAssignedClass = async (req, res) => {
   });
 };
 
-
 // Deleting an assigned subject for a particular teacher
 exports.deleteAssignedSubject = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -119,11 +117,10 @@ exports.deleteAssignedSubject = async (req, res) => {
 
       const result = await AssignedSubject.destroy({ where: { assignedTeacherId, subjectId } });
 
-      if (result === 0) {
-        return res.status(404).json({ message: 'Assigned subject not found!' });
-      }
+      if(result === 0)
+        return res.status(400).json({ message: 'Assigned subject already deleted!' });
 
-      return res.status(201).json({ message: 'Assigned subject removed successfully!' });
+      return res.status(200).json({ message: 'Assigned subject removed successfully!' });
     } catch (error) {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete assigned subject at the moment' });
@@ -194,7 +191,7 @@ exports.assignedTeacher = async (req, res) => {
   });
 };
 
-// Get all assigned teachers
+// Get all assigned teachers ????
 exports.assignedTeachers = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -311,16 +308,11 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       // If no assignments, proceed to delete 
       const result = await AssignedTeacher.destroy({ where: { classId, subjectId } });
 
-      if (result === 0) {
-        return res.status(404).json({ message: 'Assigned class not found!' });
-      }
+      if(result === 0)
+        return res.status(400).json({ message: 'Assigned subject already deleted!' });
 
-      return res.status(201).json({ message: 'Assigned subject removed successfully!' });
+      return res.status(200).json({ message: 'Assigned subject removed successfully!' });
     } catch (error) {
-      if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({ message: 'Cannot delete assigned teacher as it is assigned to one or more subject!' });
-      }
-
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete at the moment' });
     }
