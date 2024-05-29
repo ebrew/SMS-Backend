@@ -89,11 +89,9 @@ exports.addClassSection = async (req, res) => {
       // Check if the section already exists for this class
       const isExist = await Section.findOne({
         where: {
-          [Op.or]: [
-            { name: { [Op.iLike]: name } },
-            { grade },
-            { classId }
-          ],
+            name: { [Op.iLike]: name },
+            capacity ,
+            classId
         },
       });
 
