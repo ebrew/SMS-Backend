@@ -128,7 +128,7 @@ exports.updateClassSection = async (req, res) => {
       if (!result)
         return res.status(404).json({ message: 'Section not found!' });
 
-      result.name = nameame;
+      result.name = name;
       result.capacity = capacity;
       await result.save();
 
