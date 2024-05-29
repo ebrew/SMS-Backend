@@ -207,7 +207,7 @@ exports.allClasses = async (req, res) => {
   });
 };
 
-// Get a particular class with its sections   
+// Get a particular class with its sections for teacher assignment   
 exports.getClassWithSections = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -218,7 +218,7 @@ exports.getClassWithSections = async (req, res) => {
 
       const data = await Class.findOne({
         where: { id: classId },
-        include: { model: User, attributes: ['id', 'firstName', 'lastName'] }
+        include: { model: User, attributes: ['id', 'firstName', 'lastName'] },
       });
 
       if (!data) {
@@ -228,12 +228,18 @@ exports.getClassWithSections = async (req, res) => {
       const sections = await Section.findAll({
         where: { classId },
         attributes: ['id', 'name', 'capacity'],
+        order: [['name', 'ASC']],
       });
 
-      const subjects = await ClassSubject.findAll({
+      const subject = await ClassSubject.findAll({
         where: { classId },
         include: { model: Subject, attributes: ['id', 'name', 'code'] }
       });
+
+      let subjects = []
+      for (const data of subject) {
+        subjects.push( data.Subject );
+      }
 
       // Return the formatted data 
       const formattedResult = {

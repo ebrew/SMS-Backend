@@ -101,11 +101,11 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/subject/delete/id
 Authorization: Bearer <token from login>
 
-22. // List of created subjects
+22. // List of created subjects for class assignments
 API: << server >>/api/v1/subject/all
 Authorization: Bearer <token from login>
 
-23. // Fetch class assigned subjects for assignments
+23. // Fetch class assigned subjects for teacher assignments
 API: << server >>/api/v1/subject/all_class_subjects/classId
 Authorization: Bearer <token from login>
 
