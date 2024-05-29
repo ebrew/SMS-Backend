@@ -117,19 +117,19 @@ exports.updateClassSection = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { name, grade } = req.body;
+      const { name, capacity } = req.body;
       const { classId, sectionId } = req.params;
 
-      if (!name || !grade)
+      if (!name || !capacity)
         return res.status(400).json({ message: 'Incomplete fields!' });
 
-      const result = await Section.findOne({ where: { classId, sectionId } });
+      const result = await Section.findOne({ where: { classId, id: sectionId } });
 
       if (!result)
         return res.status(404).json({ message: 'Section not found!' });
 
-      result.name = className;
-      result.grade = grade;
+      result.name = nameame;
+      result.capacity = capacity;
       await result.save();
 
       return res.status(200).json({ message: 'Class section updated successfully!' });
