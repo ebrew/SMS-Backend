@@ -155,7 +155,7 @@ exports.deleteClassSection = async (req, res) => {
       if (assignments.length > 0) {
         return res.status(400).json({ message: 'Cannot delete class section as it is assigned to one or more teachers!' });
       }
-      const result = await Section.destroy({ where: { classId, sectionId } });
+      const result = await Section.destroy({ where: { classId, id: sectionId } });
 
       if (result === 0) {
         return res.status(404).json({ message: 'Class section not found!' });
