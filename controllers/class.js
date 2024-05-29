@@ -354,8 +354,9 @@ exports.deleteClass = async (req, res) => {
       const result = await User.destroy({ where: { id: staffId } });
 
       if (result === 0) {
-        return res.status(404).json({ message: 'Staff not found!' });
+        return res.status(404).json({ message: 'Class not found!' });
       }
+      return res.status(200).json({ message: 'Class deleted successfully!' });
     } catch (error) {
       if (error.name === 'SequelizeForeignKeyConstraintError') {
         return res.status(400).json({ message: 'Cannot delete class as one or more of its sections has/have been assigned to one or more teachers!' });

@@ -5,8 +5,8 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class ClassSubject extends Model {
     static associate(models) {
-      this.belongsTo(models.ClassSubject, { foreignKey: 'classId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
-      this.belongsTo(models.ClassSubject, { foreignKey: 'subjectId', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
+      this.belongsTo(models.Class, { foreignKey: 'classId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
+      this.belongsTo(models.Subject, { foreignKey: 'subjectId', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
     }
   }
   ClassSubject.init({

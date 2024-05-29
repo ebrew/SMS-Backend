@@ -42,6 +42,7 @@ eg: {
 
 8. // Update an existing class
 API: << server >>/api/v1/class/update/id
+Content: className, grade, headTeacherId
 Authorization: Bearer <token from login>
 
 9. // Delete an existing class
