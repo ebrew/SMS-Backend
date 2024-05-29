@@ -349,25 +349,28 @@ exports.deleteClass = async (req, res) => {
       const classId = req.params.id;
       let used = false
 
+      const subjectChecks = await ClassSubject.findOne({ where: { classId} });
+      if (subjectChecks) 
+        return res.status(400).json({ message: 'Cannot delete class as one or more subjects been assigned it!' });
+
       // Check if a class is assigned to a teacher   
       const checks = await Section.findAll({ where: { classId } });
-
       for (const data of checks) {
         const check = await AssignedTeacher.findOne({ where: { classId: data.id } });
         if (check) {
           used = true;
-          break; // exit the loop as soon as we find a section with an assigned teacher
+          break; 
         }
       }
 
       if (used) 
         return res.status(400).json({ message: 'Cannot delete class as one or more of its sections been assigned to one or more teachers!' });
-
+      
       // If no assignments, proceed to delete 
       const result = await Class.destroy({ where: { id: classId} });
 
       if (result === 0) {
-        return res.status(404).json({ message: 'Class not found!' });
+        return res.status(404).json({ message: 'Class already deleted!' });
       }
       return res.status(200).json({ message: 'Class deleted successfully!' });
     } catch (error) {

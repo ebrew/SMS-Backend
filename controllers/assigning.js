@@ -302,7 +302,7 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       const assignments = await AssignedSubject.findAll({ where: { subjectId } });
 
       if (assignments.length > 0) {
-        return res.status(400).json({ message: 'Cannot delete assigned subject as it is assigned to one or more classes!' });
+        return res.status(400).json({ message: 'Cannot remove assigned subject as it is assigned to one or more classes!' });
       }
 
       // If no assignments, proceed to delete 
