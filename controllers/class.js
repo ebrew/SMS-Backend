@@ -158,7 +158,7 @@ exports.deleteClassSection = async (req, res) => {
       const result = await Section.destroy({ where: { classId, id: sectionId } });
 
       if (result === 0) {
-        return res.status(404).json({ message: 'Class section not found!' });
+        return res.status(404).json({ message: 'Class section already deleted!' });
       }
       return res.status(200).json({ message: 'Class section deleted successfully!' });
     } catch (error) {

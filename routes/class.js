@@ -24,7 +24,7 @@ router.post('/update/:id', classController.updateClass)
 router.post('/create_class_section', classController.addClassSection);
 
 // Updating a class section
-router.get('/update_section/:classId/:sectionId', classController.updateClassSection)
+router.post('/update_section/:classId/:sectionId', classController.updateClassSection)
 
 // Delete an existing classSection
 router.get('/delete_section/:classId/:sectionId', classController.deleteClassSection)
