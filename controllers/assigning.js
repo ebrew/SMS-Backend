@@ -306,7 +306,7 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       }
 
       // If no assignments, proceed to delete 
-      const result = await AssignedTeacher.destroy({ where: { classId, subjectId } });
+      const result = await ClassSubject.destroy({ where: { classId, subjectId } });
 
       if(result === 0)
         return res.status(400).json({ message: 'Assigned subject already deleted!' });
