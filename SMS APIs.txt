@@ -63,7 +63,7 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/class/delete_section/classId/sectionId
 Authorization: Bearer <token from login>
 
-13. // Fetching a particular class with its sections 
+13. // Fetching a particular class with its sections and assigned subjects 
 API: << server >>/api/v1/class/get_class/id
 Authorization: Bearer <token from login>
 

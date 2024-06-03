@@ -84,14 +84,14 @@ exports.deleteAssignedClass = async (req, res) => {
       const assignments = await AssignedSubject.findAll({ where: { assignedTeacherId } });
 
       if (assignments.length > 0) {
-        return res.status(400).json({ message: 'Cannot delete assigned class as it is assigned to one or more subject!' });
+        return res.status(400).json({ message: 'Cannot delete assigned class as one or more subjects assigned to it!' });
       }
 
       // If no assignments, proceed to delete 
       const result = await AssignedTeacher.destroy({ where: { id: assignedTeacherId } });
 
       if(result === 0)
-        return res.status(400).json({ message: 'Assigned class already removed!' });
+        return res.status(400).json({ message: 'Assigned class not found!' });
 
       return res.status(200).json({ message: 'Assigned class removed successfully!' });
 
@@ -118,7 +118,7 @@ exports.deleteAssignedSubject = async (req, res) => {
       const result = await AssignedSubject.destroy({ where: { assignedTeacherId, subjectId } });
 
       if(result === 0)
-        return res.status(400).json({ message: 'Assigned subject already removed!' });
+        return res.status(400).json({ message: 'Assigned subject not found!' });
 
       return res.status(200).json({ message: 'Assigned subject removed successfully!' });
     } catch (error) {
@@ -309,7 +309,7 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       const result = await ClassSubject.destroy({ where: { classId, subjectId } });
 
       if(result === 0)
-        return res.status(400).json({ message: 'Assigned subject already removed!' });
+        return res.status(400).json({ message: 'Assigned subject not found!' });
 
       return res.status(200).json({ message: 'Assigned subject removed successfully!' });
     } catch (error) {

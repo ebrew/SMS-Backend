@@ -154,7 +154,7 @@ exports.deleteSubject = async (req, res) => {
       const result = await Subject.destroy({ where: { id: subjectId } });
 
       if (result === 0) {
-        return res.status(400).json({ message: 'Subject already deleted!' });
+        return res.status(400).json({ message: 'Subject not found!' });
       }
       return res.status(200).json({ message: 'Subject deleted successfully!' });
     } catch (error) {

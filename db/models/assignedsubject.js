@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
   class AssignedSubject extends Model {
     static associate(models) {
       this.belongsTo(models.AssignedTeacher, { foreignKey: 'assignedTeacherId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
-      this.belongsTo(models.Subject, { foreignKey: 'subjectId', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
+      this.belongsTo(models.Subject, { foreignKey: 'subjectId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
     }
   }
