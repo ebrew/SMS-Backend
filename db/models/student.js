@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Student.init({
     firstName: { type: DataTypes.STRING, allowNull: false },
+    middleName: { type: DataTypes.STRING, allowNull: true },
     lastName: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: true, unique: true },
     phone: { type: DataTypes.STRING, allowNull: true, unique: true },
@@ -34,8 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     resetToken: DataTypes.STRING,
     resetTokenExpiration: DataTypes.DATE,
     isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    departmentId: { type: DataTypes.INTEGER, allowNull: true },
-    tokens: DataTypes.STRING
+    departmentId: { type: DataTypes.INTEGER, allowNull: true }
   }, {
     sequelize,
     modelName: 'Student',

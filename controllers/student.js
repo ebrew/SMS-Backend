@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Parent, Student, Section, ClassStudent } = require("../db/models/index");
+const { Parent, Student, ClassStudent } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
 
 // Student admission
@@ -11,13 +11,13 @@ exports.admitStudent = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { student, parent, parentEmployment, emergency, class: classInfo } = req.body;
+      const { student, parent, parentEmployment, emergency, classInfo } = req.body;
 
       if (!student || !parent || !parentEmployment || !emergency || !classInfo)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      const { firstName, lastName, email, phone, address, dob, gender, nationality, passportPhoto } = student;
-      const { parentFirstName, parentLastName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone, parentGender } = parent;
+      const { firstName, middleName, lastName, email, phone, address, dob, gender, nationality, passportPhoto } = student;
+      const { parentFulltName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = parent;
       const { occupation, employer, employerAddress, workPhone } = parentEmployment;
       const { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone } = emergency;
       const { classSessionId, academicYearId } = classInfo;
@@ -27,8 +27,7 @@ exports.admitStudent = async (req, res) => {
       let parentRecord = await Parent.findOne({
         where: {
           [Op.and]: [
-            { firstName: { [Op.iLike]: parentFirstName } },
-            { lastName: { [Op.iLike]: parentLastName } },
+            { fullName: { [Op.iLike]: parentFulltName } },
             { email: normalizeGhPhone(parentPhone) }
           ]
         }
@@ -58,6 +57,7 @@ exports.admitStudent = async (req, res) => {
         where: {
           [Op.and]: [
             { firstName: { [Op.iLike]: firstName } },
+            { middleName: { [Op.iLike]: middleName } },
             { lastName: { [Op.iLike]: lastName } },
           ]
         }
@@ -68,6 +68,7 @@ exports.admitStudent = async (req, res) => {
 
       studentRecord = await Student.create({
         firstName,
+        middleName,
         lastName,
         email,
         phone: normalizeGhPhone(phone),
@@ -112,12 +113,3 @@ exports.admitStudent = async (req, res) => {
   });
 };
 
-
-
-// {
-//   "student": { "firstName": "...", "lastName": "...", "email": "...", "phone": "...", "address": "...", "dob": "...", "gender": "...", "nationality": "...", "passportPhoto": "..." },
-//   "parent": { "firstName": "...", "lastName": "...", "title": "...", "relationship": "...", "address": "...", "email": "...", "phone": "...", "homePhone": "...", "gender": "..." },
-//   "parentEmployment": { "occupation": "...", "employer": "...", "employerAddress": "...", "workPhone": "..." },
-//   "emergency": { "emergencyName": "...", "emergencyTitle": "...", "emergencyAddress": "...", "emergencyPhone": "..." },
-//   "class": { "classSessionId": "...", "academicYearId": "..." }
-// }

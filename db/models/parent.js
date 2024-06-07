@@ -14,8 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Parent.init({
-    firstName: { type: DataTypes.STRING, allowNull: false },
-    lastName: { type: DataTypes.STRING, allowNull: false },
+    fullName: { type: DataTypes.STRING, allowNull: false },
     title: { type: DataTypes.STRING, allowNull: false },
     relationship: { type: DataTypes.STRING, allowNull: false },
     address: { type: DataTypes.STRING, allowNull: false },
@@ -23,7 +22,6 @@ module.exports = (sequelize, DataTypes) => {
     phone: { type: DataTypes.STRING, allowNull: false, unique: true },
     homePhone: { type: DataTypes.STRING, allowNull: true, unique: true },
     role: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Parent'},
-    gender: { type: DataTypes.ENUM('Male', 'Female'), allowNull: false },
     occupation: { type: DataTypes.STRING, allowNull: true },
     employer: { type: DataTypes.STRING, allowNull: true },
     employerAddress: { type: DataTypes.STRING, allowNull: true },
@@ -32,7 +30,6 @@ module.exports = (sequelize, DataTypes) => {
     resetToken: { type: DataTypes.STRING, allowNull: true },
     resetTokenExpiration: DataTypes.DATE,
     isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    tokens: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Parent',

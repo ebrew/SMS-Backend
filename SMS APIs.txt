@@ -1,6 +1,6 @@
 Server << server >>: https://sms-backend-8vd4.onrender.com
 
-ADMIN
+ADMIN ROLE
 1. // Staff Login
 API: << server >>/api/v1/staff/login
 Content: userID(phone/userName/email) and password
@@ -153,6 +153,8 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/assigning/all/id
 Authorization: Bearer <token from login>
 
+
+ACADEMIC YEAR AND TERM
 33. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
 Content: name, startDate, endDate
@@ -179,6 +181,23 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/academic_term/all
 Authorization: Bearer <token from login>
 
+<<FRONTEND TEST ENDED HERE>>
+STUDENT ADMISSION
+39. // Creating a new student, parent/guidian and assigninig to a class
+API: << server >>/api/v1/student/new_admission
+Content: { 
+  student: {firstName, middleName, lastName, email, phone, address, dob, gender, nationality, passportPhoto },
+  parent: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone },
+  parentEmployment: { occupation, employer, employerAddress, workPhone },
+  emergency: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone },
+  classInfo: { classSessionId, academicYearId }
+}
+Authorization: Bearer <token from login>
+
+
+
+
+
 // Staff Requesting Password Reset from Admin
 API: << server >>/api/v1/staff/password-reset-request
 Content: userID(phone/userName/email) as a post request
@@ -191,17 +210,7 @@ NB: resetToken or "id:id, role:role"
 API: << server >>/api/v1/staff/pending-password-reset-requests
 Authorization: Bearer <token from login>
 
-STUDENT ADMISSION
-1. // Creating a new student, parent and assigninig to a class
-API: << server >>/api/v1/student/new_admission
-Content: { 
-  student: {firstName, lastName, email, phone, address, dob, gender, nationality, passportPhoto },
-  parent: { parentFirstName, parentLastName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone, parentGender },
-  parentEmployment: { occupation, employer, employerAddress, workPhone },
-  emergency: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone },
-  classInfo: { classSessionId, academicYearId }
-}
-Authorization: Bearer <token from login>
+
 
 
 
