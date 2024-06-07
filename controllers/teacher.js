@@ -25,9 +25,8 @@ exports.allTeachers = async (req, res) => {
       return res.status(200).json({ 'teachers': teachers });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
-
 };
 

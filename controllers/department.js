@@ -22,7 +22,7 @@ exports.allDepartments = async (req, res) => {
       return res.status(200).json({ 'departments': departments });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
@@ -96,54 +96,9 @@ exports.updateDepartment = async (req, res) => {
 
       department.name = name;
       department.description = description;
+      await department.save(); 
 
-      await department.save(); // Save updated department
-
-      return res.status(200).json({ message: 'Department updated successfully!', department });
-    } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: 'Cannot update department at the moment!' });
-    }
-  });
-};
-
-// Update an existing department
-exports.updateDepartmentOld = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const { name, description, hodId } = req.body;
-      const departmentId = req.params.id; 
-
-      if (!name)
-        return res.status(400).json({ message: 'Department name is required!' });
-
-      const department = await Department.findByPk(departmentId); 
-
-      if (!department)
-        return res.status(404).json({ message: 'Department not found!' });
-
-      if(hodId && hodId !== 0) {  
-        const isHodExist = await User.findByPk(hodId); 
-
-        if (!isHodExist)
-          return res.status(400).json({ message: `Selected HOD doesn't exist!` });
-      }
-
-      // const alreadyExist = await Department.findOne({ where: { name } });
-      // if (alreadyExist)
-      //   return res.status(400).json({ message: `${name} already exist!` });
-
-      // Update department attributes
-      department.name = name;
-      department.description = description;
-      department.hodId = hodId;
-
-      await department.save(); // Save updated department
-
-      return res.status(200).json({ message: 'Department updated successfully!', department });
+      return res.status(200).json({ message: 'Department updated successfully!'});
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update department at the moment!' });
@@ -174,8 +129,3 @@ exports.deleteDepartment = async (req, res) => {
     }
   });
 };
-
-
-
-
-

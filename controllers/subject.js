@@ -14,7 +14,7 @@ exports.allSubjects = async (req, res) => {
       return res.status(200).json({ 'subjects': subjects });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
@@ -56,7 +56,7 @@ exports.allClassSubjects = async (req, res) => {
       return res.status(200).json({ 'ClassSubjects': formated });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };

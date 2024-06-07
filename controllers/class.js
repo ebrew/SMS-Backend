@@ -33,9 +33,9 @@ exports.addClass = async (req, res) => {
         if (!name || !capacity)
           return res.status(400).json({ message: 'Invalid section data' });
       }
-      let isExist;
+
       if (headTeacherId && headTeacherId !== '0') {
-        isExist = await User.findByPk(headTeacherId);
+        const isExist = await User.findByPk(headTeacherId);
 
         if (!isExist)
           return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
@@ -55,21 +55,18 @@ exports.addClass = async (req, res) => {
           const { name, capacity } = sectionData;
 
           // Create the Section
-          await Section.create({
-            name: name,
-            capacity: capacity,
-            classId: classId,
-          });
+          await Section.create({ name, capacity, classId });
         } catch (error) {
           console.error('Error creating section:', error.message);
           // future error handling in the fure
+          res.status(500).json({ message: "Can't create class sections at the moment!" });
         }
       }
       res.status(200).json({ message: 'Class and sections created successfully!' });
 
     } catch (error) {
       console.error('Error creating class and sections:', error);
-      res.status(500).json({ error: "Can't create class at the moment!" });
+      res.status(500).json({ message: "Can't create class at the moment!" });
     }
   });
 };
@@ -105,7 +102,7 @@ exports.addClassSection = async (req, res) => {
 
     } catch (error) {
       console.error('Error creating class:', error);
-      res.status(500).json({ error: "Can't create class section at the moment!" });
+      res.status(500).json({ message: "Can't create class section at the moment!" });
     }
   });
 };
@@ -320,15 +317,10 @@ exports.updateClass = async (req, res) => {
           return res.status(400).json({ message: `Selected Teacher doesn't exist!` });
       }
 
-      // const alreadyExist = await Class.findOne({ where: { name: className } });
-      // if (alreadyExist)
-      //   return res.status(400).json({ message: `${className} already exist!` });
-
       // Update department attributes
       name.name = className;
       name.grade = grade;
       name.headTeacherId = headTeacherId;
-
       await name.save();
 
       return res.status(200).json({ message: 'Class updated successfully!' });

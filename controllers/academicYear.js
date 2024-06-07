@@ -19,11 +19,11 @@ exports.allAcademicYears = async (req, res) => {
         order: [['createdAt', 'DESC']],
       });
 
-      res.status(200).json({ 'Academic years': all });
+      res.status(200).json({ 'academicYears': all });
 
     } catch (error) {
       console.error('Error fetching academic year:', error);
-      res.status(500).json({ error: "Can't fetch data at the moment!" });
+      res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
@@ -85,7 +85,7 @@ exports.activeAcademicYear = async (req, res) => {
         await activeAcademicYear.setInactiveIfEndDateDue();
       // Fetch the updated active academic year
       activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      return res.status(200).json({ 'Active academic year': activeAcademicYear });
+      return res.status(200).json({ 'ActiveAcademicYear': activeAcademicYear });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });

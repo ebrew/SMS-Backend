@@ -93,12 +93,12 @@ exports.register = async (req, res) => {
       return res.status(200).json({ message: 'Staff created successfully!' });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: 'Cannot register at the moment!' });
+      return res.status(500).json({ message: 'Cannot register at the moment!' });
     }
   })
 }
 
-// Get all teachers
+// Get a particular teacher's details
 exports.getUser = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -120,7 +120,7 @@ exports.getUser = async (req, res) => {
       return res.status(200).json({ 'user': user });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
@@ -190,22 +190,21 @@ exports.deleteStaff = async (req, res) => {
       const staffId = req.params.id;
 
       // Check if a class is assigned to the staff
-      const assignments = await AssignedTeacher.findAll({ where: { teacherId: staffId } });
+      const assignment = await AssignedTeacher.findOne({ where: { teacherId: staffId } });
 
-      if (assignments.length > 0) {
+      if (assignment) 
         return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
-      }
 
       // If no assignments, proceed to delete 
       const result =  await User.destroy({ where: { id: staffId} });
 
       if(result === 0)
-        return res.status(400).json({ message: 'Staff already deleted!' });
+        return res.status(400).json({ message: 'Staff not found!' });
 
-      return res.status(200).json({ message: 'Staff has being deleted successfully!' });
+      return res.status(200).json({ message: 'Staff deleted successfully!' });
     } catch (error) {
       console.error('Error deleting subject:', error);
-      return res.status(500).json({ message: 'Cannot assigned class at the moment' });
+      return res.status(500).json({ message: 'Cannot delete staff at the moment' });
     }
   });
 };
@@ -238,7 +237,7 @@ exports.defaultReset = async (req, res) => {
       return res.status(200).json({ message: 'Password reset successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: 'Cannot reset password at the moment!' });
+      return res.status(500).json({ message: 'Cannot reset password at the moment!' });
     }
   });
 };
@@ -329,7 +328,7 @@ exports.passwordResetRequest = async (req, res) => {
     return res.status(200).json({ message: "Request sent! Admin will act soon!" });
   } catch (error) {
     console.log('Error:', error);
-    return res.status(500).json({ error: 'Cannot send request to Admin at the moment!' });
+    return res.status(500).json({ message: 'Cannot send request to Admin at the moment!' });
   }
 }
 
@@ -425,7 +424,7 @@ exports.adminResetPassword = async (req, res) => {
       return res.status(200).json({ message: 'Password reset successfully!' });
     }
   } catch (error) {
-    return res.status(400).json({ error: 'Cannot reset password at the moment!' });
+    return res.status(400).json({ message: 'Cannot reset password at the moment!' });
   }
 };
 
@@ -496,7 +495,7 @@ exports.allStaff = async (req, res) => {
       return res.status(200).json({ 'staff': staff });
     } catch (error) {
       console.error('Error:', error.message);
-      return res.status(500).json({ Error: "Can't fetch data at the moment!" });
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 
@@ -531,7 +530,7 @@ exports.admin = async (req, res) => {
     return res.status(200).json({ message: 'Admin created successfully!' });
   } catch (error) {
     console.error('Error:', error.message);
-    return res.status(500).json({ Error: 'Cannot create Admin at the moment!' });
+    return res.status(500).json({ message: 'Cannot create Admin at the moment!' });
   }
 }
 

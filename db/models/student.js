@@ -1,6 +1,4 @@
 'use strict';
-const bcrypt = require('bcrypt');
-
 const {
   Model
 } = require('sequelize');
@@ -12,28 +10,32 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
-      this.belongsTo(models.Department, { foreignKey: 'departmentId', onDelete: 'SET NULL', onUpdate:'CASCADE' });
-      
+      this.belongsTo(models.Parent, { foreignKey: 'parentId', onDelete: 'RESTRICT', onUpdate:'CASCADE' });
     }
   }
   Student.init({
-    userName: { type: DataTypes.STRING, allowNull: false, unique: true },
     firstName: { type: DataTypes.STRING, allowNull: false },
     lastName: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: true, unique: true },
     phone: { type: DataTypes.STRING, allowNull: true, unique: true },
     address: { type: DataTypes.STRING, allowNull: true },
-    role: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Student' },
+    role: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Student'},
     studentID: { type: DataTypes.STRING, allowNull: true },
     dob: { type: DataTypes.DATE, allowNull: true },
     gender: { type: DataTypes.ENUM('Male', 'Female'), allowNull: false },
+    nationality: { type: DataTypes.STRING, allowNull: false },
+    passportPhoto: { type: DataTypes.STRING, allowNull: true },
+    parentId: { type: DataTypes.INTEGER, allowNull: false },
+    emergencyName: { type: DataTypes.STRING, allowNull: true },
+    emergencyTitle: { type: DataTypes.STRING, allowNull: true },
+    emergencyAddress: { type: DataTypes.STRING, allowNull: true },
+    emergencyPhone: { type: DataTypes.STRING, allowNull: true },
     password: { type: DataTypes.STRING, allowNull: false },
     resetToken: DataTypes.STRING,
     resetTokenExpiration: DataTypes.DATE,
     isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    dp: { type: DataTypes.STRING, allowNull: true },
-    departmentId: { type: DataTypes.INTEGER, allowNull: true }
+    departmentId: { type: DataTypes.INTEGER, allowNull: true },
+    tokens: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Student',
@@ -41,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Student.beforeCreate(async (user) => {
     const hashedPassword = await bcrypt.hash(user.password, 10);
-    user.password = hashedPassword;
+    user.password = hashedPassword;  
     user.email = user.email ? user.email.toLowerCase() : null;
   });
 

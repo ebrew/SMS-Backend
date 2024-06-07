@@ -1,5 +1,6 @@
 Server << server >>: https://sms-backend-8vd4.onrender.com
 
+ADMIN
 1. // Staff Login
 API: << server >>/api/v1/staff/login
 Content: userID(phone/userName/email) and password
@@ -9,6 +10,7 @@ API: << server >>/api/v1/staff/default-reset
 Content: password
 Authorization: Bearer <token from login>
 
+DEPARTMENT
 3. // Creating a new department
 API: << server >>/api/v1/department/create
 Content: name, department and hodId
@@ -26,6 +28,7 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/department/all
 Authorization: Bearer <token from login>
 
+CLASS AND ITS SECTIONS
 7. // Creating a new class with sections
 API: << server >>/api/v1/class/create
 Content: name, grade, headTeacherId, sections
@@ -88,6 +91,7 @@ router.get('/delete_class_subject/:classId/:subjectId', assignController.deleteA
 API: << server >>/api/v1/teacher/all
 Authorization: Bearer <token from login>
 
+SUBJECT
 19. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
@@ -187,8 +191,17 @@ NB: resetToken or "id:id, role:role"
 API: << server >>/api/v1/staff/pending-password-reset-requests
 Authorization: Bearer <token from login>
 
-
-
+STUDENT ADMISSION
+1. // Creating a new student, parent and assigninig to a class
+API: << server >>/api/v1/student/new_admission
+Content: { 
+  student: {firstName, lastName, email, phone, address, dob, gender, nationality, passportPhoto },
+  parent: { parentFirstName, parentLastName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone, parentGender },
+  parentEmployment: { occupation, employer, employerAddress, workPhone },
+  emergency: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone },
+  classInfo: { classSessionId, academicYearId }
+}
+Authorization: Bearer <token from login>
 
 
 
