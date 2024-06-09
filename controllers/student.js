@@ -3,6 +3,7 @@ const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Parent, Student, ClassStudent } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
+const bcrypt = require('bcrypt');
 
 // Student admission
 exports.admitStudent = async (req, res) => {
