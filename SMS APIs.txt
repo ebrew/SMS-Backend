@@ -1,35 +1,41 @@
 Server << server >>: https://sms-backend-8vd4.onrender.com
 
 ADMIN ROLE
-1. // Staff Login
+1. // Staff Registration by Admin
+API: << server >>/api/v1/staff/register
+Content: Required - (userName, firstName, lastName, role, email, phone, gender)
+Authorization: Bearer <token from login>
+DEV: << server >>/api/v1/staff/dev
+
+2. // Staff Login
 API: << server >>/api/v1/staff/login
 Content: userID(phone/userName/email) and password
 
-2. // Resetting staff DEFAULT PASSWORD after Login
+3. // Resetting staff DEFAULT PASSWORD after Login
 API: << server >>/api/v1/staff/default-reset
 Content: password
 Authorization: Bearer <token from login>
 
 DEPARTMENT
-3. // Creating a new department
+4. // Creating a new department
 API: << server >>/api/v1/department/create
 Content: name, department and hodId
 Authorization: Bearer <token from login>
 
-4. // Update an existing department
+5. // Update an existing department
 API: << server >>/api/v1/department/update/id
 Authorization: Bearer <token from login>
 
-5. // Delete an existing department
+6. // Delete an existing department
 API: << server >>/api/v1/department/delete/id
 Authorization: Bearer <token from login>
 
-6. // List of departments
+7. // List of departments
 API: << server >>/api/v1/department/all
 Authorization: Bearer <token from login>
 
 CLASS AND ITS SECTIONS
-7. // Creating a new class with sections
+8. // Creating a new class with sections
 API: << server >>/api/v1/class/create
 Content: name, grade, headTeacherId, sections
 Authorization: Bearer <token from login>
@@ -43,80 +49,74 @@ eg: {
   ]
 }
 
-8. // Update an existing class
+9. // Update an existing class
 API: << server >>/api/v1/class/update/id
 Content: className, grade, headTeacherId
 Authorization: Bearer <token from login>
 
-9. // Delete an existing class
+10. // Delete an existing class
 API: << server >>/api/v1/class/delete/id
 Authorization: Bearer <token from login>
 
-10. // Create a new class section for a particular class
+11. // Create a new class section for a particular class
 API: << server >>/api/v1/class/create_class_section
 Content: classId, name, capacity
 Authorization: Bearer <token from login>
 
-11. // Updating a class section
+12. // Updating a class section
 API: << server >>/api/v1/class/update_section/classId/sectionId
 Content: name, capacity
 Authorization: Bearer <token from login>
 
-12. // Delete an existing class section
+13. // Delete an existing class section
 API: << server >>/api/v1/class/delete_section/classId/sectionId
 Authorization: Bearer <token from login>
 
-13. // Fetching a particular class with its sections and assigned subjects 
+14. // Fetching a particular class with its sections and assigned subjects 
 API: << server >>/api/v1/class/get_class/id
 Authorization: Bearer <token from login>
 
-14. // List of all classes
+15. // List of all classes
 API: << server >>/api/v1/class/all
 Authorization: Bearer <token from login>
 
-15. // Get all class sections for multi select when assigning teachers
+16. // Get all class sections for multi select when assigning teachers
 API: << server >>/api/v1/class/sections
 Authorization: Bearer <token from login>
 
-16. // Assign a subject to a class
+17. // Assign a subject to a class
 API: << server >>/api/v1/assigning/class_subject
 Content: classId, subjectId
 Authorization: Bearer <token from login>
 
-17. // Deleting an assigned subject to a class
+18. // Deleting an assigned subject to a class
 API: << server >>/api/v1/assigning/delete_class_subject/classId/subjectId
 router.get('/delete_class_subject/:classId/:subjectId', assignController.deleteAssignedClassSubject)
 
-18. // List of Teachers for hod and headTeacher dropdown options
+19. // List of Teachers for hod and headTeacher dropdown options
 API: << server >>/api/v1/teacher/all
 Authorization: Bearer <token from login>
 
 SUBJECT
-19. // Creating a new subject
+20. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
 Authorization: Bearer <token from login>
 
-20. // Update an existing subject
+21. // Update an existing subject
 API: << server >>/api/v1/subject/update/id
 Authorization: Bearer <token from login>
 
-21. // Delete an existing subject
+22. // Delete an existing subject
 API: << server >>/api/v1/subject/delete/id
 Authorization: Bearer <token from login>
 
-22. // List of created subjects for class assignments
+23. // List of created subjects for class assignments
 API: << server >>/api/v1/subject/all
 Authorization: Bearer <token from login>
 
-23. // Fetch class assigned subjects for teacher assignments
+24. // Fetch class assigned subjects for teacher assignments
 API: << server >>/api/v1/subject/all_class_subjects/classId
-Authorization: Bearer <token from login>
-
-24. // Staff Registration by Admin
-API: << server >>/api/v1/staff/register
-Content: Required - (userName, firstName, lastName, role, email, phone, gender)
-Update/Optional fields - (userName, firstName, lastName, email, phone, address, role, staffID, dob, gender, departmentId)
 Authorization: Bearer <token from login>
 
 25. // Get student or staff details
@@ -152,7 +152,6 @@ Authorization: Bearer <token from login>
 32. // Get a teacher's assigned classes with subjects
 API: << server >>/api/v1/assigning/all/id
 Authorization: Bearer <token from login>
-
 
 ACADEMIC YEAR AND TERM
 33. // Creating a new academic year
@@ -198,6 +197,7 @@ Authorization: Bearer <token from login>
 
 
 
+
 // Staff Requesting Password Reset from Admin
 API: << server >>/api/v1/staff/password-reset-request
 Content: userID(phone/userName/email) as a post request
@@ -209,12 +209,3 @@ NB: resetToken or "id:id, role:role"
 // List of pending Password reset requests
 API: << server >>/api/v1/staff/pending-password-reset-requests
 Authorization: Bearer <token from login>
-
-
-
-
-
-
-
-
-

@@ -2,9 +2,6 @@ const express = require('express');
 const router = express.Router();
 const staffController = require('../controllers/staff');
 
-// Developer registering admin
-router.post('/admin', staffController.admin);
-
 // Login
 router.post('/login', staffController.login);
 
@@ -35,12 +32,14 @@ router.get('/pending-password-reset-requests', staffController.pendingResetReque
 // Get all staff
 router.get('/all', staffController.allStaff)
 
+// Developer registering admin
+router.post('/dev', staffController.devAddAdmin);
+
 
 // // Forgot Password
 // router.post('/forgot-password', Mail.forgotPassword);
 
 // // Reset Password
 // router.post('/reset-password/:token', Mail.resetPassword);
-
 
 module.exports = router;

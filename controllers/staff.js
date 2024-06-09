@@ -10,7 +10,7 @@ const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
 
 
-// Login
+// Staff Login
 exports.login = async (req, res) => {
   try {
     const { userID, password } = req.body;
@@ -502,7 +502,7 @@ exports.allStaff = async (req, res) => {
 };
 
 // Developer registering Admin
-exports.admin = async (req, res) => {
+exports.devAddAdmin = async (req, res) => {
   try {
     const { userName, firstName, lastName, email, phone, gender } = req.body;
 

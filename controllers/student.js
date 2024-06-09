@@ -28,22 +28,20 @@ exports.admitStudent = async (req, res) => {
         where: {
           [Op.and]: [
             { fullName: { [Op.iLike]: parentFulltName } },
-            { email: normalizeGhPhone(parentPhone) }
+            { phone: normalizeGhPhone(parentPhone) }
           ]
         }
       });
 
       if (!parentRecord) {
         parentRecord = await Parent.create({
-          firstName: parentFirstName,
-          lastName: parentLastName,
+          fullName: parentFulltName,
           title,
           relationship,
           address: parentAddress,
           email: parentEmail,
           phone: normalizeGhPhone(parentPhone),
           homePhone,
-          gender: parentGender,
           occupation,
           employer,
           employerAddress,
@@ -64,14 +62,15 @@ exports.admitStudent = async (req, res) => {
       });
 
       if (studentRecord)
-        return res.status(400).json({ message: 'Student already admited!' });
+        return res.status(400).json({ message: 'Student record already exist!' });
 
+      const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
       studentRecord = await Student.create({
         firstName,
         middleName,
         lastName,
         email,
-        phone: normalizeGhPhone(phone),
+        phone: uphone,
         address,
         dob,
         gender,
@@ -85,26 +84,9 @@ exports.admitStudent = async (req, res) => {
         emergencyPhone
       });
 
-      // Check if student already exists in the class
-      let classRecord = await ClassStudent.findOne({
-        where: {
-          [Op.and]: [
-            { studentId: studentRecord.id },
-            { classSessionId: classSessionId },
-            { academicYearId: academicYearId }
-          ]
-        }
-      });
+      await ClassStudent.create({ studentId: studentRecord.id, classSessionId, academicYearId });
 
-      if (!classRecord) {
-        await ClassStudent.create({
-          studentId: studentRecord.id,
-          classSessionId,
-          academicYearId
-        });
-      }
-
-      res.status(200).json({ message: 'Student admitted successfully!' });
+      res.status(200).json({ message: 'Student record created successfully!' });
 
     } catch (error) {
       console.error('Error saving admission data:', error);
