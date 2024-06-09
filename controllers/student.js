@@ -85,7 +85,13 @@ exports.admitStudent = async (req, res) => {
         emergencyPhone
       });
 
-      await ClassStudent.create({ studentId: studentRecord.id, classSessionId, academicYearId });
+      // Check if class student already exists
+      let classRecord = await ClassStudent.findOne({
+        where: { studentId:studentRecord.id, classSessionId, academicYearId }
+      });
+
+      if(!classRecord)
+        await ClassStudent.create({ studentId: studentRecord.id, classSessionId, academicYearId });
 
       return res.status(200).json({ message: 'Student record created successfully!' });
 
