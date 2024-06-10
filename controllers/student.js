@@ -58,6 +58,7 @@ exports.admitStudent = async (req, res) => {
             { firstName: { [Op.iLike]: firstName } },
             { middleName: { [Op.iLike]: middleName } },
             { lastName: { [Op.iLike]: lastName } },
+            { parentId: parentRecord.id }
           ]
         }
       });
@@ -93,7 +94,7 @@ exports.admitStudent = async (req, res) => {
       if(!classRecord)
         await ClassStudent.create({ studentId: studentRecord.id, classSessionId, academicYearId });
 
-      return res.status(200).json({ message: 'Student record created successfully!' });
+      return res.status(200).json({ message: 'Student admitted successfully!' });
 
     } catch (error) {
       console.error('Error saving admission data:', error);

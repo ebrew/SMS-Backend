@@ -121,6 +121,7 @@ Authorization: Bearer <token from login>
 
 25. // Get student or staff details
 API: << server >>/api/v1/staff/details/id/role
+NB: id and role are already in the initial response 
 Authorization: Bearer <token from login>
 
 26. // Update an existing staff

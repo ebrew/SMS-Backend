@@ -98,7 +98,7 @@ exports.register = async (req, res) => {
   })
 }
 
-// Get a particular teacher's details
+// Get a particular teacher's or student details
 exports.getUser = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
