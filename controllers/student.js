@@ -104,3 +104,44 @@ exports.admitStudent = async (req, res) => {
 };
 
 
+// Update a student's DP url
+exports.updateStudentDP = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const url = req.body;
+      const studentId = req.params.id;
+
+      // Validate request body
+      if (!url) 
+        return res.status(400).json({ message: "Image's url is required !" });
+
+      // Find the student by ID
+      const user = await Student.findByPk(studentId);
+
+      if (!user)
+        return res.status(404).json({ message: 'Student not found!' });
+
+      // Check if image url exists
+      if (user.passportPhoto) {
+        if (user.passportPhoto === url)
+          return res.status(400).json({ message: "The existing and updated images are identical!" })
+      
+        // delete old image code here
+      }
+
+      //  update new DP
+      user.passportPhoto = url
+      await user.save();
+      return res.status(200).json({ message: 'Image updated successfully!' });
+    } catch (error) {
+      console.error('Error updating image:', error);
+      return res.status(500).json({ message: 'Unable to update image at the moment!' });
+    }
+  });
+};
+
+

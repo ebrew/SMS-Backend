@@ -194,6 +194,11 @@ Content: {
 }
 Authorization: Bearer <token from login>
 
+40. // Update a student's DP url
+API: << server >>/api/v1/student/update_dp/id
+Authorization: Bearer <token from login>
+
+
 
 
 
