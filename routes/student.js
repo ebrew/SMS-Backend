@@ -8,4 +8,7 @@ router.post('/new_admission', studentController.admitStudent);
 // Update a student's DP url
 router.post('/update_dp/:id', studentController.updateStudentDP)
 
+// Get all students
+router.get('/all', studentController.allStudents);
+
 module.exports = router;

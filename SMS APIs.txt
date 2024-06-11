@@ -198,6 +198,10 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/student/update_dp/id
 Authorization: Bearer <token from login>
 
+41. // Fetch all students
+API: << server >>/api/v1/student/all
+Authorization: Bearer <token from login>
+
 
 
 

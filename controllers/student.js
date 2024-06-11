@@ -3,7 +3,13 @@ const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Parent, Student, ClassStudent } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
-const bcrypt = require('bcrypt');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Student admission
 exports.admitStudent = async (req, res) => {
@@ -63,8 +69,8 @@ exports.admitStudent = async (req, res) => {
         }
       });
 
-      if (studentRecord)
-        return res.status(400).json({ message: 'Student record already exists!' });
+      // if (studentRecord)
+      //   return res.status(400).json({ message: 'Student record already exists!' });
 
       const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
       studentRecord = await Student.create({
@@ -103,7 +109,6 @@ exports.admitStudent = async (req, res) => {
   });
 };
 
-
 // Update a student's DP url
 exports.updateStudentDP = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -112,12 +117,12 @@ exports.updateStudentDP = async (req, res) => {
     }
 
     try {
-      const url = req.body;
+      const { url } = req.body;
       const studentId = req.params.id;
 
       // Validate request body
       if (!url) 
-        return res.status(400).json({ message: "Image's url is required !" });
+        return res.status(400).json({ message: "Image's url is required!" });
 
       // Find the student by ID
       const user = await Student.findByPk(studentId);
@@ -130,7 +135,16 @@ exports.updateStudentDP = async (req, res) => {
         if (user.passportPhoto === url)
           return res.status(400).json({ message: "The existing and updated images are identical!" })
       
-        // delete old image code here
+        // Extract the public ID from the current URL
+        const publicId = user.passportPhoto.split('/').pop().split('.')[0];
+
+        // Delete old image from Cloudinary
+        await cloudinary.uploader.destroy(publicId, (error, result) => {
+          if (error) {
+            console.error('Error deleting old image from Cloudinary:', error);
+            return res.status(500).json({ message: 'Error deleting old image!' });
+          }
+        });
       }
 
       //  update new DP
@@ -144,4 +158,25 @@ exports.updateStudentDP = async (req, res) => {
   });
 };
 
+// Get all students
+exports.allStudents = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
 
+    try {
+      const all = await Student.findAll({
+        order: [['firstName', 'ASC']],
+        attributes: ['id', 'firstName', 'middleName', 'lastName', 'role', 'email', 'phone', 'address', 'dob', 'gender', 'nationality', 'passportPhoto'], 
+        include: {
+          model: Parent, 
+          attributes: ['id', 'title', 'fullName', 'relationship', 'address', 'email']
+        },
+      })
+      return res.status(200).json({ 'students': all });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
