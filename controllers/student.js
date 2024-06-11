@@ -3,13 +3,7 @@ const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Parent, Student, ClassStudent } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
-const cloudinary = require('cloudinary').v2;
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const cloudinary = require('../db/config/cloudinaryConfig');
 
 // Student admission
 exports.admitStudent = async (req, res) => {
