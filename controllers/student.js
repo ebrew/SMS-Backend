@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Parent, Student, ClassStudent } = require("../db/models/index");
+const { Parent, Student, ClassStudent, Section, Class, AcademicYear } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
 const cloudinary = require('../db/config/cloudinaryConfig');
 
@@ -17,7 +17,7 @@ exports.admitStudent = async (req, res) => {
       if (!student || !parent || !parentEmployment || !emergency || !classInfo)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      const { firstName, middleName, lastName, email, phone, address, dob, gender, nationality, passportPhoto } = student;
+      const { firstName, middleName, lastName, email, phone, address, dob, gender, nationality } = student;
       const { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = parent;
       const { occupation, employer, employerAddress, workPhone } = parentEmployment;
       const { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone } = emergency;
@@ -51,7 +51,6 @@ exports.admitStudent = async (req, res) => {
         });
       }
 
-      // Check if student already exists
       let studentRecord = await Student.findOne({
         where: {
           [Op.and]: [
@@ -63,38 +62,36 @@ exports.admitStudent = async (req, res) => {
         }
       });
 
-      // if (studentRecord)
-      //   return res.status(400).json({ message: 'Student record already exists!' });
-
-      const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
-      studentRecord = await Student.create({
-        firstName,
-        middleName,
-        lastName,
-        email,
-        phone: uphone,
-        address,
-        dob,
-        gender,
-        nationality,
-        passportPhoto,
-        parentId: parentRecord.id,
-        password,
-        emergencyName,
-        emergencyTitle,
-        emergencyAddress,
-        emergencyPhone
-      });
+      if (!studentRecord) {
+        const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
+        studentRecord = await Student.create({
+          firstName,
+          middleName,
+          lastName,
+          email,
+          phone: uphone,
+          address,
+          dob,
+          gender,
+          nationality,
+          parentId: parentRecord.id,
+          password,
+          emergencyName,
+          emergencyTitle,
+          emergencyAddress,
+          emergencyPhone
+        });
+      }
 
       // Check if class student already exists
       let classRecord = await ClassStudent.findOne({
-        where: { studentId:studentRecord.id, classSessionId, academicYearId }
+        where: { studentId: studentRecord.id, classSessionId, academicYearId }
       });
 
-      if(!classRecord)
+      if (!classRecord)
         await ClassStudent.create({ studentId: studentRecord.id, classSessionId, academicYearId });
 
-      return res.status(200).json({ message: 'Student admitted successfully!' });
+      return res.status(200).json({ message: 'Student admitted successfully!', 'studentId': studentRecord.id });
 
     } catch (error) {
       console.error('Error saving admission data:', error);
@@ -115,35 +112,38 @@ exports.updateStudentDP = async (req, res) => {
       const studentId = req.params.id;
 
       // Validate request body
-      if (!url) 
+      if (!url) {
         return res.status(400).json({ message: "Image's url is required!" });
+      }
 
       // Find the student by ID
       const user = await Student.findByPk(studentId);
 
-      if (!user)
+      if (!user) {
         return res.status(404).json({ message: 'Student not found!' });
-
-      // Check if image url exists
-      if (user.passportPhoto) {
-        if (user.passportPhoto === url)
-          return res.status(400).json({ message: "The existing and updated images are identical!" })
-      
-        // Extract the public ID from the current URL
-        const publicId = user.passportPhoto.split('/').pop().split('.')[0];
-
-        // Delete old image from Cloudinary
-        await cloudinary.uploader.destroy(publicId, (error, result) => {
-          if (error) {
-            console.error('Error deleting old image from Cloudinary:', error);
-            return res.status(500).json({ message: 'Error deleting old image!' });
-          }
-        });
       }
 
-      //  update new DP
-      user.passportPhoto = url
+      const oldURL = user.passportPhoto;
+
+      if (oldURL === url) {
+        return res.status(400).json({ message: "The existing and updated images are identical!" });
+      }
+
+      // Update new DP
+      user.passportPhoto = url;
       await user.save();
+
+      // Extract the public ID from the current URL
+      const publicId = oldURL.split('/').pop().split('.')[0];
+
+      // Delete old image from Cloudinary
+      const result = await cloudinary.uploader.destroy(publicId);
+
+      if (result.result !== 'ok') {
+        console.error('Error deleting old image from Cloudinary:', result);
+        return res.status(500).json({ message: 'Error deleting old image!', 'OldImageURL': oldURL });
+      }
+
       return res.status(200).json({ message: 'Image updated successfully!' });
     } catch (error) {
       console.error('Error updating image:', error);
@@ -155,22 +155,64 @@ exports.updateStudentDP = async (req, res) => {
 // Get all students
 exports.allStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
-      const all = await Student.findAll({
+      // Find the active academic year and update its status if necessary
+      let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      if (activeAcademicYear) {
+        await activeAcademicYear.setInactiveIfEndDateDue();
+      }
+
+      // Fetch the updated active academic year
+      activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      if (!activeAcademicYear) {
+        return res.status(400).json({ message: "No active academic year available!" });
+      }
+
+      const allStudents = await Student.findAll({
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'firstName', 'middleName', 'lastName', 'role', 'email', 'phone', 'address', 'dob', 'gender', 'nationality', 'passportPhoto'], 
-        include: {
-          model: Parent, 
-          attributes: ['id', 'title', 'fullName', 'relationship', 'address', 'email']
-        },
-      })
-      return res.status(200).json({ 'students': all });
+      });
+
+      // Map through Class students and create promises to fetch classes
+      const promises = allStudents.map(async (student) => {
+        const classStudent = await ClassStudent.findOne({
+          where: { studentId: student.id, academicYearId: activeAcademicYear.id },
+          order: [['createdAt', 'DESC']],
+          include: {
+            model: Section,
+            attributes: ['id', 'name'],
+            include: {
+              model: Class,
+              attributes: ['id', 'name'],
+            },
+          },
+        });
+
+        // Check if classStudent record exists
+        let classSection = 'N/A';
+        if (classStudent)
+          classSection = `${classStudent.Section.Class.name} (${classStudent.Section.name})`;
+
+        // Return the formatted data along with the subjects in a class
+        return {
+          studentId: student.id,
+          fullName: `${student.firstName} ${student.middleName} ${student.lastName}`,
+          address: student.address,
+          passportPhoto: student.passportPhoto,
+          classSection: classSection,
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+      return res.status(200).json({ students: formattedResult });
     } catch (error) {
-      console.error('Error:', error.message);
+      console.error('Error fetching students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
+

@@ -3,16 +3,19 @@ Server << server >>: https://sms-backend-8vd4.onrender.com
 ADMIN ROLE
 1. // Staff Registration by Admin
 API: << server >>/api/v1/staff/register
+Method: POST
 Content: Required - (userName, firstName, lastName, role, email, phone, gender)
 Authorization: Bearer <token from login>
 DEV: << server >>/api/v1/staff/dev
 
 2. // Staff Login
 API: << server >>/api/v1/staff/login
+Method: POST
 Content: userID(phone/userName/email) and password
 
 3. // Resetting staff DEFAULT PASSWORD after Login
 API: << server >>/api/v1/staff/default-reset
+Method: POST
 Content: password
 Authorization: Bearer <token from login>
 
@@ -20,24 +23,29 @@ DEPARTMENT
 4. // Creating a new department
 API: << server >>/api/v1/department/create
 Content: name, department and hodId
+Method: POST
 Authorization: Bearer <token from login>
 
 5. // Update an existing department
 API: << server >>/api/v1/department/update/id
+Method: POST
 Authorization: Bearer <token from login>
 
 6. // Delete an existing department
 API: << server >>/api/v1/department/delete/id
+Method: GET
 Authorization: Bearer <token from login>
 
 7. // List of departments
 API: << server >>/api/v1/department/all
+Method: GET
 Authorization: Bearer <token from login>
 
 CLASS AND ITS SECTIONS
 8. // Creating a new class with sections
 API: << server >>/api/v1/class/create
 Content: name, grade, headTeacherId, sections
+Method: POST
 Authorization: Bearer <token from login>
 eg: {
   "className": "Primary 6",
@@ -52,24 +60,29 @@ eg: {
 9. // Update an existing class
 API: << server >>/api/v1/class/update/id
 Content: className, grade, headTeacherId
+Method: POST
 Authorization: Bearer <token from login>
 
 10. // Delete an existing class
 API: << server >>/api/v1/class/delete/id
+Method: GET
 Authorization: Bearer <token from login>
 
 11. // Create a new class section for a particular class
 API: << server >>/api/v1/class/create_class_section
+Method: POST
 Content: classId, name, capacity
 Authorization: Bearer <token from login>
 
 12. // Updating a class section
 API: << server >>/api/v1/class/update_section/classId/sectionId
+Method: POST
 Content: name, capacity
 Authorization: Bearer <token from login>
 
 13. // Delete an existing class section
 API: << server >>/api/v1/class/delete_section/classId/sectionId
+Method: GET
 Authorization: Bearer <token from login>
 
 14. // Fetching a particular class with its sections and assigned subjects 
@@ -78,115 +91,140 @@ Authorization: Bearer <token from login>
 
 15. // List of all classes
 API: << server >>/api/v1/class/all
+Method: GET
 Authorization: Bearer <token from login>
 
 16. // Get all class sections for multi select when assigning teachers
 API: << server >>/api/v1/class/sections
+Method: GET
 Authorization: Bearer <token from login>
 
 17. // Assign a subject to a class
 API: << server >>/api/v1/assigning/class_subject
 Content: classId, subjectId
+Method: POST
 Authorization: Bearer <token from login>
 
 18. // Deleting an assigned subject to a class
 API: << server >>/api/v1/assigning/delete_class_subject/classId/subjectId
+Method: GET
 router.get('/delete_class_subject/:classId/:subjectId', assignController.deleteAssignedClassSubject)
 
 19. // List of Teachers for hod and headTeacher dropdown options
 API: << server >>/api/v1/teacher/all
+Method: GET
 Authorization: Bearer <token from login>
 
 SUBJECT
 20. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
+Method: POST
 Authorization: Bearer <token from login>
 
 21. // Update an existing subject
 API: << server >>/api/v1/subject/update/id
+Method: POST
 Authorization: Bearer <token from login>
 
 22. // Delete an existing subject
 API: << server >>/api/v1/subject/delete/id
+Method: GET
 Authorization: Bearer <token from login>
 
 23. // List of created subjects for class assignments
 API: << server >>/api/v1/subject/all
+Method: GET
 Authorization: Bearer <token from login>
 
 24. // Fetch class assigned subjects for teacher assignments
 API: << server >>/api/v1/subject/all_class_subjects/classId
+Method: GET
 Authorization: Bearer <token from login>
 
 25. // Get student or staff details
 API: << server >>/api/v1/staff/details/id/role
+Method: GET
 NB: id and role are already in the initial response 
 Authorization: Bearer <token from login>
 
 26. // Update an existing staff
 API: << server >>/api/v1/staff/update/id
+Method: POST
 Authorization: Bearer <token from login>
 
 27. // Delete an existing staff
 API: << server >>/api/v1/staff/delete/id
+Method: GET
 Authorization: Bearer <token from login>
 
 28. // Assign a class to a teacher
 API: << server >>/api/v1/assigning/class
 Content: teacherId, classSectionId
+Method: POST
 Authorization: Bearer <token from login>
 
 29. // Assign a subject to a teacher
 API: << server >>/api/v1/assigning/subject
 Content: assignedTeacherId, subjectId
+Method: POST
 Authorization: Bearer <token from login>
 
 30. // Deleting an assigned subject for a particular teacher
 API: << server >>/api/v1/assigning/delete_assigned_subject/assignedTeacherId/subjectId
+Method: GET
 Authorization: Bearer <token from login>
 
 31. // Deleting an assigned class for a particular teacher
 API: << server >>/api/v1/assigning/delete_assigned_class/assignedTeacherId
+Method: GET
 Authorization: Bearer <token from login>
 
 32. // Get a teacher's assigned classes with subjects
 API: << server >>/api/v1/assigning/all/id
+Method: GET
 Authorization: Bearer <token from login>
 
 ACADEMIC YEAR AND TERM
 33. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
+Method: POST
 Content: name, startDate, endDate
 Authorization: Bearer <token from login>
 
 34. // Fetching the active academic year
 API: << server >>/api/v1/academic_year/active
+Method: GET
 Authorization: Bearer <token from login>
 
 35. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
+Method: POST
 Authorization: Bearer <token from login>
 
 36. // Fetching the active academic term
 API: << server >>/api/v1/academic_term/active
+Method: GET
 Authorization: Bearer <token from login>
 
 37. // List of all academic years
 API: << server >>/api/v1/academic_year/all
+Method: GET
 Authorization: Bearer <token from login>
 
 38. // List of all academic terms
 API: << server >>/api/v1/academic_term/all
+Method: GET
 Authorization: Bearer <token from login>
 
 <<FRONTEND TEST ENDED HERE>>
 STUDENT ADMISSION
 39. // Creating a new student, parent/guidian and assigninig to a class
 API: << server >>/api/v1/student/new_admission
+Method: POST
 Content: { 
-  student: {firstName, middleName, lastName, email, phone, address, dob, gender, nationality, passportPhoto },
+  student: {firstName, middleName, lastName, email, phone, address, dob, gender, nationality},
   parent: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone },
   parentEmployment: { occupation, employer, employerAddress, workPhone },
   emergency: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone },
@@ -195,11 +233,14 @@ Content: {
 Authorization: Bearer <token from login>
 
 40. // Update a student's DP url
-API: << server >>/api/v1/student/update_dp/id
+API: << server >>/api/v1/student/update_dp/studentId
+Content: url
+Method: POST
 Authorization: Bearer <token from login>
 
-41. // Fetch all students
+41. // Fetch all students for active academic year
 API: << server >>/api/v1/student/all
+Method: GET
 Authorization: Bearer <token from login>
 
 
