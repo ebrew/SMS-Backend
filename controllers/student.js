@@ -125,10 +125,6 @@ exports.updateStudentDP = async (req, res) => {
 
       const oldImgPublicId = JSON.parse(user.passportPhoto)?.public_id;
 
-      // if (oldURL === url) {
-      //   return res.status(400).json({ message: "The existing and updated images are identical!" });
-      // }
-
       // Update new DP
       user.passportPhoto = url;
       await user.save();
@@ -201,7 +197,7 @@ exports.allStudents = async (req, res) => {
         // Return the formatted data along with the subjects in a class
         return {
           studentId: student.id,
-          academicYearId: activeAcademicYear.id,
+          // academicYearId: activeAcademicYear.id,
           fullName: student.middleName ? `${student.firstName} ${student.middleName} ${student.lastName}`: `${student.firstName} ${student.lastName}`,
           address: student.address,
           passportPhoto: student.passportPhoto,
