@@ -133,6 +133,9 @@ exports.updateStudentDP = async (req, res) => {
       user.passportPhoto = url;
       await user.save();
 
+      if(!oldURL)
+        return res.status(200).json({ message: 'Image updated successfully!' });
+
       // Extract the public ID from the current URL
       const publicId = oldURL.split('/').pop().split('.')[0];
 
@@ -144,7 +147,6 @@ exports.updateStudentDP = async (req, res) => {
         return res.status(500).json({ message: 'Error deleting old image!', 'OldImageURL': oldURL });
       }
 
-      return res.status(200).json({ message: 'Image updated successfully!' });
     } catch (error) {
       console.error('Error updating image:', error);
       return res.status(500).json({ message: 'Unable to update image at the moment!' });
