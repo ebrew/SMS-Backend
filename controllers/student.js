@@ -199,7 +199,7 @@ exports.allStudents = async (req, res) => {
         // Return the formatted data along with the subjects in a class
         return {
           studentId: student.id,
-          fullName: `${student.firstName} ${student.middleName} ${student.lastName}`,
+          fullName: student.middleName ? `${student.firstName} ${student.middleName} ${student.lastName}`: `${student.firstName} ${student.lastName}`,
           address: student.address,
           passportPhoto: student.passportPhoto,
           classSection: classSection,
