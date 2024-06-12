@@ -123,24 +123,24 @@ exports.updateStudentDP = async (req, res) => {
         return res.status(404).json({ message: 'Student not found!' });
       }
 
-      const oldURL = user.passportPhoto;
+      const oldImgPublicId = JSON.parse(user.passportPhoto)?.public_id;
 
-      if (oldURL === url) {
-        return res.status(400).json({ message: "The existing and updated images are identical!" });
-      }
+      // if (oldURL === url) {
+      //   return res.status(400).json({ message: "The existing and updated images are identical!" });
+      // }
 
       // Update new DP
       user.passportPhoto = url;
       await user.save();
 
-      if(!oldURL)
+      if(!oldImgPublicId)
         return res.status(200).json({ message: 'Image updated successfully!' });
 
       // Extract the public ID from the current URL
-      const publicId = oldURL.split('/').pop().split('.')[0];
+      // const publicId = oldURL.split('/').pop().split('.')[0];
 
       // Delete old image from Cloudinary
-      const result = await cloudinary.uploader.destroy(publicId);
+      const result = await cloudinary.uploader.destroy(oldImgPublicId);
 
       if (result.result !== 'ok') {
         console.error('Error deleting old image from Cloudinary:', result);
