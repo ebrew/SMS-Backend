@@ -107,13 +107,11 @@ exports.getUser = async (req, res) => {
     try {
       const { id, role } = req.params;
 
-      // const ModelToUse = role === 'Student' ? Student : User;
-
       if (role === 'Student') {
         let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
         if (activeAcademicYear)
           await activeAcademicYear.setInactiveIfEndDateDue();
-        const academicYearId = await AcademicYear.findOne({ where: { status: 'Active' } }).id;
+        activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
 
         // Find the student by ID
         const student = await Student.findOne({
@@ -124,7 +122,7 @@ exports.getUser = async (req, res) => {
           },
         })
         const classStudent = await ClassStudent.findOne({
-          where: { studentId: id, academicYearId },
+          where: { studentId: id, academicYearId: activeAcademicYear.id },
           include: {
             model: Section,
             attributes: ['id', 'name'],
