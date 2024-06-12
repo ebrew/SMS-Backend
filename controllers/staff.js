@@ -113,7 +113,7 @@ exports.getUser = async (req, res) => {
         let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
         if (activeAcademicYear)
           await activeAcademicYear.setInactiveIfEndDateDue();
-        academicYearId = await AcademicYear.findOne({ where: { status: 'Active' } }).id;
+        const academicYearId = await AcademicYear.findOne({ where: { status: 'Active' } }).id;
 
         // Find the student by ID
         const student = await Student.findOne({
