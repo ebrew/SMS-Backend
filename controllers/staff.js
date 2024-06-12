@@ -72,7 +72,7 @@ exports.register = async (req, res) => {
       if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
         return res.status(400).json({ message: 'Incomplete fields!' });
 
-      const uPhone = normalizeGhPhone(phone)  // phone normalizatin
+      const uPhone = normalizeGhPhone(phone)  
       const alreadyExist = await User.findOne({
         where: {
           [Op.or]: [

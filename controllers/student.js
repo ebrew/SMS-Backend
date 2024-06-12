@@ -216,3 +216,66 @@ exports.allStudents = async (req, res) => {
   });
 };
 
+// Get a particular student's detailed info
+exports.studentDetails = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      // Find the active academic year and update its status if necessary
+      let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      if (activeAcademicYear) {
+        await activeAcademicYear.setInactiveIfEndDateDue();
+      }
+
+      // Fetch the updated active academic year
+      activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      if (!activeAcademicYear) {
+        return res.status(400).json({ message: "No active academic year available!" });
+      }
+
+      const allStudents = await Student.findAll({
+        order: [['firstName', 'ASC']],
+      });
+
+      // Map through Class students and create promises to fetch classes
+      const promises = allStudents.map(async (student) => {
+        const classStudent = await ClassStudent.findOne({
+          where: { studentId: student.id, academicYearId: activeAcademicYear.id },
+          order: [['createdAt', 'DESC']],
+          include: {
+            model: Section,
+            attributes: ['id', 'name'],
+            include: {
+              model: Class,
+              attributes: ['id', 'name'],
+            },
+          },
+        });
+
+        // Check if classStudent record exists
+        let classSection = 'N/A';
+        if (classStudent)
+          classSection = `${classStudent.Section.Class.name} (${classStudent.Section.name})`;
+
+        // Return the formatted data along with the subjects in a class
+        return {
+          studentId: student.id,
+          fullName: student.middleName ? `${student.firstName} ${student.middleName} ${student.lastName}`: `${student.firstName} ${student.lastName}`,
+          address: student.address,
+          passportPhoto: student.passportPhoto,
+          classSection: classSection,
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+      return res.status(200).json({ students: formattedResult });
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
