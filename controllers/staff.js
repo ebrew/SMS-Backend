@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, ResetRequest, Department, AssignedTeacher } = require("../db/models/index")
+const { User, Student, ResetRequest, Department, AssignedTeacher, ClassStudent } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -72,7 +72,7 @@ exports.register = async (req, res) => {
       if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
         return res.status(400).json({ message: 'Incomplete fields!' });
 
-      const uPhone = normalizeGhPhone(phone)  
+      const uPhone = normalizeGhPhone(phone)
       const alreadyExist = await User.findOne({
         where: {
           [Op.or]: [
@@ -107,17 +107,49 @@ exports.getUser = async (req, res) => {
     try {
       const { id, role } = req.params;
 
-      const ModelToUse = role === 'Student' ? Student : User;
+      // const ModelToUse = role === 'Student' ? Student : User;
 
-      const user = await ModelToUse.findOne({
-        where: { id },
-        // attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
-      })
+      if (role === 'Student') {
+        let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+        if (activeAcademicYear)
+          await activeAcademicYear.setInactiveIfEndDateDue();
+        academicYearId = await AcademicYear.findOne({ where: { status: 'Active' } }).id;
 
-      if (!user) 
-        return res.status(404).json({ message: 'User not found!' });
+        // Find the student by ID
+        const student = await Student.findOne({
+          where: { id },
+          include: {
+            model: Parent,
+            attributes: ['id', 'fullName', 'title', 'relationship', 'email', 'phone', 'address', 'homePhone', 'occupation', 'employer', 'employerAddress', 'workPhone']
+          },
+        })
+        const classStudent = await ClassStudent.findOne({
+          where: { studentId: id, academicYearId },
+          include: {
+            model: Section,
+            attributes: ['id', 'name'],
+            include: {
+              model: Class,
+              attributes: ['id', 'name'],
+            },
+          },
+        })
 
-      return res.status(200).json({ 'user': user });
+        const formattedResult = {
+          studentId: id,
+          parent: student.parent,
+          student: student,
+          assignedClassId: classStudent.id,
+          classSection: `${classStudent.Section.Class.name} (${classStudent.Section.name})`
+        };
+        return res.status(200).json({ student: formattedResult });
+      } else {
+        const user = await User.findOne({
+          where: { id },
+          attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
+        })
+        return res.status(200).json({ 'user': user });
+      }
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -137,7 +169,7 @@ exports.updateStaff = async (req, res) => {
       const staffId = req.params.id;
 
       // Validate request body
-      if (!userName || !firstName || !lastName || !role || !email || !phone || !gender) 
+      if (!userName || !firstName || !lastName || !role || !email || !phone || !gender)
         return res.status(400).json({ message: 'Important fields cannot be left blank!' });
 
       // Find the staff by ID
@@ -192,13 +224,13 @@ exports.deleteStaff = async (req, res) => {
       // Check if a class is assigned to the staff
       const assignment = await AssignedTeacher.findOne({ where: { teacherId: staffId } });
 
-      if (assignment) 
+      if (assignment)
         return res.status(400).json({ message: 'Cannot delete staff as the staff has been assigned to one or more classes!' });
 
       // If no assignments, proceed to delete 
-      const result =  await User.destroy({ where: { id: staffId} });
+      const result = await User.destroy({ where: { id: staffId } });
 
-      if(result === 0)
+      if (result === 0)
         return res.status(400).json({ message: 'Staff not found!' });
 
       return res.status(200).json({ message: 'Staff deleted successfully!' });
@@ -319,7 +351,7 @@ exports.passwordResetRequest = async (req, res) => {
 
       // Latif has to redirect if mail link is used
       const link = `${process.env.APP_URL}/staff/admin-reset-password/${resetToken}`;
-      const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);  
+      const send = await Mail.sendRequestMailToAdmin(email, link, message, salutation);
 
       // if (!send)
       //   return res.status(200).json({ message: "Request sent but email notification failed! Admin will act soon!" });

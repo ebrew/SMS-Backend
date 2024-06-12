@@ -243,6 +243,11 @@ API: << server >>/api/v1/student/all
 Method: GET
 Authorization: Bearer <token from login>
 
+42. // Get a particular student's detailed info
+API: << server >>/api/v1/student/studentId/activeAcademicYearId
+Method: GET
+Authorization: Bearer <token from login>
+
 
 
 
