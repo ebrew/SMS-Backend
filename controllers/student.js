@@ -299,7 +299,7 @@ exports.updateStudentParentDetails = async (req, res) => {
 
     try {
       const { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = req.body;
-      const { parentId } = req.params.id;
+      const { parentId } = req.params;
 
       // Find the parent by ID
       const parent = await Parent.findByPk(parentId);
@@ -337,7 +337,7 @@ exports.updateParentEmployment = async (req, res) => {
 
     try {
       const { occupation, employer, employerAddress, workPhone } = req.body;
-      const { parentId } = req.params.id;
+      const { parentId } = req.params;
 
       // Find the parent by ID
       const parent = await Parent.findByPk(parentId);
@@ -372,13 +372,14 @@ exports.updateStudentClass = async (req, res) => {
 
     try {
       const { classSessionId } = req.body;
-      const { assignedClassId } = req.params.assignedClassId;
+      const { assignedClassId } = req.params; 
 
       // Find the student class by ID
       const studentClass = await ClassStudent.findByPk(assignedClassId);
 
-      if (!studentClass)
+      if (!studentClass) {
         return res.status(404).json({ message: 'Class section not found!' });
+      }
 
       // Update class
       studentClass.classSessionId = classSessionId;
