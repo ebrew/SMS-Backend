@@ -239,7 +239,6 @@ exports.updateStudentDetails = async (req, res) => {
       student.email = email !== ""? email.toLowerCase() : null
       student.phone = phone !== "" ? normalizeGhPhone(phone) : null;
       student.gender = gender;
-      student.departmentId = departmentId === 0 ? null : departmentId;
       student.address = address;
       student.dob = dob;
       student.nationality = nationality
