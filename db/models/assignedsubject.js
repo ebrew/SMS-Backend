@@ -7,7 +7,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.belongsTo(models.AssignedTeacher, { foreignKey: 'assignedTeacherId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
       this.belongsTo(models.Subject, { foreignKey: 'subjectId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-
     }
   }
   AssignedSubject.init({

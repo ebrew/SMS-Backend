@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       this.belongsTo(models.Department, { foreignKey: 'departmentId', onDelete: 'SET NULL', onUpdate:'CASCADE' });
+      this.hasMany(models.AssignedTeacher, { foreignKey: 'teacherId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
+      this.hasMany(models.ResetRequest, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
     }
   }
   User.init({

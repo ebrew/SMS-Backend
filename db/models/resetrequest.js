@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   ResetRequest.init({
-    isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue:false}, // 
+    isPasswordReset: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue:false}, 
     userId: { type: DataTypes.INTEGER, allowNull: true },
     studentId: { type: DataTypes.INTEGER, allowNull: true },
   }, {

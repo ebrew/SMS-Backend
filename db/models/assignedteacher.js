@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.User, { foreignKey: 'teacherId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
       this.belongsTo(models.Section, { foreignKey: 'classId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
       this.belongsTo(models.AcademicTerm, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
+      this.hasMany(models.AssignedSubject, { foreignKey: 'assignedTeacherId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
     }
   }
   AssignedTeacher.init({

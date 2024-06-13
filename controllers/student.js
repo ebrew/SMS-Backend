@@ -42,11 +42,11 @@ exports.admitStudent = async (req, res) => {
           address: parentAddress,
           email: parentEmail,
           phone: normalizeGhPhone(parentPhone),
-          homePhone,
+          homePhone: homePhone !== "" ? normalizeGhPhone(homePhone) : null,
           occupation,
           employer,
           employerAddress,
-          workPhone,
+          workPhone: workPhone !== "" ? normalizeGhPhone(workPhone) : null,
           password
         });
       }
@@ -63,13 +63,13 @@ exports.admitStudent = async (req, res) => {
       });
 
       if (!studentRecord) {
-        const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
+        // const uphone = phone !== "" ? normalizeGhPhone(phone) : null;
         studentRecord = await Student.create({
           firstName,
           middleName,
           lastName,
           email,
-          phone: uphone,
+          phone: phone !== "" ? normalizeGhPhone(phone) : null,
           address,
           dob,
           gender,
@@ -79,7 +79,7 @@ exports.admitStudent = async (req, res) => {
           emergencyName,
           emergencyTitle,
           emergencyAddress,
-          emergencyPhone
+          emergencyPhone: emergencyPhone !== ""? normalizeGhPhone(emergencyPhone) : null
         });
       }
 
@@ -215,3 +215,181 @@ exports.allStudents = async (req, res) => {
   });
 };
 
+// Update student details
+exports.updateStudentDetails = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { firstName, middleName, lastName, email, phone, address, dob, gender, nationality } = req.body;
+      const studentId = req.params.id;
+
+      // Find the student by ID
+      const student = await Student.findByPk(studentId);
+
+      if (!student)
+        return res.status(404).json({ message: 'Student not found!' });
+
+      // Update student attributes
+      student.firstName = firstName;
+      student.lastName = lastName;
+      student.middleName = middleName
+      student.email = email !== ""? email.toLowerCase() : null
+      student.phone = phone !== "" ? normalizeGhPhone(phone) : null;
+      student.gender = gender;
+      student.departmentId = departmentId === 0 ? null : departmentId;
+      student.address = address;
+      student.dob = dob;
+      student.nationality = nationality
+
+      // Save the updated staff
+      await student.save();
+
+      // Respond with success message
+      return res.status(200).json({ message: 'Student updated successfully!' });
+    } catch (error) {
+      console.error('Error updating staff:', error);
+      return res.status(500).json({ message: 'Unable to update student at the moment!' });
+    }
+  });
+};
+
+// Update student emegency contact info
+exports.updateStudentEmergencyContact = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone } = req.body;
+      const studentId = req.params.id;
+
+      // Find the student by ID
+      const student = await Student.findByPk(studentId);
+
+      if (!student)
+        return res.status(404).json({ message: 'Student not found!' });
+
+      // Update student attributes
+      student.emergencyName = emergencyName;
+      student.emergencyTitle = emergencyTitle;
+      student.emergencyAddress = emergencyAddress
+      student.emergencyPhone = emergencyPhone !== ""? normalizeGhPhone(emergencyPhone) : null
+
+      // Save the updated staff
+      await student.save();
+
+      // Respond with success message
+      return res.status(200).json({ message: 'Student updated successfully!' });
+    } catch (error) {
+      console.error('Error updating student:', error);
+      return res.status(500).json({ message: 'Unable to update student at the moment!' });
+    }
+  });
+};
+
+// Update student's parent's info
+exports.updateStudentParentDetails = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = req.body;
+      const { parentId } = req.params.id;
+
+      // Find the parent by ID
+      const parent = await Parent.findByPk(parentId);
+
+      if (!parent)
+        return res.status(404).json({ message: 'Parent not found!' });
+
+      // Update parent attributes
+      parent.fullName = parentFullName;
+      parent.title = title;
+      parent.relationship = relationship
+      parent.address = parentAddress
+      parent.email = parentEmail !== ""? parentEmail.toLowerCase() : null
+      parent.phone = parentPhone !== "" ? normalizeGhPhone(parentPhone) : null;
+      parent.homePhone = homePhone !== "" ? normalizeGhPhone(homePhone) : null;
+
+      // Save the updated staff
+      await parent.save();
+
+      // Respond with success message
+      return res.status(200).json({ message: 'Parent updated successfully!' });
+    } catch (error) {
+      console.error('Error updating parent:', error);
+      return res.status(500).json({ message: 'Unable to update parent record at the moment!' });
+    }
+  });
+};
+
+// Update student's parent's employment info
+exports.updateParentEmployment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { occupation, employer, employerAddress, workPhone } = req.body;
+      const { parentId } = req.params.id;
+
+      // Find the parent by ID
+      const parent = await Parent.findByPk(parentId);
+
+      if (!parent)
+        return res.status(404).json({ message: 'Parent not found!' });
+
+      // Update parent attributes
+      parent.occupation = occupation;
+      parent.employer = employer;
+      parent.employerAddress = employerAddress
+      parent.workPhone = workPhone !== "" ? normalizeGhPhone(workPhone) : null;
+
+      // Save the updated staff
+      await parent.save();
+
+      // Respond with success message
+      return res.status(200).json({ message: 'Parent updated successfully!' });
+    } catch (error) {
+      console.error('Error updating parent:', error);
+      return res.status(500).json({ message: 'Unable to update parent record at the moment!' });
+    }
+  });
+};
+
+// Update student's class
+exports.updateStudentClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { classSessionId } = req.body;
+      const { assignedClassId } = req.params.assignedClassId;
+
+      // Find the student class by ID
+      const studentClass = await ClassStudent.findByPk(assignedClassId);
+
+      if (!studentClass)
+        return res.status(404).json({ message: 'Class section not found!' });
+
+      // Update class
+      studentClass.classSessionId = classSessionId;
+      await studentClass.save();
+
+      // Respond with success message
+      return res.status(200).json({ message: 'Class updated successfully!' });
+    } catch (error) {
+      console.error('Error updating class:', error);
+      return res.status(500).json({ message: 'Unable to update class record at the moment!' });
+    }
+  });
+};

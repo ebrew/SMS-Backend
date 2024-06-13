@@ -11,6 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.User, { foreignKey: 'headTeacherId', onDelete: 'SET NULL', onUpdate:'CASCADE'  });
+      this.hasMany(models.Section, { foreignKey: 'classId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
+      this.hasMany(models.ClassSubject, { foreignKey: 'classId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
     }
   }
   Class.init({

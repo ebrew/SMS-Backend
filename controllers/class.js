@@ -359,6 +359,7 @@ exports.deleteClass = async (req, res) => {
         return res.status(400).json({ message: 'Cannot delete class as one or more of its sections been assigned to one or more teachers!' });
       
       // If no assignments, proceed to delete 
+      
       const result = await Class.destroy({ where: { id: classId} });
 
       if (result === 0) {

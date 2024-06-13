@@ -12,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.Parent, { foreignKey: 'parentId', onDelete: 'RESTRICT', onUpdate:'CASCADE' });
+      this.hasMany(models.ClassStudent, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
+      this.hasMany(models.ResetRequest, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
     }
   }
   Student.init({
