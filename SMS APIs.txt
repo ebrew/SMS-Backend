@@ -247,31 +247,31 @@ Authorization: Bearer <token from login>
 42. // Update student details
 API: << server >>/api/v1/student/update_details/studentId
 Content: { firstName, middleName, lastName, email, phone, address, dob, gender, nationality }
-Method: PATCH
+Method: PUT
 Authorization: Bearer <token from login>
 
 43. // Update student emegency contact info
 API: << server >>/api/v1/student/update_emergency_info/studentId
 Content: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone }
-Method: PATCH
+Method: PUT
 Authorization: Bearer <token from login>
 
 44. // Update student's parent's info
 API: << server >>/api/v1/student/update_parent_details/parentId
 Content: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone }
-Method: PATCH
+Method: PUT
 Authorization: Bearer <token from login>
 
 45. // Update student's parent's employment info
 API: << server >>/api/v1/student/update_parent_employment/parentId
 Content: { occupation, employer, employerAddress, workPhone }
-Method: PATCH
+Method: PUT
 Authorization: Bearer <token from login>
 
 46. // Update a student's class
 API: << server >>/api/v1/student/update_student_class/assignedClassId
 Content: { classSessionId }
-Method: PATCH
+Method: PUT
 Authorization: Bearer <token from login>
 
 
