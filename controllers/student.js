@@ -249,7 +249,7 @@ exports.updateStudentDetails = async (req, res) => {
       // Respond with success message
       return res.status(200).json({ message: 'Student updated successfully!' });
     } catch (error) {
-      console.error('Error updating staff:', error);
+      console.error('Error updating student:', error);
       return res.status(500).json({ message: 'Unable to update student at the moment!' });
     }
   });
