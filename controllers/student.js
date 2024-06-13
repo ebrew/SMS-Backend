@@ -299,7 +299,7 @@ exports.updateStudentParentDetails = async (req, res) => {
 
     try {
       const { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = req.body;
-      const { parentId } = req.params;
+      const parentId = req.params.id;
 
       // Find the parent by ID
       const parent = await Parent.findByPk(parentId);
@@ -337,7 +337,7 @@ exports.updateParentEmployment = async (req, res) => {
 
     try {
       const { occupation, employer, employerAddress, workPhone } = req.body;
-      const { parentId } = req.params;
+      const parentId = req.params.id;
 
       // Find the parent by ID
       const parent = await Parent.findByPk(parentId);
