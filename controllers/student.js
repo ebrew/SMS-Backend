@@ -236,8 +236,8 @@ exports.updateStudentDetails = async (req, res) => {
       student.firstName = firstName;
       student.lastName = lastName;
       student.middleName = middleName
-      student.email = email ? email.toLowerCase() : null
-      student.phone = phone ? normalizeGhPhone(phone) : null;
+      student.email = email ? email.toLowerCase() : ""
+      student.phone = phone ? normalizeGhPhone(phone) : "";
       student.gender = gender;
       student.address = address;
       student.dob = dob;
@@ -276,7 +276,7 @@ exports.updateStudentEmergencyContact = async (req, res) => {
       student.emergencyName = emergencyName;
       student.emergencyTitle = emergencyTitle;
       student.emergencyAddress = emergencyAddress
-      student.emergencyPhone = emergencyPhone ? normalizeGhPhone(emergencyPhone) : null
+      student.emergencyPhone = emergencyPhone ? normalizeGhPhone(emergencyPhone) : ""
 
       // Save the updated staff
       await student.save();
@@ -312,9 +312,9 @@ exports.updateStudentParentDetails = async (req, res) => {
       parent.title = title;
       parent.relationship = relationship
       parent.address = parentAddress
-      parent.email = parentEmail ? parentEmail.toLowerCase() : null
-      parent.phone = parentPhone ? normalizeGhPhone(parentPhone) : null;
-      parent.homePhone = homePhone ? normalizeGhPhone(homePhone) : null;
+      parent.email = parentEmail ? parentEmail.toLowerCase() : ""
+      parent.phone = parentPhone ? normalizeGhPhone(parentPhone) : "";
+      parent.homePhone = homePhone ? normalizeGhPhone(homePhone) : "";
 
       // Save the updated staff
       await parent.save();
@@ -349,7 +349,7 @@ exports.updateParentEmployment = async (req, res) => {
       parent.occupation = occupation;
       parent.employer = employer;
       parent.employerAddress = employerAddress
-      parent.workPhone = workPhone ? normalizeGhPhone(workPhone) : null;
+      parent.workPhone = workPhone ? normalizeGhPhone(workPhone) : "";
 
       // Save the updated staff
       await parent.save();
