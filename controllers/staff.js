@@ -138,6 +138,7 @@ exports.getUser = async (req, res) => {
           parent: student.parent,
           student: student,
           assignedClassId: classStudent.id,
+          classSectionId: classStudent.Section.id,
           classSection: `${classStudent.Section.Class.name} (${classStudent.Section.name})`
         };
         return res.status(200).json({ student: formattedResult });
