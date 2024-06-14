@@ -104,10 +104,10 @@ exports.teacherClassSubjectAndStudent = async (req, res) => {
       // Fetching class students
       const students = await ClassStudent.findAll({
         where: { classSessionId, academicYearId: activeAcademicYear.id },
-        order: [['firstName', 'ASC']],
         include: {
           model: Student,
           attributes: ['id', 'firstName', 'middleName', 'lastName'],
+          order: [['firstName', 'ASC']],
         }
       });
 
