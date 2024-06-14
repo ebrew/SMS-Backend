@@ -5,5 +5,10 @@ const teacherController = require('../controllers/teacher');
 // Get all classes
 router.get('/all', teacherController.allTeachers);
 
+// Get a teacher's assigned classes after login
+router.get('/assigned_classes/:id', teacherController.getAssignedTeacherClass)
+
+// Get a teacher's assigned class's subjects and students
+router.get('/class_students_subjects/:classSessionId/:assignedTeacherId', teacherController.teacherClassSubjectAndStudent)
 
 module.exports = router;

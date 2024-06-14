@@ -243,7 +243,6 @@ API: << server >>/api/v1/student/all
 Method: GET
 Authorization: Bearer <token from login>
 
-<<FRONTEND TEST ENDED HERE>>
 42. // Update student details
 API: << server >>/api/v1/student/update_details/studentId
 Content: { firstName, middleName, lastName, email, phone, address, dob, gender, nationality }
@@ -272,6 +271,19 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/student/update_student_class/assignedClassId
 Content: { classSessionId }
 Method: PUT
+Authorization: Bearer <token from login>
+
+
+TEACHER ROLE
+<<FRONTEND TEST ENDED HERE>>
+1. // Get a teacher's assigned classes after login
+API: << server >>/api/v1/teacher/assigned_classes/teacherId
+Method: GET
+Authorization: Bearer <token from login>
+
+2. // Get a teacher's assigned class's subjects and students
+API: << server >>/api/v1/teacher/class_students_subjects/classSessionId/assignedTeacherId
+Method: GET
 Authorization: Bearer <token from login>
 
 
