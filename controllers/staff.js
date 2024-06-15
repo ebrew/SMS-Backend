@@ -52,8 +52,17 @@ exports.login = async (req, res) => {
     //   { tokens: [...oldTokens, { token, signedAt: Date.now().toString() }] },
     //   { where: { id: user.id } }
     // );
+    const result = {
+      message: 'Logged in successfully!', 
+      "isPasswordReset": user.isPasswordReset, 
+      "token": token,
+      "id": user.id,
+      "role": user.role,
+      "firstName": user.firstName, 
+      "lastName": user.lastName
+    }
 
-    return res.status(200).json({ message: 'Logged in successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
+    return res.status(200).json(result);
   } catch (error) {
     console.error('Error:', error.message);
     return res.status(500).json({ message: "Can't login at the moment!" });
@@ -265,7 +274,17 @@ exports.defaultReset = async (req, res) => {
       user.password = await bcrypt.hash(password, 10);
       user.isPasswordReset = true;
       await user.save();
-      return res.status(200).json({ message: 'Password reset successfully!', "isPasswordReset": user.isPasswordReset, "token": token });
+
+      const result = {
+        message: 'Logged in successfully!', 
+        "isPasswordReset": user.isPasswordReset, 
+        "token": token,
+        "id": user.id,
+        "role": user.role,
+        "firstName": user.firstName, 
+        "lastName": user.lastName
+      }
+      return res.status(200).json(result);
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot reset password at the moment!' });
