@@ -99,7 +99,7 @@ API: << server >>/api/v1/class/sections
 Method: GET
 Authorization: Bearer <token from login>
 
-17. // Assign a subject to a class
+17. // Assign a subject to a class, all sections under this class automatically get this subject assigned
 API: << server >>/api/v1/assigning/class_subject
 Content: classId, subjectId
 Method: POST
@@ -137,7 +137,8 @@ API: << server >>/api/v1/subject/all
 Method: GET
 Authorization: Bearer <token from login>
 
-24. // Fetch class assigned subjects for teacher assignments
+24. // Fetch class assigned subjects for teacher assignments; 
+This gives a list of subjects assigned to a class from API 17 for individual teacher assignments
 API: << server >>/api/v1/subject/all_class_subjects/classId
 Method: GET
 Authorization: Bearer <token from login>
@@ -164,7 +165,7 @@ Content: teacherId, classSectionId
 Method: POST
 Authorization: Bearer <token from login>
 
-29. // Assign a subject to a teacher
+29. // Assign a subject to a teacher from already assigned class subjects (API 24)
 API: << server >>/api/v1/assigning/subject
 Content: assignedTeacherId, subjectId
 Method: POST
@@ -217,7 +218,6 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/academic_term/all
 Method: GET
 Authorization: Bearer <token from login>
-
 
 STUDENT ADMISSION
 39. // Creating a new student, parent/guidian and assigninig to a class
@@ -276,12 +276,12 @@ Authorization: Bearer <token from login>
 
 TEACHER ROLE
 <<FRONTEND TEST ENDED HERE>>
-1. // Get a teacher's assigned classes after login
+47. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-2. // Get a teacher's assigned class's subjects and students
+48. // Get a teacher's assigned class's subjects and students
 API: << server >>/api/v1/teacher/class_students_subjects/classSessionId/assignedTeacherId
 Method: GET
 Authorization: Bearer <token from login>

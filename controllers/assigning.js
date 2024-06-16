@@ -176,6 +176,7 @@ exports.assignedTeacher = async (req, res) => {
         return {
           assignedTeacherId: data.id,
           classSection: `${data.Section.Class.name} (${data.Section.name})`,
+          classId: data.Section.Class.id,
           subjects: assignedSubjects,
         };
       });
