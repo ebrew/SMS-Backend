@@ -554,9 +554,9 @@ exports.allStaff = async (req, res) => {
 // Developer registering Admin
 exports.devAddAdmin = async (req, res) => {
   try {
-    const { userName, firstName, lastName, email, phone, gender } = req.body;
+    const { userName, firstName, lastName, email, phone } = req.body;
 
-    if (!userName || !firstName || !lastName || !email || !phone || !gender)
+    if (!userName || !firstName || !lastName || !email || !phone)
       return res.status(400).json({ message: 'Incomplete fields!' });
 
     const uPhone = normalizeGhPhone(phone)
@@ -575,7 +575,7 @@ exports.devAddAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Admin already exist!' });
 
     const password = process.env.DEFAULT_PASSWORD;
-    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role: 'Admin', gender, password });
+    const newStaff = new User({ userName, firstName, lastName, email, phone: uPhone, role: 'Admin', gender: 'Male', password });
     await newStaff.save()
     return res.status(200).json({ message: 'Admin created successfully!' });
   } catch (error) {

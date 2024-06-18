@@ -46,26 +46,46 @@ exports.assignSubject = async (req, res) => {
 
     try {
       const { assignedTeacherId, subjectId } = req.body;
+      let alreadyAssigned = false;
+      let teacher;
 
       if (!assignedTeacherId || !subjectId)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      if (assignedTeacherId === '0' || subjectId === '0')
-        return res.status(400).json({ message: 'You must select the necessary fields!' });
+      // if (assignedTeacherId === '0' || subjectId === '0')
+      //   return res.status(400).json({ message: 'You must select the necessary fields!' });
 
       // Check if the assigned teacher record already exists for this class
       const isExist = await AssignedSubject.findOne({ where: { subjectId, assignedTeacherId } });
 
       if (isExist)
-        return res.status(400).json({ message: 'Selected subject already assigned to the specified teacher!' });
+        return res.status(400).json({ message: 'Subject already assigned to the specified teacher!' });
+
+      // checking if the subject has been assigned to a different teacher in the same class
+      const assigned = await AssignedTeacher.findByPk(assignedTeacherId);
+      const assignedClass = await AssignedTeacher.findAll({
+        where: { classId: assigned.classId },
+        include: { model: User, attributes: ['firstName', 'lastName'] }
+      });
+
+      for (const data of assignedClass) {
+        const check = await AssignedSubject.findOne({ where: { subjectId, assignedTeacherId: data.id } });
+        if (check) {
+          alreadyAssigned = true;
+          teacher = `teacher ${data.User.firstName} ${data.User.lastName}`;
+          break;
+        }
+      }
+
+      if (alreadyAssigned)
+        return res.status(400).json({ message: `Subject already assigned to ${teacher}!` });
 
       // Create the subject
       await AssignedSubject.create({ assignedTeacherId, subjectId });
 
-      res.status(200).json({ message: 'Specified subject assigned successfully!' });
-
+      res.status(200).json({ message: 'Subject assigned successfully!' });
     } catch (error) {
-      console.error('Error creating class:', error);
+      console.error('Error assigning subject:', error);
       res.status(500).json({ message: "Can't assign the subject at the moment!" });
     }
   });
@@ -90,7 +110,7 @@ exports.deleteAssignedClass = async (req, res) => {
       // If no assignments, proceed to delete 
       const result = await AssignedTeacher.destroy({ where: { id: assignedTeacherId } });
 
-      if(result === 0)
+      if (result === 0)
         return res.status(400).json({ message: 'Assigned class not found!' });
 
       return res.status(200).json({ message: 'Assigned class removed successfully!' });
@@ -117,7 +137,7 @@ exports.deleteAssignedSubject = async (req, res) => {
 
       const result = await AssignedSubject.destroy({ where: { assignedTeacherId, subjectId } });
 
-      if(result === 0)
+      if (result === 0)
         return res.status(400).json({ message: 'Assigned subject not found!' });
 
       return res.status(200).json({ message: 'Assigned subject removed successfully!' });
@@ -229,7 +249,7 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const {classId, subjectId } = req.params;
+      const { classId, subjectId } = req.params;
 
       // Check if the subject is assigned to any teachers
       const assignments = await AssignedSubject.findAll({ where: { subjectId } });
@@ -241,7 +261,7 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       // If no assignments, proceed to delete 
       const result = await ClassSubject.destroy({ where: { classId, subjectId } });
 
-      if(result === 0)
+      if (result === 0)
         return res.status(400).json({ message: 'Assigned subject not found!' });
 
       return res.status(200).json({ message: 'Assigned subject removed successfully!' });

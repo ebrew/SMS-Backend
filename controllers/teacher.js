@@ -106,7 +106,7 @@ exports.teacherClassSubjectAndStudent = async (req, res) => {
         where: { classSessionId, academicYearId: activeAcademicYear.id },
         include: {
           model: Student,
-          attributes: ['id', 'firstName', 'middleName', 'lastName'],
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'passportPhoto'],
           order: [['firstName', 'ASC']],
         }
       });
@@ -116,12 +116,14 @@ exports.teacherClassSubjectAndStudent = async (req, res) => {
         fullName: student.Student.middleName 
           ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
           : `${student.Student.firstName} ${student.Student.lastName}`,
-        academicYearId: activeAcademicYear.id
+        address: student.Student.address,
+        photo: student.Student.passportPhoto
       }));
 
       const result = {
         classStudents,
-        assignedSubjects
+        assignedSubjects,
+        academicYearId: activeAcademicYear.id
       };
 
       return res.status(200).json({ assigned: result });
