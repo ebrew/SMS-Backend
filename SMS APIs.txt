@@ -90,138 +90,142 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/class/get_class/id
 Authorization: Bearer <token from login>
 
-15. // List of all classes
+15. // Fetching a particular section
+API: << server >>/api/v1/class/get_section/id
+Authorization: Bearer <token from login>
+
+16. // List of all classes
 API: << server >>/api/v1/class/all
 Method: GET
 Authorization: Bearer <token from login>
 
-16. // Get all class sections for multi select when assigning teachers
+17. // Get all class sections for multi select when assigning teachers
 API: << server >>/api/v1/class/sections
 Method: GET
 Authorization: Bearer <token from login>
 
-17. // Assign a subject to a class, all sections under this class automatically get this subject assigned
+18. // Assign a subject to a class, all sections under this class automatically get this subject assigned
 API: << server >>/api/v1/assigning/class_subject
 Content: classId, subjectId
 Method: POST
 Authorization: Bearer <token from login>
 
-18. // Deleting an assigned subject to a class
+19. // Deleting an assigned subject to a class
 API: << server >>/api/v1/assigning/delete_class_subject/classId/subjectId
 Method: GET
 router.get('/delete_class_subject/:classId/:subjectId', assignController.deleteAssignedClassSubject)
 
-19. // List of Teachers for hod and headTeacher dropdown options
+20. // List of Teachers for hod and headTeacher dropdown options
 API: << server >>/api/v1/teacher/all
 Method: GET
 Authorization: Bearer <token from login>
 
 SUBJECT
-20. // Creating a new subject
+21. // Creating a new subject
 API: << server >>/api/v1/subject/create
 Content: name, code and description
 Method: POST
 Authorization: Bearer <token from login>
 
-21. // Update an existing subject
+22. // Update an existing subject
 API: << server >>/api/v1/subject/update/id
 Method: POST
 Authorization: Bearer <token from login>
 
-22. // Delete an existing subject
+23. // Delete an existing subject
 API: << server >>/api/v1/subject/delete/id
 Method: GET
 Authorization: Bearer <token from login>
 
-23. // List of created subjects for class assignments
+24. // List of created subjects for class assignments
 API: << server >>/api/v1/subject/all
 Method: GET
 Authorization: Bearer <token from login>
 
-24. // Fetch class assigned subjects for teacher assignments; 
+25. // Fetch class assigned subjects for teacher assignments; 
 This gives a list of subjects assigned to a class from API 17 for individual teacher assignments
 API: << server >>/api/v1/subject/all_class_subjects/classId
 Method: GET
 Authorization: Bearer <token from login>
 
-25. // Get student or staff details
+26. // Get student or staff details
 API: << server >>/api/v1/staff/details/id/role
 Method: GET
 NB: id and role are already in the initial response 
 Authorization: Bearer <token from login>
 
-26. // Update an existing staff
+27. // Update an existing staff
 API: << server >>/api/v1/staff/update/id
 Method: POST
 Authorization: Bearer <token from login>
 
-27. // Delete an existing staff
+28. // Delete an existing staff
 API: << server >>/api/v1/staff/delete/id
 Method: GET
 Authorization: Bearer <token from login>
 
-28. // Assign a class to a teacher
+29. // Assign a class to a teacher
 API: << server >>/api/v1/assigning/class
 Content: teacherId, classSectionId
 Method: POST
 Authorization: Bearer <token from login>
 
-29. // Assign a subject to a teacher from already assigned class subjects (API 24)
+30. // Assign a subject to a teacher from already assigned class subjects (API 24)
 API: << server >>/api/v1/assigning/subject
 Content: assignedTeacherId, subjectId
 Method: POST
 Authorization: Bearer <token from login>
 
-30. // Deleting an assigned subject for a particular teacher
+31. // Deleting an assigned subject for a particular teacher
 API: << server >>/api/v1/assigning/delete_assigned_subject/assignedTeacherId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-31. // Deleting an assigned class for a particular teacher
+32. // Deleting an assigned class for a particular teacher
 API: << server >>/api/v1/assigning/delete_assigned_class/assignedTeacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-32. // Get a teacher's assigned classes with subjects
+33. // Get a teacher's assigned classes with subjects
 API: << server >>/api/v1/assigning/all/id
 Method: GET
 Authorization: Bearer <token from login>
 
 ACADEMIC YEAR AND TERM
-33. // Creating a new academic year
+34. // Creating a new academic year
 API: << server >>/api/v1/academic_year/create
 Method: POST
 Content: name, startDate, endDate
 Authorization: Bearer <token from login>
 
-34. // Fetching the active academic year
+35. // Fetching the active academic year
 API: << server >>/api/v1/academic_year/active
 Method: GET
 Authorization: Bearer <token from login>
 
-35. // Creating a new academic term
+36. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
 Method: POST
 Authorization: Bearer <token from login>
 
-36. // Fetching the active academic term
+37. // Fetching the active academic term
 API: << server >>/api/v1/academic_term/active
 Method: GET
 Authorization: Bearer <token from login>
 
-37. // List of all academic years
+38. // List of all academic years
 API: << server >>/api/v1/academic_year/all
 Method: GET
 Authorization: Bearer <token from login>
 
-38. // List of all academic terms
+39. // List of all academic terms
 API: << server >>/api/v1/academic_term/all
 Method: GET
 Authorization: Bearer <token from login>
 
 STUDENT ADMISSION
-39. // Creating a new student, parent/guidian and assigninig to a class
+40. // Creating a new student, parent/guidian and assigninig to a class
 API: << server >>/api/v1/student/new_admission
 Method: POST
 Content: { 
@@ -233,42 +237,42 @@ Content: {
 }
 Authorization: Bearer <token from login>
 
-40. // Update a student's DP url
+41. // Update a student's DP url
 API: << server >>/api/v1/student/update_dp/studentId
 Content: url
 Method: POST
 Authorization: Bearer <token from login>
 
-41. // Fetch all students for active academic year
+42. // Fetch all students for active academic year
 API: << server >>/api/v1/student/all
 Method: GET
 Authorization: Bearer <token from login>
 
-42. // Update student details
+43. // Update student details
 API: << server >>/api/v1/student/update_details/studentId
 Content: { firstName, middleName, lastName, email, phone, address, dob, gender, nationality }
 Method: PUT
 Authorization: Bearer <token from login>
 
-43. // Update student emegency contact info
+44. // Update student emegency contact info
 API: << server >>/api/v1/student/update_emergency_info/studentId
 Content: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-44. // Update student's parent's info
+45. // Update student's parent's info
 API: << server >>/api/v1/student/update_parent_details/parentId
 Content: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-45. // Update student's parent's employment info
+46. // Update student's parent's employment info
 API: << server >>/api/v1/student/update_parent_employment/parentId
 Content: { occupation, employer, employerAddress, workPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-46. // Update a student's class
+47. // Update a student's class
 API: << server >>/api/v1/student/update_student_class/assignedClassId
 Content: { classSessionId }
 Method: PUT
@@ -277,12 +281,12 @@ Authorization: Bearer <token from login>
 
 TEACHER ROLE
 <<FRONTEND TEST ENDED HERE>>
-47. // Get a teacher's assigned classes after login
+48. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-48. // Get a teacher's assigned class's subjects and students
+49. // Get a teacher's assigned class's subjects and students
 API: << server >>/api/v1/teacher/class_students_subjects/classSessionId/assignedTeacherId
 Method: GET
 Authorization: Bearer <token from login>

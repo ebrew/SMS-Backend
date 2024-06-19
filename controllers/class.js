@@ -258,6 +258,32 @@ exports.getClassWithSections = async (req, res) => {
   });
 };
 
+// Get a particular section for teacher assignment   
+exports.getSection = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const id = req.params.id;
+
+      const data = await Section.findOne({
+        where: { id },
+        include: { model: Class },
+      });
+
+      if (!data) {
+        return res.status(404).json({ message: 'Class section not found!' });
+      }
+
+      return res.status(200).json({ 'section': data });
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
 // Get all Class Sections in different formats
 exports.allClassSections = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

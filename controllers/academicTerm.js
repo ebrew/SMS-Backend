@@ -40,7 +40,15 @@ exports.addAcademicTerm = async (req, res) => {
       if (!name || !startDate || !endDate || !academicYearId)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      // updating active status if necessary
+      // Check if the endDate is equal to or less than the academic year's endDate
+      const academicYear = await AcademicYear.findOne({ where: { id: academicYearId } });
+      if (!academicYear)
+        return res.status(400).json({ message: 'Academic year not found!' });
+
+      if (new Date(endDate) > new Date(academicYear.endDate))
+        return res.status(400).json({ message: 'Term endDate cannot be grater than the academic year endDate!' });
+
+      // Updating active status if necessary
       let alreadyExist = await AcademicTerm.findOne({ where: { status: 'Active' } });
       if (alreadyExist)
         await alreadyExist.setInactiveIfEndDateDue();
@@ -58,15 +66,10 @@ exports.addAcademicTerm = async (req, res) => {
         return res.status(400).json({ message: `${alreadyExist.name} is currently running!` });
 
       if (alreadyExist)
-        return res.status(400).json({ message: `${name} already exist!` });
+        return res.status(400).json({ message: `${name} already exists!` });
 
-      const isActive = await AcademicYear.findOne({ where: { id: academicYearId } });
-
-        if (!isActive)
-          return res.status(400).json({ message: `Academic year could not be found!` });
-
-        if (isActive && isActive.status === 'Inactive')
-          return res.status(400).json({ message: `${isActive.name} has already ended!` });
+      if (academicYear.status === 'Inactive')
+        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
 
       // Create a new instance of Academic term
       await AcademicTerm.create({ name, startDate, endDate, academicYearId });
@@ -77,6 +80,7 @@ exports.addAcademicTerm = async (req, res) => {
     }
   });
 };
+
 
 // Get the active academic term
 exports.activeAcademicTerm = async (req, res) => {

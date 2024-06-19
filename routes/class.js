@@ -8,6 +8,9 @@ router.get('/all', classController.allClasses);
 // Get a particular class with its sections  
 router.get('/get_class/:id', classController.getClassWithSections);
 
+// Get a particular section for teacher assignment 
+router.get('/get_section/:id', classController.getSection);
+
 // Get all class sections for multi select when assigning teachers
 router.get('/sections', classController.allClassSections);
 
