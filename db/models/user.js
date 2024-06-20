@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Department, { foreignKey: 'departmentId', onDelete: 'SET NULL', onUpdate:'CASCADE' });
       this.hasMany(models.AssignedTeacher, { foreignKey: 'teacherId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
       this.hasMany(models.ResetRequest, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
+      this.hasMany(models.Assessment, { foreignKey: 'teacherId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
     }
   }
   User.init({
@@ -49,3 +50,8 @@ module.exports = (sequelize, DataTypes) => {
   return User;
 };
 
+
+
+
+// onDelete: 'CASCADE',
+// onUpdate: 'CASCADE'

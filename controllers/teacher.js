@@ -67,56 +67,6 @@ exports.getAssignedTeacherClass = async (req, res) => {
 };
 
 // Get a teacher's assigned class's students
-exports.teacherClassStudents1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const classSessionId = req.params.id;
-
-      // Find the active academic year and update its status if necessary
-      let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (activeAcademicYear) 
-        await activeAcademicYear.setInactiveIfEndDateDue();
-
-      activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (!activeAcademicYear) 
-        return res.status(400).json({ message: "No active academic year available!" });
-      
-      // Fetching class students
-      const students = await ClassStudent.findAll({
-        where: { classSessionId, academicYearId: activeAcademicYear.id },
-        include: {
-          model: Student,
-          attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'passportPhoto'],
-          order: [['firstName', 'ASC']],
-        }
-      });
-
-      const classStudents = students.map(student => ({
-        studentId: student.Student.id,
-        fullName: student.Student.middleName 
-          ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
-          : `${student.Student.firstName} ${student.Student.lastName}`,
-        address: student.Student.address,
-        photo: student.Student.passportPhoto
-      }));
-
-      const result = {
-        academicYearId: activeAcademicYear.id,
-        classStudents
-      };
-
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error('Error fetching teacher class students:', error);
-      return res.status(500).json({ message: "Can't fetch data at the moment!" });
-    }
-  });
-};
-
-// Get a teacher's assigned class's students
 exports.teacherClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -170,7 +120,6 @@ exports.teacherClassStudents = async (req, res) => {
     }
   });
 };
-
 
 // Get a teacher's assigned class's subjects
 exports.teacherClassSubjects = async (req, res) => {

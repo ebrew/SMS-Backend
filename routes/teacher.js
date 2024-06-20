@@ -12,6 +12,6 @@ router.get('/assigned_classes/:id', teacherController.getAssignedTeacherClass)
 router.get('/class_students/:id', teacherController.teacherClassStudents)
 
 // Get a teacher's assigned class's subjects 
-router.get('/class_students_subjects/:id', teacherController.teacherClassSubjects)
+router.get('/class_subjects/:id', teacherController.teacherClassSubjects)
 
 module.exports = router;
