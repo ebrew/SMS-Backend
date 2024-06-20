@@ -9,10 +9,10 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userName: {
+      firstName: {
         type: Sequelize.STRING
       },
-      firstName: {
+      middleName: {
         type: Sequelize.STRING
       },
       lastName: {
@@ -39,6 +39,34 @@ module.exports = {
       gender: {
         type: Sequelize.STRING
       },
+      nationality: {
+        type: Sequelize.STRING
+      },
+      passportPhoto: {
+        type: Sequelize.JSON
+      },
+      parentId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Parents', 
+          key: 'id'
+        },
+        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE'  
+      },
+      emergencyName: {
+        type: Sequelize.STRING
+      },
+      emergencyTitle: {
+        type: Sequelize.STRING
+      },
+      emergencyAddress: {
+        type: Sequelize.STRING
+      },
+      emergencyPhone: {
+        type: Sequelize.STRING
+      },
       password: {
         type: Sequelize.STRING
       },
@@ -50,9 +78,6 @@ module.exports = {
       },
       isPasswordReset: {
         type: Sequelize.BOOLEAN
-      },
-      dp: {
-        type: Sequelize.STRING
       },
       departmentId: {
         type: Sequelize.INTEGER

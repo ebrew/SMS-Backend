@@ -49,17 +49,3 @@ module.exports = (sequelize, DataTypes) => {
 
   return User;
 };
-
-
-
-
-// assessmentId: {
-//   type: Sequelize.INTEGER,
-//   allowNull: false,
-//   references: {
-//     model: 'Assessments',
-//     key: 'id'
-//   },
-//   onDelete: 'CASCADE',
-//   onUpdate: 'CASCADE'
-// },

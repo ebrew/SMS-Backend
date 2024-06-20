@@ -2,17 +2,17 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Students', {
+    await queryInterface.createTable('Users', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      firstName: {
+      userName: {
         type: Sequelize.STRING
       },
-      middleName: {
+      firstName: {
         type: Sequelize.STRING
       },
       lastName: {
@@ -30,34 +30,13 @@ module.exports = {
       role: {
         type: Sequelize.STRING
       },
-      studentID: {
+      staffID: {
         type: Sequelize.STRING
       },
       dob: {
         type: Sequelize.DATE
       },
       gender: {
-        type: Sequelize.STRING
-      },
-      nationality: {
-        type: Sequelize.STRING
-      },
-      passportPhoto: {
-        type: Sequelize.STRING
-      },
-      parentId: {
-        type: Sequelize.INTEGER
-      },
-      emergencyName: {
-        type: Sequelize.STRING
-      },
-      emergencyTitle: {
-        type: Sequelize.STRING
-      },
-      emergencyAddress: {
-        type: Sequelize.STRING
-      },
-      emergencyPhone: {
         type: Sequelize.STRING
       },
       password: {
@@ -72,8 +51,14 @@ module.exports = {
       isPasswordReset: {
         type: Sequelize.BOOLEAN
       },
+      dp: {
+        type: Sequelize.STRING
+      },
       departmentId: {
         type: Sequelize.INTEGER
+      },
+      tokens: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -86,6 +71,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Students');
+    await queryInterface.dropTable('Users');
   }
 };

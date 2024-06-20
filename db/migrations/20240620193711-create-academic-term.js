@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Assessments', {
+    await queryInterface.createTable('AcademicTerms', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,29 +12,24 @@ module.exports = {
       name: {
         type: Sequelize.STRING
       },
-      description: {
+      status: {
         type: Sequelize.STRING
       },
-      academicTermId: {
-        type: Sequelize.INTEGER
+      startDate: {
+        type: Sequelize.DATE
       },
-      studentId: {
-        type: Sequelize.INTEGER
+      endDate: {
+        type: Sequelize.DATE
       },
-      teacherId: {
-        type: Sequelize.INTEGER
-      },
-      classSectionId: {
-        type: Sequelize.INTEGER
-      },
-      subjectId: {
-        type: Sequelize.INTEGER
-      },
-      weight: {
-        type: Sequelize.DECIMAL
-      },
-      marks: {
-        type: Sequelize.DECIMAL
+      academicYearId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'AcademicYears', 
+          key: 'id'
+        },
+        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE'  
       },
       createdAt: {
         allowNull: false,
@@ -47,6 +42,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Assessments');
+    await queryInterface.dropTable('AcademicTerms');
   }
 };

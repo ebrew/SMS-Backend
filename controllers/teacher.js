@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear } = require("../db/models/index")
+const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, Assessment, Grade } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -77,11 +77,11 @@ exports.teacherClassStudents = async (req, res) => {
 
       // Find the active academic year and update its status if necessary
       let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (activeAcademicYear) 
+      if (activeAcademicYear)
         await activeAcademicYear.setInactiveIfEndDateDue();
 
       activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (!activeAcademicYear) 
+      if (!activeAcademicYear)
         return res.status(400).json({ message: "No active academic year available!" });
 
       // Fetching class students
@@ -100,7 +100,7 @@ exports.teacherClassStudents = async (req, res) => {
         }
         return {
           studentId: student.Student.id,
-          fullName: student.Student.middleName 
+          fullName: student.Student.middleName
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           address: student.Student.address,
@@ -159,6 +159,74 @@ exports.teacherClassSubjects = async (req, res) => {
     } catch (error) {
       console.error('Error fetching teacher class subjects and students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Create a new Assessment
+exports.addClass = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { className, grade, headTeacherId, sections } = req.body;
+
+      if (!className || !grade || !sections)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      const alreadyExist = await Class.findOne({
+        where: {
+          [Op.or]: [
+            { name: { [Op.iLike]: className } },
+            { grade: grade },
+          ],
+        },
+      });
+
+      if (alreadyExist)
+        return res.status(400).json({ message: `${className} or grade ${grade} already exists!` });
+
+      // Validating section data before creating the class
+      for (const sectionData of sections) {
+        const { name, capacity } = sectionData;
+        if (!name || !capacity)
+          return res.status(400).json({ message: 'Invalid section data' });
+      }
+
+      if (headTeacherId && headTeacherId !== '0') {
+        const isExist = await User.findByPk(headTeacherId);
+
+        if (!isExist)
+          return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
+
+        if (isExist && isExist.role !== 'Teacher')
+          return res.status(400).json({ message: "Selected staff isn't a teacher" })
+      }
+
+      // Create the Class
+      let newClass = headTeacherId === '0' ? await Class.create({ name: className, grade, headTeacherId: null }) : await Class.create({ name: className, grade, headTeacherId });
+
+      const classId = newClass.id;
+
+      // Save the Sections
+      for (const sectionData of sections) {
+        try {
+          const { name, capacity } = sectionData;
+
+          // Create the Section
+          await Section.create({ name, capacity, classId });
+        } catch (error) {
+          console.error('Error creating section:', error.message);
+          // future error handling in the fure
+          res.status(500).json({ message: "Can't create class sections at the moment!" });
+        }
+      }
+      res.status(200).json({ message: 'Class and sections created successfully!' });
+
+    } catch (error) {
+      console.error('Error creating class and sections:', error);
+      res.status(500).json({ message: "Can't create class at the moment!" });
     }
   });
 };
