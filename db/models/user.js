@@ -53,5 +53,13 @@ module.exports = (sequelize, DataTypes) => {
 
 
 
-// onDelete: 'CASCADE',
-// onUpdate: 'CASCADE'
+// assessmentId: {
+//   type: Sequelize.INTEGER,
+//   allowNull: false,
+//   references: {
+//     model: 'Assessments',
+//     key: 'id'
+//   },
+//   onDelete: 'CASCADE',
+//   onUpdate: 'CASCADE'
+// },

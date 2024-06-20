@@ -128,11 +128,12 @@ exports.teacherClassSubjects = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const assignedTeacherId = req.params.id;
+      const { teacherId, classSessionId } = req.params;
 
       // Fetching class' assigned subjects
+      const assignedTeacher = AssignedTeacher.findOne({ where: { teacherId, classSessionId } })
       const subjects = await AssignedSubject.findAll({
-        where: { assignedTeacherId },
+        where: { assignedTeacherId: assignedTeacher.id },
         attributes: [],
         order: [['createdAt', 'DESC']],
         include: {
