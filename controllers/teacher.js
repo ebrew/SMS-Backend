@@ -131,7 +131,7 @@ exports.teacherClassSubjects = async (req, res) => {
       const { teacherId, classSessionId } = req.params;
 
       // Fetching class' assigned subjects
-      const assignedTeacher = AssignedTeacher.findOne({ where: { teacherId, classSessionId } })
+      const assignedTeacher = AssignedTeacher.findOne({ where: { teacherId, classId: classSessionId } })
       const subjects = await AssignedSubject.findAll({
         where: { assignedTeacherId: assignedTeacher.id },
         attributes: [],
