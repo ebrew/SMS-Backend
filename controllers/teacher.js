@@ -124,14 +124,21 @@ exports.teacherClassStudents = async (req, res) => {
 // Get a teacher's assigned class's subjects
 exports.teacherClassSubjects = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { teacherId, classSessionId } = req.params;
 
+      // Fetching the assigned teacher for the specified class session
+      const assignedTeacher = await AssignedTeacher.findOne({ where: { teacherId, classId: classSessionId } });
+
+      if (!assignedTeacher) {
+        return res.status(400).json({ message: 'Assigned teacher not found for the specified class session.' });
+      }
+
       // Fetching class' assigned subjects
-      const assignedTeacher = AssignedTeacher.findOne({ where: { teacherId, classId: classSessionId } })
       const subjects = await AssignedSubject.findAll({
         where: { assignedTeacherId: assignedTeacher.id },
         attributes: [],
