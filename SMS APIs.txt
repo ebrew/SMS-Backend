@@ -286,8 +286,13 @@ API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-49. // Get a teacher's assigned class's subjects and students
-API: << server >>/api/v1/teacher/class_students_subjects/classSessionId/assignedTeacherId
+49. // Get a teacher's assigned class's students
+API: << server >>/api/v1/teacher/class_students/classSessionId
+Method: GET
+Authorization: Bearer <token from login>
+
+50. // Get a teacher's assigned class's subjects
+API: << server >>/api/v1/teacher/class_subjects/assignedTeacherId
 Method: GET
 Authorization: Bearer <token from login>
 

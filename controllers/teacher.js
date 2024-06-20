@@ -66,31 +66,14 @@ exports.getAssignedTeacherClass = async (req, res) => {
   });
 };
 
-// Get a teacher's assigned class's subjects and students
-exports.teacherClassSubjectAndStudent = async (req, res) => {
+// Get a teacher's assigned class's students
+exports.teacherClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { classSessionId, assignedTeacherId } = req.params;
-
-      // Fetching class' assigned subjects
-      const subjects = await AssignedSubject.findAll({
-        where: { assignedTeacherId },
-        attributes: [],
-        order: [['createdAt', 'DESC']],
-        include: {
-          model: Subject,
-          attributes: ['id', 'name'],
-        }
-      });
-
-      const assignedSubjects = subjects.map(data => ({
-        assignedSubjectId: data.id,
-        subjectId: `${data.Subject.id}`,
-        subjectName: `${data.Subject.name}`,
-      }));
+      const classSessionId = req.params.id;
 
       // Find the active academic year and update its status if necessary
       let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
@@ -121,12 +104,45 @@ exports.teacherClassSubjectAndStudent = async (req, res) => {
       }));
 
       const result = {
-        classStudents,
-        assignedSubjects,
-        academicYearId: activeAcademicYear.id
+        academicYearId: activeAcademicYear.id,
+        classStudents
       };
 
-      return res.status(200).json({ assigned: result });
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching teacher class students:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Get a teacher's assigned class's subjects
+exports.teacherClassSubjects = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const assignedTeacherId = req.params.id;
+
+      // Fetching class' assigned subjects
+      const subjects = await AssignedSubject.findAll({
+        where: { assignedTeacherId },
+        attributes: [],
+        order: [['createdAt', 'DESC']],
+        include: {
+          model: Subject,
+          attributes: ['id', 'name'],
+        }
+      });
+
+      const assignedSubjects = subjects.map(data => ({
+        assignedSubjectId: data.id,
+        subjectId: `${data.Subject.id}`,
+        subjectName: `${data.Subject.name}`,
+      }));
+
+      return res.status(200).json(assignedSubjects);
     } catch (error) {
       console.error('Error fetching teacher class subjects and students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
