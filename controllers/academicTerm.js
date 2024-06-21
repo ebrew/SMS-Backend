@@ -40,15 +40,25 @@ exports.addAcademicTerm = async (req, res) => {
       if (!name || !startDate || !endDate || !academicYearId)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      // Check if the endDate is equal to or less than the academic year's endDate
+      // Check if the academic year exists
       const academicYear = await AcademicYear.findOne({ where: { id: academicYearId } });
       if (!academicYear)
-        return res.status(400).json({ message: 'Academic year not found!' });
+        return res.status(400).json({ message: 'Academic year could not be found!' });
 
-      if (new Date(endDate) > new Date(academicYear.endDate))
-        return res.status(400).json({ message: 'Term endDate cannot be grater than the academic year endDate!' });
+      // Check if the academic year is active
+      if (academicYear.status === 'Inactive')
+        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
 
-      // Updating active status if necessary
+      // Validate the term dates
+      const termStartDate = new Date(startDate);
+      const termEndDate = new Date(endDate);
+      const yearStartDate = new Date(academicYear.startDate);
+      const yearEndDate = new Date(academicYear.endDate);
+
+      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
+        return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
+
+      // updating active status if necessary
       let alreadyExist = await AcademicTerm.findOne({ where: { status: 'Active' } });
       if (alreadyExist)
         await alreadyExist.setInactiveIfEndDateDue();
@@ -67,9 +77,6 @@ exports.addAcademicTerm = async (req, res) => {
 
       if (alreadyExist)
         return res.status(400).json({ message: `${name} already exists!` });
-
-      if (academicYear.status === 'Inactive')
-        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
 
       // Create a new instance of Academic term
       await AcademicTerm.create({ name, startDate, endDate, academicYearId });

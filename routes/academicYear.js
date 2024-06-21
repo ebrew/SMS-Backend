@@ -12,6 +12,6 @@ router.get('/active', academicYearController.activeAcademicYear);
 router.get('/all', academicYearController.allAcademicYears);
 
 // delete academic year
-router.delete('delete/:id', academicYearController.deleteAcademicYear);
+router.delete('/delete/:id', academicYearController.deleteAcademicYear);
 
 module.exports = router;

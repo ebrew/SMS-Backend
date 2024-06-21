@@ -203,6 +203,11 @@ API: << server >>/api/v1/academic_year/active
 Method: GET
 Authorization: Bearer <token from login>
 
+// Deleting academic year
+API: << server >>/api/v1/academic_year/delete/Id
+Method: DELETE
+Authorization: Bearer <token from login>
+
 36. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
