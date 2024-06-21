@@ -11,7 +11,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.AcademicTerm, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
-      this.belongsTo(models.Student, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
       this.belongsTo(models.User, { foreignKey: 'teacherId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
       this.belongsTo(models.Section, { foreignKey: 'classSessionId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
       this.belongsTo(models.Subject, { foreignKey: 'subjectId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
@@ -22,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.STRING, allowNull: false },
     academicTermId: { type: DataTypes.INTEGER, allowNull: false },
-    studentId: { type: DataTypes.INTEGER, allowNull: false },
     teacherId: { type: DataTypes.INTEGER, allowNull: false },
     classSessionId: { type: DataTypes.INTEGER, allowNull: false },
     subjectId: { type: DataTypes.INTEGER, allowNull: false },

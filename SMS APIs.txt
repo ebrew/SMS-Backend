@@ -203,11 +203,6 @@ API: << server >>/api/v1/academic_year/active
 Method: GET
 Authorization: Bearer <token from login>
 
-// Deleting academic year
-API: << server >>/api/v1/academic_year/delete/Id
-Method: DELETE
-Authorization: Bearer <token from login>
-
 36. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
@@ -300,6 +295,25 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
+
+51. // Create a new assessment
+API: << server >>/api/v1/teacher/assessment/create
+Method: POST
+Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
+Authorization: Bearer <token from login>
+
+52. // Get all subject assessments for the active academic term
+API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
+Method: GET
+Authorization: Bearer <token from login>
+
+53. // Grade student
+API: << server >>/api/v1/teacher/grade_student
+Method: POST
+Content: { assessmentId, studentId, score }
+Authorization: Bearer <token from login>
+
+
 
 
 

@@ -25,16 +25,6 @@ module.exports = {
         onDelete: 'CASCADE', 
         onUpdate: 'CASCADE'  
       },
-      studentId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Students', 
-          key: 'id'
-        },
-        onDelete: 'CASCADE', 
-        onUpdate: 'CASCADE'  
-      },
       teacherId: {
         type: Sequelize.INTEGER,
         allowNull: false,

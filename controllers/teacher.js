@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, Assessment, Grade } = require("../db/models/index")
+const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -170,63 +170,104 @@ exports.addAssessment = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { className, grade, headTeacherId, sections } = req.body;
+      const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
 
-      if (!className || !grade || !sections)
+      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      const alreadyExist = await Class.findOne({
+      const alreadyExist = await Assessment.findOne({
         where: {
-          [Op.or]: [
-            { name: { [Op.iLike]: className } },
-            { grade: grade },
+          [Op.and]: [
+            { name: { [Op.iLike]: name } },
+            { academicTermId },
+            { classSessionId },
+            { subjectId },
           ],
         },
       });
 
       if (alreadyExist)
-        return res.status(400).json({ message: `${className} or grade ${grade} already exists!` });
+        return res.status(400).json({ message: `${name} already exists!` });
 
-      // Validating section data before creating the class
-      for (const sectionData of sections) {
-        const { name, capacity } = sectionData;
-        if (!name || !capacity)
-          return res.status(400).json({ message: 'Invalid section data' });
-      }
-
-      if (headTeacherId && headTeacherId !== '0') {
-        const isExist = await User.findByPk(headTeacherId);
-
-        if (!isExist)
-          return res.status(400).json({ message: `Seleected teacher doesn't exist!` });
-
-        if (isExist && isExist.role !== 'Teacher')
-          return res.status(400).json({ message: "Selected staff isn't a teacher" })
-      }
-
-      // Create the Class
-      let newClass = headTeacherId === '0' ? await Class.create({ name: className, grade, headTeacherId: null }) : await Class.create({ name: className, grade, headTeacherId });
-
-      const classId = newClass.id;
-
-      // Save the Sections
-      for (const sectionData of sections) {
-        try {
-          const { name, capacity } = sectionData;
-
-          // Create the Section
-          await Section.create({ name, capacity, classId });
-        } catch (error) {
-          console.error('Error creating section:', error.message);
-          // future error handling in the fure
-          res.status(500).json({ message: "Can't create class sections at the moment!" });
-        }
-      }
-      res.status(200).json({ message: 'Class and sections created successfully!' });
+      await Assessment.create({ name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks });
+      res.status(200).json({ message: 'Assessment created successfully!' });
 
     } catch (error) {
-      console.error('Error creating class and sections:', error);
-      res.status(500).json({ message: "Can't create class at the moment!" });
+      console.error('Error creating assessment:', error);
+      res.status(500).json({ message: "Can't create assessment at the moment!" });
+    }
+  });
+};
+
+// Get all subject assessments for active academic term
+exports.allSubjectAssessments = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { classSessionId, subjectId } = req.params;
+
+      // Validate required parameters
+      if (!classSessionId || !subjectId) {
+        return res.status(400).json({ message: 'Incomplete fields!' });
+      }
+
+      // Find the active academic term and update its status if necessary
+      let activeAcademicTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
+      if (activeAcademicTerm) 
+        await activeAcademicTerm.setInactiveIfEndDateDue();
+
+      activeAcademicTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
+      if (!activeAcademicTerm) 
+        return res.status(400).json({ message: "No active academic term available!" });
+
+      // Fetching class assessments
+      const assessments = await Assessment.findAll({
+        where: { classSessionId, academicTermId: activeAcademicTerm.id, subjectId },
+        order: [['weight', 'DESC']],
+      });
+
+      return res.status(200).json({ assessments });
+    } catch (error) {
+      console.error('Error fetching assessments:', error.message);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Grade a student
+exports.gradeStudent = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { assessmentId, studentId, score } = req.body;
+
+      // Validate required fields
+      if (!assessmentId || !studentId || score === undefined) 
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      // Check if the assessment exists
+      const assessment = await Assessment.findByPk(assessmentId);
+      if (!assessment) 
+        return res.status(400).json({ message: 'Subject assessment not found!' });
+
+      // Check if the student is already graded
+      const alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
+      if (alreadyExist) 
+        return res.status(400).json({ message: 'Student already graded!' });
+
+      // Create a new grade
+      await Grade.create({ assessmentId, studentId, score });
+      return res.status(200).json({ message: 'Student graded successfully!' });
+
+    } catch (error) {
+      console.error('Error grading student:', error);
+      return res.status(500).json({ message: "Can't grade student at the moment!" });
     }
   });
 };

@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Parent, { foreignKey: 'parentId', onDelete: 'RESTRICT', onUpdate:'CASCADE' });
       this.hasMany(models.ClassStudent, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
       this.hasMany(models.ResetRequest, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
-      this.hasMany(models.Assessment, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
+      this.hasMany(models.Grade, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
     }
   }
   Student.init({
