@@ -71,7 +71,6 @@ exports.addAcademicYear = async (req, res) => {
   });
 };
 
-
 // Get the active academic year
 exports.activeAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -93,3 +92,32 @@ exports.activeAcademicYear = async (req, res) => {
   });
 };
 
+// Delete a acdaemic year
+exports.deleteAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const ayId = req.params.id;
+
+      // // Check if the subject is assigned to any teachers
+      // const assignments = await AssignedSubject.findAll({ where: { subjectId: ayId } });
+
+      // if (assignments.length > 0) {
+      //   return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
+      // }
+
+      // If no assignments, proceed to delete the subject
+      const result = await AcademicYear.destroy({ where: { id: ayId } });
+
+      if (result === 0) {
+        return res.status(400).json({ message: 'Acacdemi year not found!' });
+      }
+      return res.status(200).json({ message: 'Academic year deleted successfully!' });
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete subject at the moment' });
+    }
+  });
+};

@@ -81,7 +81,6 @@ exports.addAcademicTerm = async (req, res) => {
   });
 };
 
-
 // Get the active academic term
 exports.activeAcademicTerm = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

@@ -164,7 +164,7 @@ exports.teacherClassSubjects = async (req, res) => {
 };
 
 // Create a new Assessment
-exports.addClass = async (req, res) => {
+exports.addAssessment = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
