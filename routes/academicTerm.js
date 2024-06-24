@@ -5,6 +5,9 @@ const academicTermController = require('../controllers/academicTerm');
 // Create a new academic year
 router.post('/create', academicTermController.addAcademicTerm);
 
+// update academic term
+router.put('/update/:id', academicTermController.updateAcademicTerm);
+
 // Get active academic term
 router.get('/active', academicTermController.activeAcademicTerm);
 

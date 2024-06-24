@@ -71,6 +71,36 @@ exports.addAcademicYear = async (req, res) => {
   });
 };
 
+// Update an existing academic year
+exports.updateAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, startDate, endDate } = req.body;
+      const academicYearId = req.params.id;
+
+      if (!name || !startDate || !endDate)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      const result = await AcademicYear.findByPk(academicYearId);
+      if (!result)
+        return res.status(400).json({ message: 'Academic year not found!' });
+
+      result.name = name;
+      result.startDate = startDate;
+      result.endDate = endDate
+      await result.save();
+
+      return res.status(200).json({ message: 'Academic year updated successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Cannot update at the moment!' });
+    }
+  });
+};
+
 // Get the active academic year
 exports.activeAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
