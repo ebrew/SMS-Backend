@@ -5,6 +5,9 @@ const subjectController = require('../controllers/subject');
 // Get all subjects
 router.get('/all', subjectController.allSubjects);
 
+// Get a particular subject
+router.get('/get_subject/:id', subjectController.getSubject)
+
 // Fetch class assigned subjects 
 router.get('/all_class_subjects/:classId', subjectController.allClassSubjects )
 

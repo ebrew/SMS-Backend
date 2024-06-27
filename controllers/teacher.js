@@ -166,15 +166,19 @@ exports.teacherClassSubjects = async (req, res) => {
 // Create a new Assessment
 exports.addAssessment = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
 
-      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined)
+      // Check for missing fields
+      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
 
+      // Check if the assessment already exists
       const alreadyExist = await Assessment.findOne({
         where: {
           [Op.and]: [
@@ -186,15 +190,53 @@ exports.addAssessment = async (req, res) => {
         },
       });
 
-      if (alreadyExist)
+      if (alreadyExist) {
         return res.status(400).json({ message: `${name} already exists!` });
+      }
 
+      // Sum the weights of existing assessments
+      const totalWeight = await Assessment.sum('weight', {
+        where: {
+          academicTermId,
+          classSessionId,
+          subjectId,
+        },
+      });
+
+      if (totalWeight + weight > 100.00) {
+        return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
+      }
+
+      // Create the new assessment
       await Assessment.create({ name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks });
-      res.status(200).json({ message: 'Assessment created successfully!' });
+      return res.status(200).json({ message: 'Assessment created successfully!' });
 
     } catch (error) {
       console.error('Error creating assessment:', error);
-      res.status(500).json({ message: "Can't create assessment at the moment!" });
+      return res.status(500).json({ message: "Can't create assessment at the moment!" });
+    }
+  });
+};
+
+// Get a particular subject assessment   
+exports.getAssessment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const id = req.params.id;
+
+      const data = await Assessment.findByPk(id);
+
+      if (!data) {
+        return res.status(404).json({ message: 'Subject assessment not found!' });
+      }
+
+      return res.status(200).json({ 'assessment': data });
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
@@ -248,18 +290,26 @@ exports.gradeStudent = async (req, res) => {
       const { assessmentId, studentId, score } = req.body;
 
       // Validate required fields
-      if (!assessmentId || !studentId || score === undefined) 
+      if (!assessmentId || !studentId || score === undefined) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
 
       // Check if the assessment exists
       const assessment = await Assessment.findByPk(assessmentId);
-      if (!assessment) 
+      if (!assessment) {
         return res.status(400).json({ message: 'Subject assessment not found!' });
+      }
+
+      // Ensure the score does not exceed the assessment's marks
+      if (score > assessment.marks) {
+        return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessment.marks}` });
+      }
 
       // Check if the student is already graded
       const alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
-      if (alreadyExist) 
+      if (alreadyExist) {
         return res.status(400).json({ message: 'Student already graded!' });
+      }
 
       // Create a new grade
       await Grade.create({ assessmentId, studentId, score });
@@ -271,3 +321,4 @@ exports.gradeStudent = async (req, res) => {
     }
   });
 };
+

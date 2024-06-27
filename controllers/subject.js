@@ -19,6 +19,29 @@ exports.allSubjects = async (req, res) => {
   });
 };
 
+// Get a particular subject    
+exports.getSubject = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const id = req.params.id;
+
+      const data = await Subject.findByPk(id);
+
+      if (!data) {
+        return res.status(404).json({ message: 'Subject not found!' });
+      }
+
+      return res.status(200).json({ 'subject': data });
+    } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
 // Get all class subjects
 exports.allClassSubjects = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

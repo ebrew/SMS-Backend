@@ -17,6 +17,9 @@ router.get('/class_subjects/:teacherId/:classSessionId', teacherController.teach
 // Create a new assessment
 router.post('/assessment/create', teacherController.addAssessment);
 
+// Get a particular subject assessment
+router.get('/get_assessment/:id', teacherController.getAssessment)
+
 // Get all subject assessments for active academic term
 router.get('/subject_assessments/:classSessionId/:subjectId', teacherController.allSubjectAssessments)
 
