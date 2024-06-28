@@ -4,7 +4,6 @@ const passport = require('../db/config/passport')
 const { Class, ClassSubject, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
 const Mail = require('../utility/email');
 
-
 // Assign a class to a teacher
 exports.assignClass = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

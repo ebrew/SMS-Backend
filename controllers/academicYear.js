@@ -88,9 +88,17 @@ exports.updateAcademicYear = async (req, res) => {
       if (!result)
         return res.status(400).json({ message: 'Academic year not found!' });
 
+      // Ensure only one active academic year
+      const activeYear = await AcademicYear.findOne({
+        where: { status: 'Active' }
+      });
+      if (activeYear && activeYear.id !== academicYearId) {
+        return res.status(400).json({ message: 'Only one active academic year is allowed!' });
+      }
+
       result.name = name;
       result.startDate = startDate;
-      result.endDate = endDate
+      result.endDate = endDate;
       await result.save();
 
       return res.status(200).json({ message: 'Academic year updated successfully!' });

@@ -323,21 +323,31 @@ API: << server >>/api/v1/teacher/get_assessment/id
 Method: GET
 Authorization: Bearer <token from login>
 
-56. // Get all subject assessments for the active academic term
+56. // Updating a particular subject assessment
+API: << server >>/api/v1/teacher/update_assessment/id
+Method: PUT
+Authorization: Bearer <token from login>
+
+57. // Deleting a particular subject assessment
+API: << server >>/api/v1/teacher/delete_assessment/id
+Method: DELETE
+Authorization: Bearer <token from login>
+
+58. // Get all subject assessments for the active academic term
 API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-57. // Grade student
+59. // Grade student
 API: << server >>/api/v1/teacher/grade_student
 Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-<<FRONTEND TEST ENDED HERE>> 
-
-
-
+60. // update a student's grade
+API: << server >>/api/v1/teacher/update_student_grade/id
+Method: PUT
+Authorization: Bearer <token from login>
 
 
 

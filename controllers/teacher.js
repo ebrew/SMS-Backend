@@ -218,6 +218,100 @@ exports.addAssessment = async (req, res) => {
   });
 };
 
+// Update an already created Assessment
+exports.updateAssessment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
+      const id = req.params.id;
+
+      // Check for missing fields
+      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
+        return res.status(400).json({ message: 'Incomplete field!' });
+      }
+
+      const assessment = await Assessment.findByPk(id);
+
+      if (!assessment) {
+        return res.status(400).json({ message: 'Assessment not found!' });
+      }
+
+      // If weight has changed, verify the total weight does not exceed 100
+      if (assessment.weight !== weight) {
+        // Sum the weights of existing assessments excluding the current one
+        const totalWeight = await Assessment.sum('weight', {
+          where: {
+            academicTermId,
+            classSessionId,
+            subjectId,
+            id: { [Op.ne]: id }, // Exclude the current assessment
+          },
+        });
+
+        if (totalWeight + weight > 100.00) {
+          return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
+        }
+      }
+
+      // Update assessment details
+      assessment.name = name;
+      assessment.description = description;
+      assessment.academicTermId = academicTermId;
+      assessment.teacherId = teacherId;
+      assessment.classSessionId = classSessionId;
+      assessment.subjectId = subjectId;
+      assessment.weight = weight;
+      assessment.marks = marks;
+      await assessment.save();
+
+      return res.status(200).json({ message: 'Assessment updated successfully!' });
+
+    } catch (error) {
+      console.error('Error updating assessment:', error);
+      return res.status(500).json({ message: "Can't update assessment at the moment!" });
+    }
+  });
+};
+
+// Delete assessment
+exports.deleteAssessment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const id = req.params.id;
+
+      // Check if the assessment exists
+      const assessment = await Assessment.findByPk(id);
+
+      if (!assessment) {
+        return res.status(400).json({ message: 'Assessment not found!' });
+      }
+
+      // Check if the assessment has associated grades
+      const gradesCount = await Grade.count({ where: { assessmentId: id } });
+
+      if (gradesCount > 0) {
+        return res.status(400).json({ message: 'Cannot delete assessment as it has associated grades!' });
+      }
+
+      // Proceed to delete the assessment if no associated grades
+      await assessment.destroy();
+
+      return res.status(200).json({ message: 'Assessment deleted successfully!' });
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      return res.status(500).json({ message: 'Cannot delete assessment at the moment' });
+    }
+  });
+};
+
 // Get a particular subject assessment   
 exports.getAssessment = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -258,11 +352,11 @@ exports.allSubjectAssessments = async (req, res) => {
 
       // Find the active academic term and update its status if necessary
       let activeAcademicTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
-      if (activeAcademicTerm) 
+      if (activeAcademicTerm)
         await activeAcademicTerm.setInactiveIfEndDateDue();
 
       activeAcademicTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
-      if (!activeAcademicTerm) 
+      if (!activeAcademicTerm)
         return res.status(400).json({ message: "No active academic term available!" });
 
       // Fetching class assessments
@@ -321,4 +415,51 @@ exports.gradeStudent = async (req, res) => {
     }
   });
 };
+
+// Update student grade
+exports.updateStudentGrade = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { score } = req.body;
+      const id = req.params.id;
+
+      // Check for missing fields
+      if (score === undefined) {
+        return res.status(400).json({ message: 'Score is required!' });
+      }
+
+      const grade = await Grade.findByPk(id);
+
+      if (!grade) {
+        return res.status(400).json({ message: 'Student grade not found!' });
+      }
+
+      // If score has changed, ensure the score does not exceed the assessment's marks
+      if (grade.score !== score) {
+        const assessment = await Assessment.findByPk(grade.assessmentId);
+        if (!assessment) {
+          return res.status(400).json({ message: 'Associated assessment not found!' });
+        }
+        if (score > assessment.marks) {
+          return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessment.marks}` });
+        }
+      }
+
+      // Update grade details
+      grade.score = score;
+      await grade.save();
+
+      return res.status(200).json({ message: 'Grade updated successfully!' });
+
+    } catch (error) {
+      console.error('Error updating grade:', error);
+      return res.status(500).json({ message: "Can't update grade at the moment!" });
+    }
+  });
+};
+
 

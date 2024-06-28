@@ -102,7 +102,7 @@ exports.updateAcademicTerm = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete field!' });
 
       // Check if the academic year exists
-      const academicYear = await AcademicYear.findByPk(academicYearId );
+      const academicYear = await AcademicYear.findByPk(academicYearId);
       if (!academicYear)
         return res.status(400).json({ message: 'Academic year could not be found!' });
 
@@ -119,10 +119,19 @@ exports.updateAcademicTerm = async (req, res) => {
       if (termStartDate < yearStartDate || termEndDate > yearEndDate)
         return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
 
+      // Ensure only one active academic term
+      const activeTerm = await AcademicTerm.findOne({
+        where: { status: 'Active', academicYearId }
+      });
+      if (activeTerm && activeTerm.id !== academicTermId) {
+        return res.status(400).json({ message: 'Only one active academic term is allowed per academic year!' });
+      }
+
+      // Update academic term
       result.name = name;
       result.startDate = startDate;
-      result.endDate = endDate
-      result.academicYearId = academicYearId
+      result.endDate = endDate;
+      result.academicYearId = academicYearId;
       await result.save();
 
       return res.status(200).json({ message: 'Academic term updated successfully!' });
