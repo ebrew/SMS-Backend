@@ -195,20 +195,22 @@ exports.addAssessment = async (req, res) => {
       }
 
       // Sum the weights of existing assessments
-      const totalWeight = await Assessment.sum('weight', {
+      const totalWeight = parseFloat(await Assessment.sum('weight', {
         where: {
           academicTermId,
           classSessionId,
           subjectId,
         },
-      });
-
-      console.log(`Total Weight: ${totalWeight}, New Assessment Weight: ${weight}`); // Debugging information
-
-      if ((totalWeight + weight) > 100.00) {
+      }));
+      
+      const newWeight = parseFloat(weight);
+      
+      console.log(`Total Weight: ${totalWeight}, New Assessment Weight: ${newWeight}`); // Debugging information
+      
+      if ((totalWeight + newWeight) > 100.00) {
         return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
       }
-
+  
       // Create the new assessment
       await Assessment.create({ name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks });
       return res.status(200).json({ message: 'Assessment created successfully!' });
