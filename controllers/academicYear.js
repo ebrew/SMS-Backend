@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { Op, or, and } = require('sequelize');
+const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { AcademicYear } = require("../db/models/index");
+const { AcademicYear, AcademicTerm } = require("../db/models/index");
 
 
 // Get all academic years
@@ -109,20 +109,23 @@ exports.updateAcademicYear = async (req, res) => {
   });
 };
 
-// Get the active academic year
-exports.activeAcademicYear = async (req, res) => {
+// Get a particular academic year
+exports.getAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      // Find the active academic year and update its status if necessary
-      let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (activeAcademicYear)
-        await activeAcademicYear.setInactiveIfEndDateDue();
-      // Fetch the updated active academic year
-      activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-      return res.status(200).json({ 'ActiveAcademicYear': activeAcademicYear });
+      const id = req.params.id;
+
+      const academicYear = await AcademicYear.findByPk(id);
+
+      if (!academicYear)
+        return res.status(400).json({ message: 'Academic year not found' });
+
+      const academicTerms = await AcademicTerm.findAll({ where: { academicYearId: id } });
+
+      return res.status(200).json({ academicYear, 'academicTerms' : academicTerms });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -130,32 +133,33 @@ exports.activeAcademicYear = async (req, res) => {
   });
 };
 
-// // Delete a acdaemic year
-// exports.deleteAcademicYear = async (req, res) => {
-//   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-//     if (err)
-//       return res.status(401).json({ message: 'Unauthorized' });
 
-//     try {
-//       const ayId = req.params.id;
+// Delete a acdaemic year
+exports.deleteAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
 
-//       // // Check if the subject is assigned to any teachers
-//       // const assignments = await AssignedSubject.findAll({ where: { subjectId: ayId } });
+    try {
+      const ayId = req.params.id;
 
-//       // if (assignments.length > 0) {
-//       //   return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
-//       // }
+      // // Check if the subject is assigned to any teachers
+      // const assignments = await AssignedSubject.findAll({ where: { subjectId: ayId } });
 
-//       // If no assignments, proceed to delete the subject
-//       const result = await AcademicYear.destroy({ where: { id: ayId } });
+      // if (assignments.length > 0) {
+      //   return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
+      // }
 
-//       if (result === 0) {
-//         return res.status(400).json({ message: 'Acacdemi year not found!' });
-//       }
-//       return res.status(200).json({ message: 'Academic year deleted successfully!' });
-//     } catch (error) {
-//       console.error('Error deleting subject:', error);
-//       return res.status(500).json({ message: 'Cannot delete subject at the moment' });
-//     }
-//   });
-// };
+      // If no assignments, proceed to delete the subject
+      const result = await AcademicYear.destroy({ where: { id: ayId } });
+
+      if (result === 0) {
+        return res.status(400).json({ message: 'Acacdemi year not found!' });
+      }
+      return res.status(200).json({ message: 'Academic year deleted successfully!' });
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      return res.status(500).json({ message: 'Cannot delete subject at the moment' });
+    }
+  });
+};

@@ -6,7 +6,7 @@ const academicYearController = require('../controllers/academicYear');
 router.post('/create', academicYearController.addAcademicYear);
 
 // Get active academic year
-router.get('/active', academicYearController.activeAcademicYear);
+router.get('/get_academic_year/:id', academicYearController.getAcademicYearr);
 
 // Get all academic years
 router.get('/all', academicYearController.allAcademicYears);
