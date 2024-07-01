@@ -202,15 +202,12 @@ exports.addAssessment = async (req, res) => {
           subjectId,
         },
       }));
-      
-      const newWeight = parseFloat(weight);
-      
-      console.log(`Total Weight: ${totalWeight}, New Assessment Weight: ${newWeight}`); // Debugging information
-      
-      if ((totalWeight + newWeight) > 100.00) {
+
+      // Check if adding the new weight exceeds 100%
+      if ((totalWeight + parseFloat(weight)) > 100.00) {
         return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
       }
-  
+
       // Create the new assessment
       await Assessment.create({ name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks });
       return res.status(200).json({ message: 'Assessment created successfully!' });
@@ -221,7 +218,6 @@ exports.addAssessment = async (req, res) => {
     }
   });
 };
-
 
 // Update an already created Assessment
 exports.updateAssessment = async (req, res) => {
@@ -248,16 +244,16 @@ exports.updateAssessment = async (req, res) => {
       // If weight has changed, verify the total weight does not exceed 100
       if (assessment.weight !== weight) {
         // Sum the weights of existing assessments excluding the current one
-        const totalWeight = await Assessment.sum('weight', {
+        const totalWeight = parseFloat(await Assessment.sum('weight', {
           where: {
             academicTermId,
             classSessionId,
             subjectId,
             id: { [Op.ne]: id }, // Exclude the current assessment
           },
-        });
-
-        if (totalWeight + weight > 100.00) {
+        }));
+        
+        if ((totalWeight + parseFloat(weight)) > 100.00) {
           return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
         }
       }
@@ -277,6 +273,7 @@ exports.updateAssessment = async (req, res) => {
     }
   });
 };
+
 
 // Delete assessment
 exports.deleteAssessment = async (req, res) => {
