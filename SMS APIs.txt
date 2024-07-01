@@ -325,6 +325,7 @@ Authorization: Bearer <token from login>
 
 56. // Updating a particular subject assessment
 API: << server >>/api/v1/teacher/update_assessment/id
+Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
 Method: PUT
 Authorization: Bearer <token from login>
 

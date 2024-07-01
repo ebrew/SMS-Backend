@@ -164,7 +164,7 @@ exports.teacherClassSubjects = async (req, res) => {
 };
 
 // Create a new Assessment
-exports.addAssessment = async (req, res) => {
+exports.addAssessment1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -174,7 +174,7 @@ exports.addAssessment = async (req, res) => {
       const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
 
       // Check for missing fields
-      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
+      if (!name || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
         return res.status(400).json({ message: 'Incomplete field!' });
       }
 
@@ -217,6 +217,63 @@ exports.addAssessment = async (req, res) => {
     }
   });
 };
+// Create a new Assessment
+exports.addAssessment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
+
+      // Check for missing fields
+      if (!name || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
+        return res.status(400).json({ message: 'Incomplete field!' });
+      }
+
+      // Check if the assessment already exists
+      const alreadyExist = await Assessment.findOne({
+        where: {
+          [Op.and]: [
+            { name: { [Op.iLike]: name } },
+            { academicTermId },
+            { classSessionId },
+            { subjectId },
+          ],
+        },
+      });
+
+      if (alreadyExist) {
+        return res.status(400).json({ message: `${name} already exists!` });
+      }
+
+      // Sum the weights of existing assessments
+      const totalWeight = await Assessment.sum('weight', {
+        where: {
+          academicTermId,
+          classSessionId,
+          subjectId,
+        },
+      });
+
+      console.log(`Total Weight: ${totalWeight}, New Assessment Weight: ${weight}`); // Debugging information
+
+      if (totalWeight + weight > 100.00) {
+        return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
+      }
+
+      // Create the new assessment
+      await Assessment.create({ name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks });
+      return res.status(200).json({ message: 'Assessment created successfully!' });
+
+    } catch (error) {
+      console.error('Error creating assessment:', error);
+      return res.status(500).json({ message: "Can't create assessment at the moment!" });
+    }
+  });
+};
+
 
 // Update an already created Assessment
 exports.updateAssessment = async (req, res) => {
@@ -226,11 +283,11 @@ exports.updateAssessment = async (req, res) => {
     }
 
     try {
-      const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
+      const { name, description, academicTermId, classSessionId, subjectId, weight, marks } = req.body;
       const id = req.params.id;
 
       // Check for missing fields
-      if (!name || !description || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
+      if (!name || !academicTermId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
         return res.status(400).json({ message: 'Incomplete field!' });
       }
 
@@ -260,10 +317,6 @@ exports.updateAssessment = async (req, res) => {
       // Update assessment details
       assessment.name = name;
       assessment.description = description;
-      assessment.academicTermId = academicTermId;
-      assessment.teacherId = teacherId;
-      assessment.classSessionId = classSessionId;
-      assessment.subjectId = subjectId;
       assessment.weight = weight;
       assessment.marks = marks;
       await assessment.save();

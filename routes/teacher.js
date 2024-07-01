@@ -24,7 +24,7 @@ router.get('/get_assessment/:id', teacherController.getAssessment)
 router.put('/update_assessment/:id', teacherController.updateAssessment)
 
 // Delete a particular Assessment
-router.delete('/delet_assessment/:id', teacherController.deleteAssessment)
+router.delete('/delete_assessment/:id', teacherController.deleteAssessment)
 
 // Get all subject assessments for active academic term
 router.get('/subject_assessments/:classSessionId/:subjectId', teacherController.allSubjectAssessments)
