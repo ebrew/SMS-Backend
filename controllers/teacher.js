@@ -274,7 +274,6 @@ exports.updateAssessment = async (req, res) => {
   });
 };
 
-
 // Delete assessment
 exports.deleteAssessment = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

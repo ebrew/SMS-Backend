@@ -101,48 +101,42 @@ exports.admitStudent = async (req, res) => {
 };
 
 // Update a student's DP url
-exports.updateStudentDP = async (req, res) => {
+exports.updateStudentDP1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
+    if (err) 
       return res.status(401).json({ message: 'Unauthorized' });
-    }
 
     try {
-      const { url } = req.body;
+      const { passportPhoto } = req.body;
       const studentId = req.params.id;
 
       // Validate request body
-      if (!url) {
-        return res.status(400).json({ message: "Image's url is required!" });
-      }
+      if (!passportPhoto) 
+        return res.status(400).json({ message: "Passport photo is required!" });
 
       // Find the student by ID
       const user = await Student.findByPk(studentId);
-
-      if (!user) {
+      if (!user) 
         return res.status(404).json({ message: 'Student not found!' });
-      }
 
-      const oldImgPublicId = JSON.parse(user.passportPhoto)?.public_id;
+      const oldImgPublicId = user.passportPhoto?.public_id;
 
       // Update new DP
-      user.passportPhoto = url;
+      user.passportPhoto = passportPhoto;
       await user.save();
 
-      if(!oldImgPublicId)
+      if (!oldImgPublicId) 
         return res.status(200).json({ message: 'Image updated successfully!' });
-
-      // Extract the public ID from the current URL
-      // const publicId = oldURL.split('/').pop().split('.')[0];
 
       // Delete old image from Cloudinary
       const result = await cloudinary.uploader.destroy(oldImgPublicId);
 
       if (result.result !== 'ok') {
         console.error('Error deleting old image from Cloudinary:', result);
-        return res.status(500).json({ message: 'Error deleting old image!', 'OldImageURL': oldURL });
+        return res.status(500).json({ message: 'Error deleting old image!' });
       }
 
+      return res.status(200).json({ message: 'Image updated successfully!' });
     } catch (error) {
       console.error('Error updating image:', error);
       return res.status(500).json({ message: 'Unable to update image at the moment!' });

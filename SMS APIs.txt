@@ -209,40 +209,65 @@ Content: { name, startDate, endDate }
 Method: PUT
 Authorization: Bearer <token from login>
 
-37. // Fetching the a particular academic year
+37. // Fetching the active academic year
+API: << server >>/api/v1/academic_year/active
+Method: GET
+Authorization: Bearer <token from login>
+
+38. // Fetching the a particular academic year with its terms
 API: << server >>/api/v1/academic_year/get_academic_year/academicYearId
 Method: GET
 Authorization: Bearer <token from login>
 
-38. // Creating a new academic term
+39. // Ending a particular academic year
+API: << server >>/api/v1/academic_year/end/academicYearId
+Method: PUT
+Authorization: Bearer <token from login>
+
+40. // Deleting a particular academic year
+API: << server >>/api/v1/academic_year/delete/academicYearId
+Method: DELETE
+Authorization: Bearer <token from login>
+
+41. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
 Content: name, startDate, endDate, academicYearId
 Method: POST
 Authorization: Bearer <token from login>
 
-39. // Update academic term
+42. // Update academic term
 API: << server >>/api/v1/academic_term/update/academicTermId
 Content: { name, startDate, endDate, academicYearId }
 Method: PUT
 Authorization: Bearer <token from login>
 
-40. // Fetching the active academic term
+43. // Fetching the active academic term
 API: << server >>/api/v1/academic_term/active
 Method: GET
 Authorization: Bearer <token from login>
 
-41. // List of all academic years
+44. // List of all academic years
 API: << server >>/api/v1/academic_year/all
 Method: GET
 Authorization: Bearer <token from login>
 
-42. // List of all academic terms
+45. // List of all academic terms
 API: << server >>/api/v1/academic_term/all
 Method: GET
 Authorization: Bearer <token from login>
 
+46. // Ending a particular academic term
+API: << server >>/api/v1/academic_term/end/academicTermId
+Method: PUT
+Authorization: Bearer <token from login>
+
+47. // Deleting a particular academic term
+API: << server >>/api/v1/academic_term/delete/academicTermId
+Method: DELETE
+Authorization: Bearer <token from login>
+
 STUDENT ADMISSION
-43. // Creating a new student, parent/guidian and assigninig to a class
+48. // Creating a new student, parent/guidian and assigninig to a class
 API: << server >>/api/v1/student/new_admission
 Method: POST
 Content: { 
@@ -254,42 +279,42 @@ Content: {
 }
 Authorization: Bearer <token from login>
 
-44. // Update a student's DP url
+49. // Update a student's DP url
 API: << server >>/api/v1/student/update_dp/studentId
-Content: url
+Content: passportPhoto
 Method: POST
 Authorization: Bearer <token from login>
 
-45. // Fetch all students for active academic year
+50. // Fetch all students for active academic year
 API: << server >>/api/v1/student/all
 Method: GET
 Authorization: Bearer <token from login>
 
-46. // Update student details
+51. // Update student details
 API: << server >>/api/v1/student/update_details/studentId
 Content: { firstName, middleName, lastName, email, phone, address, dob, gender, nationality }
 Method: PUT
 Authorization: Bearer <token from login>
 
-47. // Update student emegency contact info
+52. // Update student emegency contact info
 API: << server >>/api/v1/student/update_emergency_info/studentId
 Content: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-48. // Update student's parent's info
+53. // Update student's parent's info
 API: << server >>/api/v1/student/update_parent_details/parentId
 Content: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-49. // Update student's parent's employment info
+54. // Update student's parent's employment info
 API: << server >>/api/v1/student/update_parent_employment/parentId
 Content: { occupation, employer, employerAddress, workPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-50. // Update a student's class section
+55. // Update a student's class section
 API: << server >>/api/v1/student/update_student_class/assignedClassId
 Content: { classSessionId }
 Method: PUT
@@ -297,55 +322,55 @@ Authorization: Bearer <token from login>
 
 
 TEACHER ROLE
-51. // Get a teacher's assigned classes after login
+56. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-52. // Get a teacher's assigned class's students
+57. // Get a teacher's assigned class's students
 API: << server >>/api/v1/teacher/class_students/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-53. // Get a teacher's assigned class's subjects
+58. // Get a teacher's assigned class's subjects
 API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-54. // Create a new assessment
+59. // Create a new assessment
 API: << server >>/api/v1/teacher/assessment/create
 Method: POST
 Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
 Authorization: Bearer <token from login>
 
-55. // Fetching a particular subject assessment
+60. // Fetching a particular subject assessment
 API: << server >>/api/v1/teacher/get_assessment/id
 Method: GET
 Authorization: Bearer <token from login>
 
-56. // Updating a particular subject assessment
+61. // Updating a particular subject assessment
 API: << server >>/api/v1/teacher/update_assessment/id
 Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-57. // Deleting a particular subject assessment
+62. // Deleting a particular subject assessment
 API: << server >>/api/v1/teacher/delete_assessment/id
 Method: DELETE
 Authorization: Bearer <token from login>
 
-58. // Get all subject assessments for the active academic term
+63. // Get all subject assessments for the active academic term
 API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-59. // Grade student
+64. // Grade student
 API: << server >>/api/v1/teacher/grade_student
 Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-60. // update a student's grade
+65. // update a student's grade
 API: << server >>/api/v1/teacher/update_student_grade/id
 Method: PUT
 Authorization: Bearer <token from login>

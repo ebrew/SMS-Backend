@@ -14,4 +14,13 @@ router.get('/all', academicYearController.allAcademicYears);
 // update academic year
 router.put('/update/:id', academicYearController.updateAcademicYear);
 
+// Get active academic year
+router.get('/active', academicYearController.activeAcademicYear);
+
+// End academic year
+router.put('/end/:id', academicYearController.endAcademicYear);
+
+// Delete academic year
+router.delete('/delete/:id', academicYearController.deleteAcademicYear);
+
 module.exports = router;

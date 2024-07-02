@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { AcademicYear, AcademicTerm } = require("../db/models/index");
+const { AcademicYear, AcademicTerm, ClassStudent } = require("../db/models/index");
 
 
 // Get all academic years
@@ -109,7 +109,28 @@ exports.updateAcademicYear = async (req, res) => {
   });
 };
 
-// Get a particular academic year
+// Get the active academic year
+exports.activeAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      // Find the active academic year and update its status if necessary
+      let activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      if (activeAcademicYear)
+        await activeAcademicYear.setInactiveIfEndDateDue();
+      // Fetch the updated active academic year
+      activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      return res.status(200).json({ 'ActiveAcademicYear': activeAcademicYear });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Get a particular academic year with its terms
 exports.getAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -125,7 +146,7 @@ exports.getAcademicYear = async (req, res) => {
 
       const academicTerms = await AcademicTerm.findAll({ where: { academicYearId: id } });
 
-      return res.status(200).json({ academicYear, 'academicTerms' : academicTerms });
+      return res.status(200).json({ academicYear, 'academicTerms': academicTerms });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
@@ -133,33 +154,84 @@ exports.getAcademicYear = async (req, res) => {
   });
 };
 
-
-// Delete a acdaemic year
+// Delete an academic year
 exports.deleteAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const ayId = req.params.id;
+      const academicYear = await AcademicYear.findByPk(ayId);
 
-      // // Check if the subject is assigned to any teachers
-      // const assignments = await AssignedSubject.findAll({ where: { subjectId: ayId } });
-
-      // if (assignments.length > 0) {
-      //   return res.status(400).json({ message: 'Cannot delete subject as it is assigned to one or more teachers!' });
-      // }
-
-      // If no assignments, proceed to delete the subject
-      const result = await AcademicYear.destroy({ where: { id: ayId } });
-
-      if (result === 0) {
-        return res.status(400).json({ message: 'Acacdemi year not found!' });
+      if (!academicYear) {
+        return res.status(400).json({ message: 'Academic year not found!' });
       }
+
+      // Check if academic year has associations
+      const hasTerm = await AcademicTerm.findOne({ where: { academicYearId: ayId } });
+      const hasStudent = await ClassStudent.findOne({ where: { academicYearId: ayId } });
+
+      if (hasTerm) {
+        return res.status(400).json({ message: 'Cannot delete, it has academic term(s) associated with it!' });
+      }
+      if (hasStudent) {
+        return res.status(400).json({ message: 'Cannot delete, it has class students associated with it!' });
+      }
+
+      // If no associations, proceed to delete
+      await AcademicYear.destroy({ where: { id: ayId } });
+
       return res.status(200).json({ message: 'Academic year deleted successfully!' });
     } catch (error) {
-      console.error('Error deleting subject:', error);
-      return res.status(500).json({ message: 'Cannot delete subject at the moment' });
+      console.error('Error deleting academic year:', error);
+      return res.status(500).json({ message: 'Cannot delete at the moment' });
     }
   });
 };
+
+// End academic year
+exports.endAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const ayId = req.params.id;
+      const academicYear = await AcademicYear.findByPk(ayId);
+
+      // Check if the academic year exists
+      if (!academicYear) {
+        return res.status(400).json({ message: 'Academic year not found!' });
+      }
+
+      // Check if the academic year is already inactive
+      if (academicYear.status === 'Inactive') {
+        return res.status(400).json({ message: 'Academic year has already ended!' });
+      }
+
+      // Check if the academic year has any active academic terms
+      const hasActiveTerm = await AcademicTerm.findOne({ where: { academicYearId: ayId, status: 'Active' }, });
+      if (hasActiveTerm) {
+        return res.status(400).json({ message: 'Cannot end the academic year, it has active academic terms!' });
+      }
+
+      // Set the end date to today's date
+      academicYear.endDate = new Date();
+
+      // Save the updated academic year
+      await academicYear.save();
+
+      // Trigger the status check and update if necessary
+      await academicYear.setInactiveIfEndDateDue();
+
+      return res.status(200).json({ message: 'Academic year ended successfully!' });
+    } catch (error) {
+      console.error('Error ending academic year:', error);
+      return res.status(500).json({ message: 'Cannot end at the moment' });
+    }
+  });
+};
+

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op, or, and } = require('sequelize');
 const passport = require('../db/config/passport')
-const { AcademicTerm, AcademicYear } = require("../db/models/index");
+const { AcademicTerm, AcademicYear, Assessment } = require("../db/models/index");
 
 
 // Get all academic years
@@ -162,3 +162,75 @@ exports.activeAcademicTerm = async (req, res) => {
     }
   });
 };
+
+// Delete an academic term
+exports.deleteAcademicTerm = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const id = req.params.id;
+      const academicTerm = await AcademicTerm.findByPk(id);
+
+      if (!academicTerm) {
+        return res.status(400).json({ message: 'Academic term not found!' });
+      }
+
+      // Check if academic term has associations
+      const hasAssessment = await Assessment.findOne({ where: { academicTermId: id } });
+
+      if (hasAssessment) {
+        return res.status(400).json({ message: 'Cannot delete, it has academic assessment(s) associated with it!' });
+      }
+
+      // If no associations, proceed to delete
+      await AcademicTerm.destroy({ where: { id } });
+
+      return res.status(200).json({ message: 'Academic term deleted successfully!' });
+    } catch (error) {
+      console.error('Error deleting academic term:', error);
+      return res.status(500).json({ message: 'Cannot delete at the moment' });
+    }
+  });
+};
+
+// End academic term
+exports.endAcademicTerm = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const id = req.params.id;
+      const academicTerm = await AcademicTerm.findByPk(id);
+
+      // Check if the academic term exists
+      if (!academicTerm) {
+        return res.status(400).json({ message: 'Academic term not found!' });
+      }
+
+      // Check if the academic term is already inactive
+      if (academicTerm.status === 'Inactive') {
+        return res.status(400).json({ message: 'Academic term has already ended!' });
+      }
+
+      // Set the end date to today's date
+      academicTerm.endDate = new Date();
+
+      // Save the updated academic term
+      await academicTerm.save();
+
+      // Trigger the status check and update if necessary
+      await academicTerm.setInactiveIfEndDateDue();
+
+      return res.status(200).json({ message: 'Academic term ended successfully!' });
+    } catch (error) {
+      console.error('Error ending academic term:', error);
+      return res.status(500).json({ message: 'Cannot end at the moment' });
+    }
+  });
+};
+

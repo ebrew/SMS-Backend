@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
     dob: { type: DataTypes.DATE, allowNull: true },
     gender: { type: DataTypes.ENUM('Male', 'Female'), allowNull: false },
     nationality: { type: DataTypes.STRING, allowNull: false },
-    passportPhoto: { type: DataTypes.STRING, allowNull: true },
+    passportPhoto: { type: DataTypes.JSON, allowNull: true },
     parentId: { type: DataTypes.INTEGER, allowNull: false },
     emergencyName: { type: DataTypes.STRING, allowNull: true },
     emergencyTitle: { type: DataTypes.STRING, allowNull: true },
