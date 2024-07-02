@@ -103,7 +103,7 @@ exports.admitStudent = async (req, res) => {
 // Update a student's DP url
 exports.updateStudentDP = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) 
+    if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
