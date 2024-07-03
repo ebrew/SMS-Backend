@@ -459,4 +459,57 @@ exports.updateStudentGrade = async (req, res) => {
   });
 };
 
+// Students' assessment grades
+exports.studentsAssessmentGrades = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) 
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const assessmentId = req.params.id;
+
+      const assessment = await Assessment.findByPk(assessmentId);
+      if (!assessment) 
+        return res.status(400).json({ message: "Assessment not found!" });
+
+      // Fetching class students
+      const students = await ClassStudent.findAll({
+        where: { classSessionId: assessment.classSessionId, academicYearId: assessment.academicYearId },
+        include: {
+          model: Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        },
+        order: [[{ model: Student }, 'firstName', 'ASC']],
+      });
+
+      const classStudents = await Promise.all(students.map(async (student) => {
+        if (!student.Student) {
+          return null;
+        }
+
+        // Fetch assessment grade
+        const score = await Grade.findOne({ where: { assessmentId, studentId: student.Student.id } });
+        return {
+          studentId: student.Student.id,
+          fullName: student.Student.middleName
+            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+            : `${student.Student.firstName} ${student.Student.lastName}`,
+          photo: student.Student.passportPhoto,
+          score: score ? (parseFloat(score.score) / parseFloat(assessment.weight)).toFixed(2) : null 
+        };
+      })).filter(student => student !== null);
+
+      const result = {
+        assessmentId: assessmentId,
+        weight: assessment.weight,
+        classStudents
+      };
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching teacher class students assessment:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
 

@@ -281,7 +281,7 @@ Authorization: Bearer <token from login>
 
 49. // Update a student's DP url
 API: << server >>/api/v1/student/update_dp/studentId
-Content: passportPhoto
+Content: passportPhoto as json
 Method: POST
 Authorization: Bearer <token from login>
 
@@ -374,6 +374,12 @@ Authorization: Bearer <token from login>
 API: << server >>/api/v1/teacher/update_student_grade/id
 Method: PUT
 Authorization: Bearer <token from login>
+
+66. // Students' assessment grades
+API: << server >>/api/v1/teacher/assessment_grades/assessmentId
+Method: GET
+Authorization: Bearer <token from login>
+
 
 
 

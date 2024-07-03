@@ -35,4 +35,7 @@ router.post('/grade_student', teacherController.gradeStudent);
 // update a student's grade
 router.put('/update_student_grade/:id', teacherController.updateStudentGrade)
 
+// Students' assessment grades
+router.get('/assessment_grades/:id', teacherController.studentsAssessmentGrades)
+
 module.exports = router;
