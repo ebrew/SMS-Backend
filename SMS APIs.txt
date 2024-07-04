@@ -231,7 +231,7 @@ Authorization: Bearer <token from login>
 
 41. // Creating a new academic term
 API: << server >>/api/v1/academic_term/create
-Content: name, startDate, endDate, academicYearId
+Content: { name, startDate, endDate }
 Method: POST
 Authorization: Bearer <token from login>
 

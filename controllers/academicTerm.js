@@ -49,7 +49,7 @@ exports.addAcademicTerm = async (req, res) => {
       if (academicYear.status === 'Inactive')
         return res.status(400).json({ message: `${academicYear.name} has already ended!` });
 
-      // Validate the term dates
+      // Validate the term dates fall within year date
       const termStartDate = new Date(startDate);
       const termEndDate = new Date(endDate);
       const yearStartDate = new Date(academicYear.startDate);
@@ -78,6 +78,15 @@ exports.addAcademicTerm = async (req, res) => {
       if (alreadyExist)
         return res.status(400).json({ message: `${name} already exists!` });
 
+      // Check for existing academic terms
+      const latestTerm = await AcademicTerm.findOne({
+        order: [['endDate', 'DESC']],
+      });
+
+      // Ensure the new startDate is greater than the endDate of the latest academic term
+      if (latestTerm && new Date(startDate) <= new Date(latestTerm.endDate))
+        return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term.' });
+
       // Create a new instance of Academic term
       await AcademicTerm.create({ name, startDate, endDate, academicYearId });
       res.status(200).json({ message: 'Academic term created successfully!' });
@@ -96,42 +105,53 @@ exports.updateAcademicTerm = async (req, res) => {
 
     try {
       const academicTermId = req.params.id;
-      const { name, startDate, endDate, academicYearId } = req.body;
+      const { name, startDate, endDate } = req.body;
 
-      if (!name || !startDate || !endDate || !academicYearId)
+      if (!name || !startDate || !endDate)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      // Check if the academic year exists
-      const academicYear = await AcademicYear.findByPk(academicYearId);
-      if (!academicYear)
-        return res.status(400).json({ message: 'Academic year could not be found!' });
+      const result = await AcademicTerm.findByPk(academicTermId, { include: { model: AcademicYear }});
 
-      const result = await AcademicTerm.findByPk(academicTermId);
       if (!result)
         return res.status(400).json({ message: 'Academic term not found!' });
 
-      // Validate the term dates
+      // Convert dates to Date objects
       const termStartDate = new Date(startDate);
       const termEndDate = new Date(endDate);
-      const yearStartDate = new Date(academicYear.startDate);
-      const yearEndDate = new Date(academicYear.endDate);
+      const yearStartDate = new Date(result.AcademicYear.startDate);
+      const yearEndDate = new Date(result.AcademicYear.endDate);
 
-      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
-        return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
+      // Check if startDate and endDate of result have not changed
+      if (result.startDate.toDateString() === termStartDate.toDateString() && result.endDate.toDateString() === termEndDate.toDateString()) {
+        result.name = name;
+        await result.save();
 
-      // Ensure only one active academic term
-      const activeTerm = await AcademicTerm.findOne({
-        where: { status: 'Active', academicYearId }
-      });
-      if (activeTerm && activeTerm.id !== academicTermId) {
-        return res.status(400).json({ message: 'Only one active academic term is allowed per academic year!' });
+        return res.status(200).json({ message: 'Academic term updated successfully!' });
       }
+
+      // Validate the term dates against its academic year date
+      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
+        return res.status(400).json({ message: "Invalid date range for term's academic year!" });
+
+      if (result.status !== 'Active')
+        return res.status(400).json({ message: 'Academic term has already ended!' });
+
+      // Check for existing academic terms
+      const latestTerm = await AcademicTerm.findOne({
+        where: {
+          id: { [Op.ne]: academicTermId }, // Exclude the current academic term
+        },
+        order: [['endDate', 'DESC']],
+      });
+
+      // Ensure the new startDate is greater than the endDate of the latest academic term
+      if (latestTerm && termStartDate <= new Date(latestTerm.endDate))
+        return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term!' });
 
       // Update academic term
       result.name = name;
-      result.startDate = startDate;
-      result.endDate = endDate;
-      result.academicYearId = academicYearId;
+      result.startDate = termStartDate;
+      result.endDate = termEndDate;
       await result.save();
 
       return res.status(200).json({ message: 'Academic term updated successfully!' });

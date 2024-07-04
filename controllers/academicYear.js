@@ -59,13 +59,22 @@ exports.addAcademicYear = async (req, res) => {
         return res.status(400).json({ message: `${alreadyExist.name} is currently running!` });
 
       if (alreadyExist)
-        return res.status(400).json({ message: `${name} already exist!` });
+        return res.status(400).json({ message: `${name} already exists!` });
 
-      // Create a new instance of Academic term
+      // Check for existing academic years
+      const latestYear = await AcademicYear.findOne({
+        order: [['endDate', 'DESC']],
+      });
+
+      // Ensure the new startDate is greater than the endDate of the latest academic year
+      if (latestYear && new Date(startDate) <= new Date(latestYear.endDate))
+        return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
+
+      // Create a new instance of Academic Year
       await AcademicYear.create({ name, startDate, endDate });
       res.status(200).json({ message: 'Academic year created successfully!' });
     } catch (error) {
-      console.error('Error creating year:', error);
+      console.error('Error creating academic year:', error);
       res.status(500).json({ message: "Can't create academic year at the moment!" });
     }
   });
@@ -88,17 +97,36 @@ exports.updateAcademicYear = async (req, res) => {
       if (!result)
         return res.status(400).json({ message: 'Academic year not found!' });
 
-      // Ensure only one active academic year
-      const activeYear = await AcademicYear.findOne({
-        where: { status: 'Active' }
-      });
-      if (activeYear && activeYear.id !== academicYearId) {
-        return res.status(400).json({ message: 'Only one active academic year is allowed!' });
+      // Convert dates to Date objects
+      const newStartDate = new Date(startDate);
+      const newEndDate = new Date(endDate);
+
+      // Check if startDate and endDate of result have not changed
+      if (result.startDate.toDateString() === newStartDate.toDateString() && result.endDate.toDateString() === newEndDate.toDateString()) {
+        result.name = name;
+        await result.save();
+
+        return res.status(200).json({ message: 'Academic year updated successfully!' });
       }
 
+      if (result.status !== 'Active')
+        return res.status(400).json({ message: 'Academic year has already ended!' });
+
+      // Check for existing academic years
+      const latestYear = await AcademicYear.findOne({
+        where: {
+          id: { [Op.ne]: academicYearId }, // Exclude the current academic year
+        },
+        order: [['endDate', 'DESC']],
+      });
+
+      // Ensure the new startDate is greater than the endDate of the latest academic year
+      if (latestYear && newStartDate <= new Date(latestYear.endDate))
+        return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
+
       result.name = name;
-      result.startDate = startDate;
-      result.endDate = endDate;
+      result.startDate = newStartDate;
+      result.endDate = newEndDate;
       await result.save();
 
       return res.status(200).json({ message: 'Academic year updated successfully!' });
