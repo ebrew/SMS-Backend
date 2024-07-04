@@ -468,7 +468,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
     try {
       const assessmentId = req.params.id;
 
-      // Fetch the assessment details along with the academic year
+      // Fetch the assessment details along with the academic term and year
       const assessment = await Assessment.findByPk(assessmentId, {
         include: {
           model: AcademicTerm,
@@ -513,12 +513,15 @@ exports.studentsAssessmentGrades = async (req, res) => {
           photo: student.Student.passportPhoto,
           score: score ? (parseFloat(score.score) / parseFloat(assessment.weight)).toFixed(2) : null 
         };
-      })).filter(student => student !== null);
+      }));
+
+      // Filter out any null values from the results
+      const filteredClassStudents = classStudents.filter(student => student !== null);
 
       const result = {
         assessmentId: assessmentId,
         weight: assessment.weight,
-        classStudents
+        classStudents: filteredClassStudents
       };
 
       return res.status(200).json(result);
