@@ -468,13 +468,28 @@ exports.studentsAssessmentGrades = async (req, res) => {
     try {
       const assessmentId = req.params.id;
 
-      const assessment = await Assessment.findByPk(assessmentId);
+      // Fetch the assessment details along with the academic year
+      const assessment = await Assessment.findByPk(assessmentId, {
+        include: {
+          model: AcademicTerm,
+          include: {
+            model: AcademicYear,
+            attributes: ['id'],
+          },
+        },
+      });
+
       if (!assessment) 
         return res.status(400).json({ message: "Assessment not found!" });
 
+      const academicYearId = assessment.AcademicTerm.AcademicYear.id;
+
       // Fetching class students
       const students = await ClassStudent.findAll({
-        where: { classSessionId: assessment.classSessionId, academicYearId: assessment.academicYearId },
+        where: { 
+          classSessionId: assessment.classSessionId, 
+          academicYearId: academicYearId 
+        },
         include: {
           model: Student,
           attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
@@ -482,6 +497,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
         order: [[{ model: Student }, 'firstName', 'ASC']],
       });
 
+      // Process the students and their grades
       const classStudents = await Promise.all(students.map(async (student) => {
         if (!student.Student) {
           return null;
@@ -512,4 +528,3 @@ exports.studentsAssessmentGrades = async (req, res) => {
     }
   });
 };
-
