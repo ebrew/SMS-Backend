@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     async setInactiveIfEndDateDue() {
-      if (this.status === 'Active' && new Date() >= this.endDate) {
+      if (this.status === 'Active' && new Date() > this.endDate) {
         this.status = 'Inactive';
         await this.save();
       }

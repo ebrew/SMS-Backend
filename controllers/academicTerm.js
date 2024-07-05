@@ -84,7 +84,7 @@ exports.addAcademicTerm = async (req, res) => {
       });
 
       // Ensure the new startDate is greater than the endDate of the latest academic term
-      if (latestTerm && new Date(startDate) <= new Date(latestTerm.endDate))
+      if (latestTerm && new Date(startDate) < new Date(latestTerm.endDate))
         return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term.' });
 
       // Create a new instance of Academic term
@@ -145,7 +145,7 @@ exports.updateAcademicTerm = async (req, res) => {
       });
 
       // Ensure the new startDate is greater than the endDate of the latest academic term
-      if (latestTerm && termStartDate <= new Date(latestTerm.endDate))
+      if (latestTerm && termStartDate < new Date(latestTerm.endDate))
         return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term!' });
 
       // Update academic term
@@ -239,12 +239,10 @@ exports.endAcademicTerm = async (req, res) => {
 
       // Set the end date to today's date
       academicTerm.endDate = new Date();
+      academicTerm.status = 'Inactive';
 
       // Save the updated academic term
       await academicTerm.save();
-
-      // Trigger the status check and update if necessary
-      await academicTerm.setInactiveIfEndDateDue();
 
       return res.status(200).json({ message: 'Academic term ended successfully!' });
     } catch (error) {

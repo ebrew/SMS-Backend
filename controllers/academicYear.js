@@ -67,7 +67,7 @@ exports.addAcademicYear = async (req, res) => {
       });
 
       // Ensure the new startDate is greater than the endDate of the latest academic year
-      if (latestYear && new Date(startDate) <= new Date(latestYear.endDate))
+      if (latestYear && new Date(startDate) < new Date(latestYear.endDate))
         return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
 
       // Create a new instance of Academic Year
@@ -248,13 +248,11 @@ exports.endAcademicYear = async (req, res) => {
 
       // Set the end date to today's date
       academicYear.endDate = new Date();
+      academicYear.status = 'Inactive';
 
       // Save the updated academic year
       await academicYear.save();
-
-      // Trigger the status check and update if necessary
-      await academicYear.setInactiveIfEndDateDue();
-
+      
       return res.status(200).json({ message: 'Academic year ended successfully!' });
     } catch (error) {
       console.error('Error ending academic year:', error);

@@ -396,10 +396,17 @@ exports.gradeStudent = async (req, res) => {
         return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessment.marks}` });
       }
 
-      // Check if the student is already graded
-      const alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
+      // // Check if the student is already graded
+      // const alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
+      // if (alreadyExist) {
+      //   return res.status(400).json({ message: 'Student already graded!' });
+      // }
+      // updating if the student is already graded
+      let alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
       if (alreadyExist) {
-        return res.status(400).json({ message: 'Student already graded!' });
+        alreadyExist.score = score;
+        alreadyExist.save();
+        return res.status(200).json({ message: 'Student graded successfully!' });
       }
 
       // Create a new grade
@@ -511,7 +518,8 @@ exports.studentsAssessmentGrades = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          score: score ? (parseFloat(score.score) / parseFloat(assessment.weight)).toFixed(2) : null 
+          score: score.score,
+          weight: score ? (parseFloat(score.score) / parseFloat(assessment.weight)).toFixed(2) : null 
         };
       }));
 
