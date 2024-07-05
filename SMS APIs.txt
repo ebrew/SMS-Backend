@@ -370,13 +370,18 @@ Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-65. // update a student's grade
+// update a student's grade
 API: << server >>/api/v1/teacher/update_student_grade/id
 Method: PUT
 Authorization: Bearer <token from login>
 
-66. // Students' assessment grades
+65. // Students' grades for a particular assessment
 API: << server >>/api/v1/teacher/assessment_grades/assessmentId
+Method: GET
+Authorization: Bearer <token from login>
+
+66. // Students' grades for a particular subject's assessments
+API: << server >>/api/v1/teacher/subject_assessment_grades/:academicTermId/:classSessionId/:subjectId
 Method: GET
 Authorization: Bearer <token from login>
 

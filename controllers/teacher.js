@@ -2,7 +2,7 @@ require('dotenv').config();
 var express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Op, or, and } = require('sequelize');
+const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade } = require("../db/models/index")
 const Mail = require('../utility/email');
@@ -396,16 +396,11 @@ exports.gradeStudent = async (req, res) => {
         return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessment.marks}` });
       }
 
-      // // Check if the student is already graded
-      // const alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
-      // if (alreadyExist) {
-      //   return res.status(400).json({ message: 'Student already graded!' });
-      // }
-      // updating if the student is already graded
+      // Check if the student is already graded
       let alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
       if (alreadyExist) {
         alreadyExist.score = score;
-        alreadyExist.save();
+        await alreadyExist.save();
         return res.status(200).json({ message: 'Student graded successfully!' });
       }
 
@@ -420,7 +415,7 @@ exports.gradeStudent = async (req, res) => {
   });
 };
 
-// Update student grade
+// Update student grade   || Not in use
 exports.updateStudentGrade = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {
@@ -466,7 +461,7 @@ exports.updateStudentGrade = async (req, res) => {
   });
 };
 
-// Students' assessment grades
+// Students' grades for a particular assessment
 exports.studentsAssessmentGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) 
@@ -486,8 +481,8 @@ exports.studentsAssessmentGrades = async (req, res) => {
         },
       });
 
-      if (!assessment) 
-        return res.status(400).json({ message: "Assessment not found!" });
+      if (!assessment || !assessment.AcademicTerm || !assessment.AcademicTerm.AcademicYear) 
+        return res.status(400).json({ message: "Assessment or related academic term/year not found!" });
 
       const academicYearId = assessment.AcademicTerm.AcademicYear.id;
 
@@ -518,8 +513,8 @@ exports.studentsAssessmentGrades = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          score: score.score,
-          weight: score ? (parseFloat(score.score) / parseFloat(assessment.weight)).toFixed(2) : null 
+          score: score ? score.score : null,
+          weight: score ? ((parseFloat(score.score) / parseFloat(assessment.marks)) * parseFloat(assessment.weight)).toFixed(2) : null 
         };
       }));
 
@@ -539,3 +534,103 @@ exports.studentsAssessmentGrades = async (req, res) => {
     }
   });
 };
+
+// Students' grades for a particular subject's assessments
+exports.subjectAssessmentsGrades = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) 
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { academicTermId, classSessionId, subjectId } = req.params;
+
+      // Fetch the assessments details along with the academic term and year
+      const assessments = await Assessment.findAll({
+        where: {
+          subjectId,
+          classSessionId,
+          academicTermId
+        },
+        include: {
+          model: AcademicTerm,
+          include: {
+            model: AcademicYear,
+            attributes: ['id'],
+          },
+        },
+      });
+
+      if (assessments.length === 0) 
+        return res.status(400).json({ message: "No assessment made for the academic term!" });
+
+      const academicYearId = assessments[0].AcademicTerm.AcademicYear.id;
+
+      // Fetching class students
+      const students = await ClassStudent.findAll({
+        where: { 
+          classSessionId,
+          academicYearId
+        },
+        include: {
+          model: Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        },
+        order: [[{ model: Student }, 'firstName', 'ASC']],
+      });
+
+      // Process the students and their grades
+      const classStudents = await Promise.all(students.map(async (student) => {
+        if (!student.Student) {
+          return null;
+        }
+
+        let totalscore = 0;
+        let studentTotalWeight = 0;
+
+        // Fetch grades for each student's assessments in the specified subject
+        const grades = await Grade.findAll({
+          where: {
+            studentId: student.Student.id,
+            assessmentId: {
+              [Op.in]: assessments.map(assessment => assessment.id)
+            }
+          },
+          include: {
+            model: Assessment,
+            attributes: ['weight', 'marks']
+          }
+        });
+
+        grades.forEach(grade => {
+          studentTotalWeight += parseFloat(grade.Assessment.weight);
+          totalscore += (parseFloat(grade.score) / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight);
+        });
+
+        return {
+          studentId: student.Student.id,
+          fullName: student.Student.middleName
+            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+            : `${student.Student.firstName} ${student.Student.lastName}`,
+          photo: student.Student.passportPhoto,
+          totalscore: totalscore.toFixed(2),
+          totalWeight: studentTotalWeight,
+          finalScore: studentTotalWeight ? (totalscore / studentTotalWeight).toFixed(2) : null
+        };
+      }));
+
+      // Filter out any null values from the results
+      const filteredClassStudents = classStudents.filter(student => student !== null);
+
+      const result = {
+        totalWeight: assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0),
+        classStudents: filteredClassStudents
+      };
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching students assessments:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
