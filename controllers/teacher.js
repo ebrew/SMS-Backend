@@ -600,7 +600,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           return null;
         }
 
-        let studentTotalMarks = 0;
+        // let studentTotalMarks = 0;
         let assessmentScore = 0;
         const assessmentsScores = {};
 
@@ -624,7 +624,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           const score = grade ? parseFloat(grade.score) : 0;
           const weightedScore = grade ? (score / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight) : 0;
 
-          studentTotalMarks += score;
+          // studentTotalMarks += score;
           assessmentScore += weightedScore;
 
           assessmentsScores[assessment.name] = weightedScore;
@@ -641,7 +641,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           photo: student.Student.passportPhoto,
           assessmentsScores: assessmentsScores,
           totalScore: totalScore,
-          studentTotalMarks: studentTotalMarks,
+          // studentTotalMarks: studentTotalMarks,
           grade: grade,
           remarks: remarks
         };
