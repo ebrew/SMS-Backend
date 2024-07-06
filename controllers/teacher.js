@@ -252,7 +252,7 @@ exports.updateAssessment = async (req, res) => {
             id: { [Op.ne]: id }, // Exclude the current assessment
           },
         }));
-        
+
         if ((totalWeight + parseFloat(weight)) > 100.00) {
           return res.status(400).json({ message: 'Total weight of assessments exceeds 100%!' });
         }
@@ -464,7 +464,7 @@ exports.updateStudentGrade = async (req, res) => {
 // Students' grades for a particular assessment
 exports.studentsAssessmentGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) 
+    if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
@@ -481,16 +481,16 @@ exports.studentsAssessmentGrades = async (req, res) => {
         },
       });
 
-      if (!assessment || !assessment.AcademicTerm || !assessment.AcademicTerm.AcademicYear) 
+      if (!assessment || !assessment.AcademicTerm || !assessment.AcademicTerm.AcademicYear)
         return res.status(400).json({ message: "Assessment or related academic term/year not found!" });
 
       const academicYearId = assessment.AcademicTerm.AcademicYear.id;
 
       // Fetching class students
       const students = await ClassStudent.findAll({
-        where: { 
-          classSessionId: assessment.classSessionId, 
-          academicYearId: academicYearId 
+        where: {
+          classSessionId: assessment.classSessionId,
+          academicYearId: academicYearId
         },
         include: {
           model: Student,
@@ -514,7 +514,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
           score: score ? score.score : null,
-          weight: score ? ((parseFloat(score.score) / parseFloat(assessment.marks)) * parseFloat(assessment.weight)).toFixed(2) : null 
+          weight: score ? ((parseFloat(score.score) / parseFloat(assessment.marks)) * parseFloat(assessment.weight)).toFixed(2) : null
         };
       }));
 
@@ -538,7 +538,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
 // Students' grades for a particular subject's assessments
 exports.subjectAssessmentsGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) 
+    if (err)
       return res.status(401).json({ message: 'Unauthorized' });
 
     try {
@@ -560,14 +560,14 @@ exports.subjectAssessmentsGrades = async (req, res) => {
         },
       });
 
-      if (assessments.length === 0) 
+      if (assessments.length === 0)
         return res.status(400).json({ message: "No assessment made for the academic term!" });
 
       const academicYearId = assessments[0].AcademicTerm.AcademicYear.id;
 
       // Fetching class students
       const students = await ClassStudent.findAll({
-        where: { 
+        where: {
           classSessionId,
           academicYearId
         },
@@ -578,14 +578,17 @@ exports.subjectAssessmentsGrades = async (req, res) => {
         order: [[{ model: Student }, 'firstName', 'ASC']],
       });
 
+      const subjectTotalMarks = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.marks), 0); // sum all required marks
+      const subjectTotalWeight = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0); // sum all required weight
+
       // Process the students and their grades
       const classStudents = await Promise.all(students.map(async (student) => {
         if (!student.Student) {
           return null;
         }
 
-        let totalscore = 0;
-        let studentTotalWeight = 0;
+        let studentTotalMarks = 0;
+        let assessmentScore = 0;
 
         // Fetch grades for each student's assessments in the specified subject
         const grades = await Grade.findAll({
@@ -601,10 +604,17 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           }
         });
 
+        // Calculate total marks and assessment score
         grades.forEach(grade => {
-          studentTotalWeight += parseFloat(grade.Assessment.weight);
-          totalscore += (parseFloat(grade.score) / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight);
+          studentTotalMarks += parseFloat(grade.score);
+          assessmentScore += (parseFloat(grade.score) / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight);
         });
+
+        // Adjust if no grades found
+        if (grades.length === 0) {
+          assessmentScore = 0;
+          studentTotalMarks = 0;
+        }
 
         return {
           studentId: student.Student.id,
@@ -612,9 +622,8 @@ exports.subjectAssessmentsGrades = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          totalscore: totalscore.toFixed(2),
-          totalWeight: studentTotalWeight,
-          finalScore: studentTotalWeight ? (totalscore / studentTotalWeight).toFixed(2) : null
+          totalscore: assessmentScore.toFixed(2),
+          studentTotalMarks: studentTotalMarks,
         };
       }));
 
@@ -622,7 +631,8 @@ exports.subjectAssessmentsGrades = async (req, res) => {
       const filteredClassStudents = classStudents.filter(student => student !== null);
 
       const result = {
-        totalWeight: assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0),
+        subjectTotalWeight: subjectTotalWeight,
+        subjectTotalMarks: subjectTotalMarks,
         classStudents: filteredClassStudents
       };
 
@@ -633,4 +643,5 @@ exports.subjectAssessmentsGrades = async (req, res) => {
     }
   });
 };
+
 
