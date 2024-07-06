@@ -11,4 +11,7 @@ router.put('/update/:id', gradingSystemController.updateGradePoint)
 // Delete Grade Point
 router.delete('/delete/:id', gradingSystemController.deleteGradePoint)
 
+// Fetch all GradePoints in descending order of grade
+router.get('/all', gradingSystemController.getAllGradePoints);
+
 module.exports = router;

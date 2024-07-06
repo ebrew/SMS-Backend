@@ -324,12 +324,12 @@ GRADING SYSTEM
 56. // Create a new Grading point
 API: << server >>/api/v1/grading_system/create
 Method: POST
-Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
+Content: { minScore, maxScore, grade, remarks }
 Authorization: Bearer <token from login>
 
 57. // Update an already created GradePoint
 API: << server >>/api/v1/grading_system/update/GradePointId
-Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
+Content: { minScore, maxScore, grade, remarks }
 Method: PUT
 Authorization: Bearer <token from login>
 
@@ -338,62 +338,67 @@ API: << server >>/api/v1/grading_system/delete/GradePointId
 Method: DELETE
 Authorization: Bearer <token from login>
 
+59. // Fetch all GradePoints in descending order of grade
+API: << server >>/api/v1/grading_system/all
+Method: GET
+Authorization: Bearer <token from login>
+
 
 TEACHER ROLE
-59. // Get a teacher's assigned classes after login
+60. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-60. // Get a teacher's assigned class's students
+61. // Get a teacher's assigned class's students
 API: << server >>/api/v1/teacher/class_students/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-61. // Get a teacher's assigned class's subjects
+62. // Get a teacher's assigned class's subjects
 API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-62. // Create a new assessment
+63. // Create a new assessment
 API: << server >>/api/v1/teacher/assessment/create
 Method: POST
 Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
 Authorization: Bearer <token from login>
 
-63. // Fetching a particular subject assessment
+64. // Fetching a particular subject assessment
 API: << server >>/api/v1/teacher/get_assessment/id
 Method: GET
 Authorization: Bearer <token from login>
 
-64. // Updating a particular subject assessment
+65. // Updating a particular subject assessment
 API: << server >>/api/v1/teacher/update_assessment/id
 Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-65. // Deleting a particular subject assessment
+66. // Deleting a particular subject assessment
 API: << server >>/api/v1/teacher/delete_assessment/id
 Method: DELETE
 Authorization: Bearer <token from login>
 
-66. // Get all subject assessments for the active academic term
+67. // Get all subject assessments for the active academic term
 API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-67. // Grade student
+68. // Grade student
 API: << server >>/api/v1/teacher/grade_student
 Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-68. // Students' grades for a particular assessment
+69. // Students' grades for a particular assessment
 API: << server >>/api/v1/teacher/assessment_grades/assessmentId
 Method: GET
 Authorization: Bearer <token from login>
 
-69. // Students' grades for a particular subject's assessments
+70. // Students' grades for a particular subject's assessments
 API: << server >>/api/v1/teacher/subject_assessment_grades/:academicTermId/:classSessionId/:subjectId
 Method: GET
 Authorization: Bearer <token from login>

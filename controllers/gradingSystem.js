@@ -7,7 +7,6 @@ const passport = require('../db/config/passport')
 const { User, Student, GradingSystem } = require("../db/models/index")
 const Mail = require('../utility/email');
 
-
 // Create a new Grading point
 exports.addGradePoint = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -172,3 +171,26 @@ exports.deleteGradePoint = async (req, res) => {
     }
   });
 };
+
+// Fetch all GradePoints in descending order of grade
+exports.getAllGradePoints = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      // Fetch all grade points in descending order of grade
+      const gradePoints = await GradingSystem.findAll({
+        order: [['grade', 'DESC']]
+      });
+
+      return res.status(200).json({ gradePoints });
+    } catch (error) {
+      console.error('Error fetching grade points:', error);
+      return res.status(500).json({ message: "Can't fetch grade points at the moment!" });
+    }
+  });
+};
+
+
