@@ -7,8 +7,6 @@ const passport = require('../db/config/passport')
 const { User, Student, GradingSystem } = require("../db/models/index")
 const Mail = require('../utility/email');
 
-const { Op } = require('sequelize');
-
 // Create a new Grading point
 exports.addGradePoint = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
