@@ -481,8 +481,8 @@ exports.studentsAssessmentGrades = async (req, res) => {
         },
       });
 
-      if (!assessment || !assessment.AcademicTerm || !assessment.AcademicTerm.AcademicYear)
-        return res.status(400).json({ message: "Assessment or related academic term/year not found!" });
+      if (!assessment)
+        return res.status(400).json({ message: "Assessment not found!" });
 
       const academicYearId = assessment.AcademicTerm.AcademicYear.id;
 
@@ -524,6 +524,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
       const result = {
         assessmentId: assessmentId,
         weight: assessment.weight,
+        marks: assessment.marks,
         classStudents: filteredClassStudents
       };
 
