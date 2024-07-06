@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op, or, and, where } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade } = require("../db/models/index")
+const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade, GradingSystem } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
@@ -537,7 +537,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
 };
 
 // Students' grades for a particular subject's assessments
-exports.subjectAssessmentsGrades = async (req, res) => {
+exports.subjectAssessmentsGrades1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
@@ -585,12 +585,12 @@ exports.subjectAssessmentsGrades = async (req, res) => {
 
       // Define grading scale and remarks
       const getGradeAndRemarks = (score) => {
-        if (score >= 90) return { grade: 'A', remarks: 'Excellent' };
-        if (score >= 80) return { grade: 'B', remarks: 'Very Good' };
-        if (score >= 70) return { grade: 'C', remarks: 'Good' };
-        if (score >= 60) return { grade: 'D', remarks: 'Fair' };
-        if (score >= 50) return { grade: 'E', remarks: 'Pass' };
-        return { grade: 'F', remarks: 'Fail' };
+        if (score >= 90) return { grade: '1', remarks: 'Excellent' };
+        if (score >= 80) return { grade: '2', remarks: 'Very Good' };
+        if (score >= 70) return { grade: '3', remarks: 'Good' };
+        if (score >= 60) return { grade: '4', remarks: 'Fair' };
+        if (score >= 50) return { grade: '5', remarks: 'Pass' };
+        return { grade: '6', remarks: 'Fail' };
       };
 
       // Process the students and their grades
@@ -681,7 +681,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
 };
 
 // Students' grades for a particular subject's assessments
-exports.subjectAssessmentsGradesLaterUse = async (req, res) => {
+exports.subjectAssessmentsGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
@@ -724,7 +724,7 @@ exports.subjectAssessmentsGradesLaterUse = async (req, res) => {
         order: [[{ model: Student }, 'firstName', 'ASC']],
       });
 
-      const subjectTotalMarks = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.marks), 0); // sum all required marks
+      // const subjectTotalMarks = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.marks), 0); // sum all required marks
       const subjectTotalWeight = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0); // sum all required weight
 
       // Define a function to fetch grade and remarks based on totalScore
