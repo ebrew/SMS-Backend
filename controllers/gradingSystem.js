@@ -7,6 +7,8 @@ const passport = require('../db/config/passport')
 const { User, Student, GradingSystem } = require("../db/models/index")
 const Mail = require('../utility/email');
 
+const { Op } = require('sequelize');
+
 // Create a new Grading point
 exports.addGradePoint = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -20,6 +22,15 @@ exports.addGradePoint = async (req, res) => {
       // Check for missing fields
       if (minScore == null || maxScore == null || !grade || !remarks) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
+
+      // Check if grade already exists
+      const existingGrade = await GradingSystem.findOne({
+        where: { grade }
+      });
+
+      if (existingGrade) {
+        return res.status(400).json({ message: 'Grade already exists!' });
       }
 
       // Check for overlapping grade points
