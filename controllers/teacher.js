@@ -667,8 +667,8 @@ exports.subjectAssessmentsGrades = async (req, res) => {
       });
 
       const result = {
-        assessments: assessments.map(assessment => ({ id: assessment.id, name: assessment.name, weight: assessment.weight, marks: assessment.marks })),
         subjectTotalWeight: subjectTotalWeight,
+        assessments: assessments.map(assessment => ({ id: assessment.id, name: assessment.name, weight: assessment.weight, marks: assessment.marks })),
         // subjectTotalMarks: subjectTotalMarks,
         classStudents: filteredClassStudents
       };
