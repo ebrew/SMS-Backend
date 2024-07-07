@@ -539,8 +539,9 @@ exports.studentsAssessmentGrades = async (req, res) => {
 // Students' grades for a particular subject's assessments
 exports.subjectAssessmentsGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
+    if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { academicTermId, classSessionId, subjectId } = req.params;
@@ -580,8 +581,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
         order: [[{ model: Student }, 'firstName', 'ASC']],
       });
 
-      // const subjectTotalMarks = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.marks), 0); // sum all required marks
-      const subjectTotalWeight = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0); // sum all required weight
+      const subjectTotalWeight = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0);
 
       // Define a function to fetch grade and remarks based on totalScore
       const getGradeAndRemarks = async (totalScore) => {
@@ -600,9 +600,8 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           return null;
         }
 
-        // let studentTotalMarks = 0;
         let assessmentScore = 0;
-        const assessmentsScores = {};
+        const assessmentsScores = [];
 
         // Fetch grades for each student's assessments in the specified subject
         const grades = await Grade.findAll({
@@ -624,10 +623,12 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           const score = grade ? parseFloat(grade.score) : 0;
           const weightedScore = grade ? (score / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight) : 0;
 
-          // studentTotalMarks += score;
           assessmentScore += weightedScore;
 
-          assessmentsScores[assessment.name] = weightedScore;
+          assessmentsScores.push({
+            name: assessment.name,
+            score: weightedScore
+          });
         });
 
         const totalScore = assessmentScore.toFixed(2);
@@ -641,7 +642,6 @@ exports.subjectAssessmentsGrades = async (req, res) => {
           photo: student.Student.passportPhoto,
           assessmentsScores: assessmentsScores,
           totalScore: totalScore,
-          // studentTotalMarks: studentTotalMarks,
           grade: grade,
           remarks: remarks
         };
@@ -668,8 +668,12 @@ exports.subjectAssessmentsGrades = async (req, res) => {
 
       const result = {
         subjectTotalWeight: subjectTotalWeight,
-        assessments: assessments.map(assessment => ({ id: assessment.id, name: assessment.name, weight: assessment.weight, marks: assessment.marks })),
-        // subjectTotalMarks: subjectTotalMarks,
+        assessments: assessments.map(assessment => ({
+          id: assessment.id,
+          name: assessment.name,
+          weight: assessment.weight,
+          marks: assessment.marks
+        })),
         classStudents: filteredClassStudents
       };
 
@@ -680,5 +684,6 @@ exports.subjectAssessmentsGrades = async (req, res) => {
     }
   });
 };
+
 
 
