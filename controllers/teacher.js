@@ -391,21 +391,25 @@ exports.gradeStudent = async (req, res) => {
         return res.status(400).json({ message: 'Subject assessment not found!' });
       }
 
+      // Ensure the score and assessment marks are numbers
+      const assessmentMarks = parseFloat(assessment.marks);
+      const studentScore = parseFloat(score);
+
       // Ensure the score does not exceed the assessment's marks
-      if (score > assessment.marks) {
-        return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessment.marks}` });
+      if (studentScore > assessmentMarks) {
+        return res.status(400).json({ message: `Score exceeds the maximum marks for this assessment! Maximum marks: ${assessmentMarks}` });
       }
 
       // Check if the student is already graded
       let alreadyExist = await Grade.findOne({ where: { assessmentId, studentId } });
       if (alreadyExist) {
-        alreadyExist.score = score;
+        alreadyExist.score = studentScore;
         await alreadyExist.save();
         return res.status(200).json({ message: 'Student graded successfully!' });
       }
 
       // Create a new grade
-      await Grade.create({ assessmentId, studentId, score });
+      await Grade.create({ assessmentId, studentId, score: studentScore });
       return res.status(200).json({ message: 'Student graded successfully!' });
 
     } catch (error) {
@@ -414,6 +418,7 @@ exports.gradeStudent = async (req, res) => {
     }
   });
 };
+
 
 // Update student grade   || Not in use
 exports.updateStudentGrade = async (req, res) => {
