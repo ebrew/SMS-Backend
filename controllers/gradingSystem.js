@@ -1,11 +1,7 @@
 require('dotenv').config();
-var express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { Op, or, and, where } = require('sequelize');
+const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
-const { User, Student, GradingSystem } = require("../db/models/index")
-const Mail = require('../utility/email');
+const { GradingSystem } = require("../db/models/index")
 
 // Create a new Grading point
 exports.addGradePoint = async (req, res) => {

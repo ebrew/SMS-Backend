@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Op, or, and, where } = require('sequelize');
+const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { ClassSubject, Subject, AssignedSubject, Class } = require("../db/models/index");
 

@@ -11,11 +11,13 @@ var departmentRouter = require('./routes/departments');
 var classRouter = require('./routes/class');
 var subjectRouter = require('./routes/subject');
 var teacherRouter = require('./routes/teacher');
+var assessmentRouter = require('./routes/assessment');
 var academicYearRouter = require('./routes/academicYear');
 var academicTermRouter = require('./routes/academicTerm');
 var assignRouter = require('./routes/assigning');
 var studentRouter = require('./routes/student');
 var gradingSystemRouter = require('./routes/gradingPoint');
+var resultRouter = require('./routes/result');
 
 var app = express();
 
@@ -38,11 +40,13 @@ app.use('/api/v1/department', departmentRouter);
 app.use('/api/v1/class', classRouter);
 app.use('/api/v1/subject', subjectRouter);
 app.use('/api/v1/teacher', teacherRouter);
+app.use('/api/v1/teacher', assessmentRouter);
 app.use('/api/v1/academic_year', academicYearRouter);
 app.use('/api/v1/academic_term', academicTermRouter);
 app.use('/api/v1/assigning', assignRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/grading_system', gradingSystemRouter);
+app.use('/api/v1/result', resultRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

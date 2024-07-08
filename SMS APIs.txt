@@ -1,4 +1,4 @@
-Server << server >>: https://sms-backend-8vd4.onrender.com
+Server << server >>: http://localhost:3000 OR https://sms-backend-8vd4.onrender.com
 
 ADMIN ROLE
 1. // Staff Registration by Admin
@@ -360,6 +360,7 @@ API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
+GRADING AND ASSESSMENT
 63. // Create a new assessment
 API: << server >>/api/v1/teacher/assessment/create
 Method: POST
@@ -399,9 +400,18 @@ Method: GET
 Authorization: Bearer <token from login>
 
 70. // Students' grades for a particular subject's assessments
-API: << server >>/api/v1/teacher/subject_assessment_grades/:academicTermId/:classSessionId/:subjectId
+API: << server >>/api/v1/teacher/subject_assessment_grades/academicTermId/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
+
+RESULTS
+71. // Fetch class students' results for a particular academic term
+API: << server >>/api/v1/result/class_students/academicTermId/classSessioId/
+Method: GET
+Authorization: Bearer <token from login>
+
+
+
 
 
 

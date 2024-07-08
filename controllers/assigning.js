@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { Op, or, and } = require('sequelize');
+const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Class, ClassSubject, Section, Subject, User, AssignedTeacher, AssignedSubject, AcademicTerm } = require("../db/models/index");
+const { Class, ClassSubject, Section, Subject, User, AssignedTeacher, AssignedSubject } = require("../db/models/index");
 const Mail = require('../utility/email');
 
 // Assign a class to a teacher

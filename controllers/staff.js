@@ -1,8 +1,7 @@
 require('dotenv').config();
-var express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Op, or, and } = require('sequelize');
+const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { User, Student, Parent, Class, Section, ResetRequest, Department, AssignedTeacher, ClassStudent, AcademicYear } = require("../db/models/index")
 const Mail = require('../utility/email');
