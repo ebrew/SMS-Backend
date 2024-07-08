@@ -430,17 +430,6 @@ exports.subjectAssessmentsGrades = async (req, res) => {
 
       const subjectTotalWeight = assessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0);
 
-      // // Define a function to fetch grade and remarks based on totalScore
-      // const getGradeAndRemarks = async (totalScore) => {
-      //   const grading = await GradingSystem.findOne({
-      //     where: {
-      //       minScore: { [Op.lte]: totalScore },
-      //       maxScore: { [Op.gte]: totalScore }
-      //     }
-      //   });
-      //   return grading ? { grade: grading.grade, remarks: grading.remarks } : { grade: 'N/A', remarks: 'N/A' };
-      // };
-
       // Process the students and their grades
       const classStudents = await Promise.all(students.map(async (student) => {
         if (!student.Student) {

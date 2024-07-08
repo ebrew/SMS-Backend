@@ -406,7 +406,7 @@ Authorization: Bearer <token from login>
 
 RESULTS
 71. // Fetch class students' results for a particular academic term
-API: << server >>/api/v1/result/class_students/academicTermId/classSessioId/
+API: << server >>/api/v1/result/class_students/academicTermId/classSessioId
 Method: GET
 Authorization: Bearer <token from login>
 
