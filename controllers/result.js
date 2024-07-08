@@ -175,6 +175,7 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
   }
 };
 
+
 // Fetch students results for a class section subjects a particular academic term
 exports.classStudentsResults = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
