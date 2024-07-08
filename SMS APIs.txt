@@ -410,6 +410,10 @@ API: << server >>/api/v1/result/class_students/academicTermId/classSessioId/
 Method: GET
 Authorization: Bearer <token from login>
 
+72. // Fetch a single student results for a particular academic term
+API: << server >>/api/v1/result/single_student/studentId/academicTermId/classSessioId/
+Method: GET
+Authorization: Bearer <token from login>
 
 
 
