@@ -15,6 +15,8 @@ const getGradeAndRemarks = async (totalScore) => {
   return grading ? { grade: grading.grade, remarks: grading.remarks } : { grade: 'N/A', remarks: 'N/A' };
 };
 
+module.exports = { getGradeAndRemarks }
+
 // Helper function to fetch class results
 const fetchClassResults = async (academicTermId, classSessionId) => {
   try {
@@ -350,6 +352,7 @@ exports.singleStudentResult = async (req, res) => {
     }
   });
 };
+
 
 
 
