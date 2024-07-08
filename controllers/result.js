@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Student, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade, GradingSystem, Subject, Class, Section } = require("../db/models/index")
+const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section } = require("../db/models/index")
 
 
 // Fetch students results for a class section subjects for a particular academic term
