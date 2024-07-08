@@ -4,7 +4,7 @@ const passport = require('../db/config/passport')
 const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section } = require("../db/models/index")
 
 
-// Fetch students results for a class section subjects for a particular academic term
+// Fetch students results for a class section subjects a particular academic term
 exports.classStudentsResults = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {
@@ -17,10 +17,8 @@ exports.classStudentsResults = async (req, res) => {
       const section = await Section.findByPk(classSessionId);
       const term = await AcademicTerm.findByPk(academicTermId);
 
-      if (!section)
-        return res.status(400).json({ message: "Class section not found!" });
-      if (!term)
-        return res.status(400).json({ message: "Academic term not found!" });
+      if (!section) return res.status(400).json({ message: "Class section not found!" });
+      if (!term) return res.status(400).json({ message: "Academic term not found!" });
 
       // Fetching class students
       const students = await ClassStudent.findAll({
@@ -47,7 +45,7 @@ exports.classStudentsResults = async (req, res) => {
       });
 
       // Calculate total assessments weight for each subject
-      const subjectsWithWeights = await Promise.all(subjects.map(async (subject) => {
+      const subjectTotalWeights = await Promise.all(subjects.map(async (subject) => {
         const subjectAssessments = await Assessment.findAll({
           where: {
             subjectId: subject.subjectId,
@@ -58,14 +56,12 @@ exports.classStudentsResults = async (req, res) => {
         });
         const subjectTotalWeight = subjectAssessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0);
         return {
-          id: subject.Subject.id,
-          name: subject.Subject.name,
-          subjectWeight: subjectTotalWeight,
-          assessments: subjectAssessments
+          subjectId: subject.subjectId,
+          subjectName: subject.Subject.name,
+          subjectTotalWeight,
+          subjectAssessments
         };
       }));
-
-      const totalWeight = subjectsWithWeights.reduce((sum, subject) => sum + subject.subjectWeight, 0);
 
       // Define a function to fetch grade and remarks based on totalScore
       const getGradeAndRemarks = async (totalScore) => {
@@ -84,15 +80,14 @@ exports.classStudentsResults = async (req, res) => {
           return null;
         }
 
-        const subjectScores = await Promise.all(subjectsWithWeights.map(async (subject) => {
-          let assessmentScore = 0;
-
-          // Fetch grades for each student's assessments in the specified subject
+        let totalScore = 0;
+        const subjectScores = await Promise.all(subjectTotalWeights.map(async (subject) => {
+          let subjectScore = 0;
           const grades = await Grade.findAll({
             where: {
               studentId: student.Student.id,
               assessmentId: {
-                [Op.in]: subject.assessments.map(assessment => assessment.id)
+                [Op.in]: subject.subjectAssessments.map(assessment => assessment.id)
               }
             },
             include: {
@@ -101,22 +96,24 @@ exports.classStudentsResults = async (req, res) => {
             }
           });
 
-          // Calculate total marks and assessment score
-          subject.assessments.forEach(assessment => {
+          subject.subjectAssessments.forEach(assessment => {
             const grade = grades.find(g => g.assessmentId === assessment.id);
             const score = grade ? parseFloat(grade.score) : 0;
             const weightedScore = grade ? (score / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight) : 0;
-            assessmentScore += weightedScore;
+            subjectScore += weightedScore;
           });
 
+          const { grade, remarks } = await getGradeAndRemarks(subjectScore.toFixed(2));
+          totalScore += subjectScore;
           return {
-            name: subject.name,
-            score: assessmentScore.toFixed(2)
+            name: subject.subjectName,
+            score: subjectScore.toFixed(2),
+            grade,
+            remarks
           };
         }));
 
-        const totalScore = subjectScores.reduce((sum, subjectScore) => sum + parseFloat(subjectScore.score), 0);
-        const { grade, remarks } = await getGradeAndRemarks(totalScore);
+        const { grade, remarks } = await getGradeAndRemarks(totalScore.toFixed(2));
 
         return {
           studentId: student.Student.id,
@@ -151,11 +148,11 @@ exports.classStudentsResults = async (req, res) => {
       });
 
       const result = {
-        totalWeight: totalWeight,
-        subjects: subjectsWithWeights.map(subject => ({
-          id: subject.id,
-          name: subject.name,
-          subjectWeight: subject.subjectWeight
+        totalWeight: subjectTotalWeights.reduce((sum, subject) => sum + subject.subjectTotalWeight, 0),
+        subjects: subjectTotalWeights.map(subject => ({
+          id: subject.subjectId,
+          name: subject.subjectName,
+          subjectWeight: subject.subjectTotalWeight
         })),
         classStudents: filteredClassStudents
       };
@@ -167,6 +164,7 @@ exports.classStudentsResults = async (req, res) => {
     }
   });
 };
+
 
 
 
