@@ -123,8 +123,8 @@ exports.classStudentsResults = async (req, res) => {
           photo: student.Student.passportPhoto,
           subjectScores: subjectScores,
           totalScore: totalScore.toFixed(2),
-          grade: grade,
-          remarks: remarks
+          // grade: grade,
+          // remarks: remarks
         };
       }));
 
