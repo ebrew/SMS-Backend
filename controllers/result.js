@@ -4,7 +4,7 @@ const passport = require('../db/config/passport')
 const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section } = require("../db/models/index")
 
 
-// Define a function to fetch grade and remarks based on totalScore
+// Function to fetch grade and remarks based on total score
 const getGradeAndRemarks = async (totalScore) => {
   const grading = await GradingSystem.findOne({
     where: {
@@ -13,6 +13,19 @@ const getGradeAndRemarks = async (totalScore) => {
     }
   });
   return grading ? { grade: grading.grade, remarks: grading.remarks } : { grade: 'N/A', remarks: 'N/A' };
+};
+
+// Function to fetch position's suffix 
+const getPositionSuffix = async (position) => {
+  let suffix = 'th';
+  if (position % 10 === 1 && position % 100 !== 11) {
+    suffix = 'st';
+  } else if (position % 10 === 2 && position % 100 !== 12) {
+    suffix = 'nd';
+  } else if (position % 10 === 3 && position % 100 !== 13) {
+    suffix = 'rd';
+  }
+  return `${position}${suffix}`;
 };
 
 // Helper function to fetch class results
@@ -175,7 +188,6 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
   }
 };
 
-
 // Fetch students results for a class section subjects a particular academic term
 exports.classStudentsResults = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -282,8 +294,6 @@ exports.classStudentsResults = async (req, res) => {
           photo: student.Student.passportPhoto,
           subjectScores: subjectScores,
           totalScore: totalScore.toFixed(2)
-          // grade: grade,
-          // remarks: remarks
         };
       }));
 
@@ -293,18 +303,25 @@ exports.classStudentsResults = async (req, res) => {
       // Sort students by totalScore in descending order and assign positions
       filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
 
-      filteredClassStudents.forEach((student, index) => {
+      // filteredClassStudents.forEach(async (student, index) => {
+      //   const position = index + 1;
+      //   // let suffix = 'th';
+      //   // if (position % 10 === 1 && position % 100 !== 11) {
+      //   //   suffix = 'st';
+      //   // } else if (position % 10 === 2 && position % 100 !== 12) {
+      //   //   suffix = 'nd';
+      //   // } else if (position % 10 === 3 && position % 100 !== 13) {
+      //   //   suffix = 'rd';
+      //   // }
+      //   // student.position = `${position}${suffix}`;
+      //   student.position = await getPositionSuffix(position);
+      // });
+      // Assign positions using the getPositionSuffix function
+      filteredClassStudents.forEach(async (student, index) => {
         const position = index + 1;
-        let suffix = 'th';
-        if (position % 10 === 1 && position % 100 !== 11) {
-          suffix = 'st';
-        } else if (position % 10 === 2 && position % 100 !== 12) {
-          suffix = 'nd';
-        } else if (position % 10 === 3 && position % 100 !== 13) {
-          suffix = 'rd';
-        }
-        student.position = `${position}${suffix}`;
+        student.position = await getPositionSuffix(position);
       });
+
 
       const result = {
         totalWeight: subjectTotalWeights.reduce((sum, subject) => sum + subject.subjectTotalWeight, 0),
@@ -337,13 +354,13 @@ exports.singleStudentResult = async (req, res) => {
       // Fetch the class results first
       const classResults = await fetchClassResults(academicTermId, classSessionId);
 
-      if (!classResults) 
+      if (!classResults)
         return res.status(400).json({ message: "Class results not found!" });
 
       // Find the specific student result
       const studentResult = classResults.classStudents.find(student => student.studentId == studentId);
 
-      if (!studentResult) 
+      if (!studentResult)
         return res.status(404).json({ message: "Student result not found!" });
 
       return res.status(200).json(studentResult);
@@ -357,6 +374,7 @@ exports.singleStudentResult = async (req, res) => {
 
 module.exports = {
   getGradeAndRemarks,
+  getPositionSuffix,
   classStudentsResults: exports.classStudentsResults,
   singleStudentResult: exports.singleStudentResult,
 };

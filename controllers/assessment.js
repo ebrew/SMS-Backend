@@ -383,7 +383,7 @@ exports.studentsAssessmentGrades = async (req, res) => {
   });
 };
 
-// Students' grades for a particular subject's assessments
+// Students' grades for a particular subject's assessments for a teacher
 exports.subjectAssessmentsGrades = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {

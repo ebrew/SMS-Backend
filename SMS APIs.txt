@@ -399,7 +399,7 @@ API: << server >>/api/v1/teacher/assessment_grades/assessmentId
 Method: GET
 Authorization: Bearer <token from login>
 
-70. // Students' grades for a particular subject's assessments
+70. // Students' grades for a particular subject's assessments for a teacher
 API: << server >>/api/v1/teacher/subject_assessment_grades/academicTermId/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
