@@ -137,17 +137,10 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
     // Sort students by totalScore in descending order and assign positions
     filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
 
-    filteredClassStudents.forEach((student, index) => {
+    // Assign positions using the getPositionSuffix function
+    filteredClassStudents.forEach(async (student, index) => {
       const position = index + 1;
-      let suffix = 'th';
-      if (position % 10 === 1 && position % 100 !== 11) {
-        suffix = 'st';
-      } else if (position % 10 === 2 && position % 100 !== 12) {
-        suffix = 'nd';
-      } else if (position % 10 === 3 && position % 100 !== 13) {
-        suffix = 'rd';
-      }
-      student.position = `${position}${suffix}`;
+      student.position = await getPositionSuffix(position);
     });
 
     // Calculate subject positions
@@ -157,19 +150,11 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
         score: parseFloat(student.subjectScores.find(s => s.subjectId === subject.subjectId).score)
       })).sort((a, b) => b.score - a.score);
 
-      subjectScores.forEach((subjectScore, index) => {
+      subjectScores.forEach(async (subjectScore, index) => {
         const position = index + 1;
-        let suffix = 'th';
-        if (position % 10 === 1 && position % 100 !== 11) {
-          suffix = 'st';
-        } else if (position % 10 === 2 && position % 100 !== 12) {
-          suffix = 'nd';
-        } else if (position % 10 === 3 && position % 100 !== 13) {
-          suffix = 'rd';
-        }
         const student = filteredClassStudents.find(s => s.studentId === subjectScore.studentId);
         const subjectDetail = student.subjectScores.find(s => s.subjectId === subject.subjectId);
-        subjectDetail.position = `${position}${suffix}`;
+        subjectDetail.position = await getPositionSuffix(position);
       });
     });
 
@@ -303,19 +288,6 @@ exports.classStudentsResults = async (req, res) => {
       // Sort students by totalScore in descending order and assign positions
       filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
 
-      // filteredClassStudents.forEach(async (student, index) => {
-      //   const position = index + 1;
-      //   // let suffix = 'th';
-      //   // if (position % 10 === 1 && position % 100 !== 11) {
-      //   //   suffix = 'st';
-      //   // } else if (position % 10 === 2 && position % 100 !== 12) {
-      //   //   suffix = 'nd';
-      //   // } else if (position % 10 === 3 && position % 100 !== 13) {
-      //   //   suffix = 'rd';
-      //   // }
-      //   // student.position = `${position}${suffix}`;
-      //   student.position = await getPositionSuffix(position);
-      // });
       // Assign positions using the getPositionSuffix function
       filteredClassStudents.forEach(async (student, index) => {
         const position = index + 1;

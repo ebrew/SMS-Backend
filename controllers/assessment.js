@@ -3,7 +3,7 @@ var express = require('express');
 const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Student, ClassStudent, AcademicYear, AcademicTerm, Assessment, Grade, GradingSystem } = require("../db/models/index")
-const { getGradeAndRemarks } = require('../controllers/result');
+const { getGradeAndRemarks, getPositionSuffix } = require('../controllers/result');
 
 
 // Create a new Assessment
@@ -489,17 +489,9 @@ exports.subjectAssessmentsGrades = async (req, res) => {
       // Sort students by totalScore in descending order and assign positions
       filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
 
-      filteredClassStudents.forEach((student, index) => {
+      filteredClassStudents.forEach(async (student, index) => {
         const position = index + 1;
-        let suffix = 'th';
-        if (position % 10 === 1 && position % 100 !== 11) {
-          suffix = 'st';
-        } else if (position % 10 === 2 && position % 100 !== 12) {
-          suffix = 'nd';
-        } else if (position % 10 === 3 && position % 100 !== 13) {
-          suffix = 'rd';
-        }
-        student.position = `${position}${suffix}`;
+        student.position = await getPositionSuffix(position);
       });
 
       const result = {
