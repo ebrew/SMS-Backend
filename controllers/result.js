@@ -174,7 +174,7 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
 };
 
 // Fetch students results for a class section subjects a particular academic term
-exports.classStudentsResults = async (req, res) => {
+exports.classStudentsResults1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -312,6 +312,149 @@ exports.classStudentsResults = async (req, res) => {
     }
   });
 };
+// Fetch students results for a class section subjects a particular academic term
+exports.classStudentsResults = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { academicTermId, classSessionId } = req.params;
+
+      const section = await Section.findByPk(classSessionId);
+      const term = await AcademicTerm.findByPk(academicTermId);
+
+      if (!section) return res.status(400).json({ message: "Class section not found!" });
+      if (!term) return res.status(400).json({ message: "Academic term not found!" });
+
+      // Fetching class students
+      const students = await ClassStudent.findAll({
+        where: {
+          classSessionId,
+          academicYearId: term.academicYearId
+        },
+        include: {
+          model: Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        }
+      });
+
+      // Fetch all class subjects
+      const subjects = await ClassSubject.findAll({
+        where: { classId: section.classId },
+        include: [
+          {
+            model: Subject,
+            attributes: ['id', 'name'],
+            order: [['name', 'ASC']]
+          },
+        ],
+      });
+
+      // Calculate total assessments weight for each subject
+      const subjectTotalWeights = await Promise.all(subjects.map(async (subject) => {
+        const subjectAssessments = await Assessment.findAll({
+          where: {
+            subjectId: subject.subjectId,
+            classSessionId,
+            academicTermId
+          },
+          attributes: ['id', 'name', 'weight', 'marks'],
+        });
+        const subjectTotalWeight = subjectAssessments.reduce((sum, assessment) => sum + parseFloat(assessment.weight), 0);
+        return {
+          subjectId: subject.subjectId,
+          subjectName: subject.Subject.name,
+          subjectTotalWeight,
+          subjectAssessments
+        };
+      }));
+
+      // Process the students and their grades
+      const classStudents = await Promise.all(students.map(async (student) => {
+        if (!student.Student) {
+          return null;
+        }
+
+        let totalScore = 0;
+        const subjectScores = await Promise.all(subjectTotalWeights.map(async (subject) => {
+          let subjectScore = 0;
+          const grades = await Grade.findAll({
+            where: {
+              studentId: student.Student.id,
+              assessmentId: {
+                [Op.in]: subject.subjectAssessments.map(assessment => assessment.id)
+              }
+            },
+            include: {
+              model: Assessment,
+              attributes: ['weight', 'marks', 'name']
+            }
+          });
+
+          subject.subjectAssessments.forEach(assessment => {
+            const grade = grades.find(g => g.assessmentId === assessment.id);
+            const score = grade ? parseFloat(grade.score) : 0;
+            const weightedScore = grade ? (score / parseFloat(grade.Assessment.marks)) * parseFloat(grade.Assessment.weight) : 0;
+            subjectScore += weightedScore;
+          });
+
+          const { grade, remarks } = await getGradeAndRemarks(subjectScore.toFixed(2));
+          totalScore += subjectScore;
+          return {
+            name: subject.subjectName,
+            score: subjectScore.toFixed(2),
+            grade,
+            remarks
+          };
+        }));
+
+        return {
+          studentId: student.Student.id,
+          fullName: student.Student.middleName
+            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+            : `${student.Student.firstName} ${student.Student.lastName}`,
+          photo: {
+            url: student.Student.passportPhoto,
+            public_id: `SMS/students/${student.Student.id}`
+          },
+          subjectScores: subjectScores,
+          totalScore: totalScore.toFixed(2)
+        };
+      }));
+
+      // Filter out any null values from the results
+      const filteredClassStudents = classStudents.filter(student => student !== null);
+
+      // Sort students by totalScore in descending order and assign positions
+      filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
+
+      // Assign positions using the getPositionSuffix function
+      for (let index = 0; index < filteredClassStudents.length; index++) {
+        const student = filteredClassStudents[index];
+        const position = index + 1;
+        student.position = await getPositionSuffix(position);
+      }
+
+      const result = {
+        totalWeight: subjectTotalWeights.reduce((sum, subject) => sum + subject.subjectTotalWeight, 0),
+        subjects: subjectTotalWeights.map(subject => ({
+          id: subject.subjectId,
+          name: subject.subjectName,
+          subjectWeight: subject.subjectTotalWeight
+        })),
+        classStudents: filteredClassStudents
+      };
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching students assessments:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
 
 // Fetch a single student results for a particular academic term
 exports.singleStudentResult = async (req, res) => {
