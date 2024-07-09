@@ -405,8 +405,8 @@ exports.classStudentsResults = async (req, res) => {
           return {
             name: subject.subjectName,
             score: subjectScore.toFixed(2),
-            grade,
-            remarks
+            // grade,
+            // remarks
           };
         }));
 
