@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     classSessionId: { type: DataTypes.INTEGER, allowNull: false },
     studentId: { type: DataTypes.INTEGER, allowNull: false },
     academicYearId: { type: DataTypes.INTEGER, allowNull: false },
-    status: { type: DataTypes.ENUM('Promoted', 'Repeated', 'Not Yet'), defaultValue: 'Not Yet', allowNull: false }
+    // status: { type: DataTypes.ENUM('Promoted', 'Repeated', 'Not Yet'), defaultValue: 'Not Yet', allowNull: false }
   }, {
     sequelize,
     modelName: 'ClassStudent',
