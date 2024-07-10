@@ -320,97 +320,102 @@ Content: { classSessionId }
 Method: PUT
 Authorization: Bearer <token from login>
 
+56. // Fetch academic year classSession students
+API: << server >>/api/v1/student/class_students/academicYearId/classSessionId
+Method: GET
+Authorization: Bearer <token from login>
+
 GRADING SYSTEM
-56. // Create a new Grading point
+57. // Create a new Grading point
 API: << server >>/api/v1/grading_system/create
 Method: POST
 Content: { minScore, maxScore, grade, remarks }
 Authorization: Bearer <token from login>
 
-57. // Update an already created GradePoint
+58. // Update an already created GradePoint
 API: << server >>/api/v1/grading_system/update/GradePointId
 Content: { minScore, maxScore, grade, remarks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-58. // Delete Grade Point
+59. // Delete Grade Point
 API: << server >>/api/v1/grading_system/delete/GradePointId
 Method: DELETE
 Authorization: Bearer <token from login>
 
-59. // Fetch all GradePoints in descending order of grade
+60. // Fetch all GradePoints in descending order of grade
 API: << server >>/api/v1/grading_system/all
 Method: GET
 Authorization: Bearer <token from login>
 
 
 TEACHER ROLE
-60. // Get a teacher's assigned classes after login
+61. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-61. // Get a teacher's assigned class's students
+62. // Get a teacher's assigned class's students
 API: << server >>/api/v1/teacher/class_students/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-62. // Get a teacher's assigned class's subjects
+63. // Get a teacher's assigned class's subjects
 API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
 GRADING AND ASSESSMENT
-63. // Create a new assessment
+64. // Create a new assessment
 API: << server >>/api/v1/teacher/assessment/create
 Method: POST
 Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
 Authorization: Bearer <token from login>
 
-64. // Fetching a particular subject assessment
+65. // Fetching a particular subject assessment
 API: << server >>/api/v1/teacher/get_assessment/id
 Method: GET
 Authorization: Bearer <token from login>
 
-65. // Updating a particular subject assessment
+66. // Updating a particular subject assessment
 API: << server >>/api/v1/teacher/update_assessment/id
 Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-66. // Deleting a particular subject assessment
+67. // Deleting a particular subject assessment
 API: << server >>/api/v1/teacher/delete_assessment/id
 Method: DELETE
 Authorization: Bearer <token from login>
 
-67. // Get all subject assessments for the active academic term
+68. // Get all subject assessments for the active academic term
 API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-68. // Grade student
+69. // Grade student
 API: << server >>/api/v1/teacher/grade_student
 Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-69. // Students' grades for a particular assessment
+70. // Students' grades for a particular assessment
 API: << server >>/api/v1/teacher/assessment_grades/assessmentId
 Method: GET
 Authorization: Bearer <token from login>
 
-70. // Students' grades for a particular subject's assessments for a teacher
+71. // Students' grades for a particular subject's assessments for a teacher
 API: << server >>/api/v1/teacher/subject_assessment_grades/academicTermId/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
 RESULTS
-71. // Fetch class students' results for a particular academic term
+72. // Fetch class students' results for a particular academic term
 API: << server >>/api/v1/result/class_students/academicTermId/classSessioId
 Method: GET
 Authorization: Bearer <token from login>
 
-72. // Fetch a single student results for a particular academic term
+73. // Fetch a single student results for a particular academic term
 API: << server >>/api/v1/result/single_student/studentId/academicTermId/classSessioId/
 Method: GET
 Authorization: Bearer <token from login>

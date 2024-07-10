@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Parent, Student, ClassStudent, Section, Class, AcademicYear } = require("../db/models/index");
 const { normalizeGhPhone } = require('../utility/cleaning');
@@ -384,6 +384,55 @@ exports.updateStudentClass = async (req, res) => {
     } catch (error) {
       console.error('Error updating class:', error);
       return res.status(500).json({ message: 'Unable to update class record at the moment!' });
+    }
+  });
+};
+
+// Fetch academic year classSession students
+exports.classStudents = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { academicYearId, classSessionId } = req.params;
+      const section = await Section.findByPk(classSessionId);
+      const academicYear = await AcademicYear.findByPk(academicYearId);
+
+      if (!section) return res.status(400).json({ message: "Class section not found!" });
+      if (!academicYear) return res.status(400).json({ message: "Academic year not found!" });
+
+      // Fetching class students
+      const students = await ClassStudent.findAll({
+        where: {
+          classSessionId,
+          academicYearId
+        },
+        include: {
+          model: Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        }
+      });
+
+      // Map through Class students and create promises to fetch classes
+      const promises = students.map(async (classStudent) => {
+        const student = classStudent.Student; // Access the related Student model
+
+        // Return the formatted data along with the subjects in a class
+        return {
+          studentId: student.id,
+          fullName: student.middleName
+            ? `${student.firstName} ${student.middleName} ${student.lastName}`
+            : `${student.firstName} ${student.lastName}`,
+          passportPhoto: student.passportPhoto,
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const formattedResult = await Promise.all(promises);
+      return res.status(200).json({ students: formattedResult });
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };

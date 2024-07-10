@@ -26,4 +26,7 @@ router.put('/update_parent_employment/:id', studentController.updateParentEmploy
 // Update a student's class
 router.put('/update_student_class/:assignedClassId', studentController.updateStudentClass)
 
+// Fetch academic year classSession students
+router.get('/class_students/:academicYearId/:classSessionId', studentController.classStudents)
+
 module.exports = router;

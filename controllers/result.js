@@ -266,8 +266,8 @@ exports.classStudentsResults1 = async (req, res) => {
           return {
             name: subject.subjectName,
             score: subjectScore.toFixed(2),
-            grade,
-            remarks
+            // grade,
+            // remarks
           };
         }));
 
@@ -276,7 +276,10 @@ exports.classStudentsResults1 = async (req, res) => {
           fullName: student.Student.middleName
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
-          photo: student.Student.passportPhoto,
+          photo: {
+            url: student.Student.passportPhoto,
+            public_id: `SMS/students/${student.Student.id}`
+          },
           subjectScores: subjectScores,
           totalScore: totalScore.toFixed(2)
         };
@@ -289,11 +292,11 @@ exports.classStudentsResults1 = async (req, res) => {
       filteredClassStudents.sort((a, b) => b.totalScore - a.totalScore);
 
       // Assign positions using the getPositionSuffix function
-      filteredClassStudents.forEach(async (student, index) => {
+      for (let index = 0; index < filteredClassStudents.length; index++) {
+        const student = filteredClassStudents[index];
         const position = index + 1;
         student.position = await getPositionSuffix(position);
-      });
-
+      }
 
       const result = {
         totalWeight: subjectTotalWeights.reduce((sum, subject) => sum + subject.subjectTotalWeight, 0),
@@ -405,8 +408,6 @@ exports.classStudentsResults = async (req, res) => {
           return {
             name: subject.subjectName,
             score: subjectScore.toFixed(2),
-            // grade,
-            // remarks
           };
         }));
 
@@ -486,13 +487,13 @@ exports.singleStudentResult = async (req, res) => {
   });
 };
 
-
 module.exports = {
   getGradeAndRemarks,
   getPositionSuffix,
   classStudentsResults: exports.classStudentsResults,
   singleStudentResult: exports.singleStudentResult,
 };
+
 
 
 
