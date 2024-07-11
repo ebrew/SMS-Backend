@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
-const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section } = require("../db/models/index")
+const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section, Class, AcademicYear } = require("../db/models/index")
 
 
 // Function to fetch grade and remarks based on total score
@@ -31,8 +31,19 @@ const getPositionSuffix = async (position) => {
 // Helper function to fetch class results
 const fetchClassResults = async (academicTermId, classSessionId) => {
   try {
-    const section = await Section.findByPk(classSessionId);
-    const term = await AcademicTerm.findByPk(academicTermId);
+    const section = await Section.findByPk(classSessionId, {
+      include: {
+        model: Class,
+        attributes: ['name'],
+      },
+    });
+    
+    const term = await AcademicTerm.findByPk(academicTermId, {
+      include: {
+        model: AcademicYear,
+        attributes: ['name'],
+      },
+    });    
 
     if (!section) throw new Error("Class section not found!");
     if (!term) throw new Error("Academic term not found!");
@@ -121,6 +132,9 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
       }));
 
       return {
+        academicYear: term.AcademicYear.name,
+        academicTerm: term.name,
+        classSession: `${section.Class.name} ${section.name}`,
         studentId: student.Student.id,
         fullName: student.Student.middleName
           ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
@@ -455,7 +469,6 @@ exports.classStudentsResults = async (req, res) => {
     }
   });
 };
-
 
 // Fetch a single student results for a particular academic term
 exports.singleStudentResult = async (req, res) => {
