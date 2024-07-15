@@ -10,24 +10,32 @@ const validateAcademicYear = async (academicYearId) => {
 };
 
 const fetchAcademicYears = async () => {
-
-    // Fetch active and pending academic
+    // Fetch active and pending academic years
     let activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
     let pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
 
-    if (activeYear) await activeYear.setInactiveIfEndDateDue();
-    activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-    
-    if (pendingYear) await pendingYear.setInactiveIfEndDateDue();
-    pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+    // Check if the active year needs to be set to inactive
+    if (activeYear && activeYear.endDate <= new Date()) {
+        await activeYear.update({ status: 'Inactive' });
+        activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+    }
 
+    // Check if the pending year needs to be set to inactive
+    if (pendingYear && pendingYear.endDate <= new Date()) {
+        await pendingYear.update({ status: 'Inactive' });
+        pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+    }
+
+    // If there is no active year, throw an error
     if (!activeYear) throw new Error('No active academic year found!');
 
+    // If there is no pending year, throw an error
     if (!pendingYear) throw new Error('No promotion academic year found!');
 
-    // Return both class sessions
+    // Return both active and pending academic years
     return { activeYear, pendingYear };
 };
+
 
 const validateClassSession = async (classSessionId, nextClassSessionId) => {
 
