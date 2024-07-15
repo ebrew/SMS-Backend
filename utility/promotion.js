@@ -1,4 +1,4 @@
-const { AcademicYear, ClassSession, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
+const { AcademicYear, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
 
 // i'll check the logic later
 const validateAcademicYear = async (academicYearId) => {
@@ -31,8 +31,8 @@ const fetchAcademicYears = async () => {
 
 const validateClassSession = async (classSessionId, nextClassSessionId) => {
 
-    const classSession = await ClassSession.findByPk(classSessionId);
-    const nextClassSession = await ClassSession.findByPk(nextClassSessionId);
+    const classSession = await Section.findByPk(classSessionId);
+    const nextClassSession = await Section.findByPk(nextClassSessionId);
 
     if (!classSession) {
         throw new Error('Class session not found!');
