@@ -199,17 +199,20 @@ exports.promoteClassStudentsWithPassMark = async (req, res) => {
 // Promote class students without pass mark
 exports.promoteClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
       const { classSessionId, nextClassSessionId } = req.body;
-      if (!classSessionId || !nextClassSessionId)
+      if (!classSessionId || !nextClassSessionId) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
 
       // Validate class sessions
       const { classSession, nextClassSession } = await validateClassSession(classSessionId, nextClassSessionId);
 
-      // fetch academic years
+      // Fetch academic years
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
       // Validate students
@@ -234,7 +237,7 @@ exports.promoteClassStudents = async (req, res) => {
 
       // Insert new records if they do not exist
       await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true // I need to verify if this option is available for this versions of Sequelize
+        ignoreDuplicates: true // Ensure this option is available for the Sequelize version you're using
       });
 
       // Prepare promotion result for response
@@ -247,11 +250,11 @@ exports.promoteClassStudents = async (req, res) => {
       res.status(200).json({ message: 'Class students promoted successfully!', promotions });
     } catch (error) {
       console.error('Error promoting class students:', error);
-      // res.status(500).json({ message: "Can't promote class students at the moment!" });
-      return null;
+      return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
   });
 };
+
 
 // Update a single student's promotion
 exports.updateStudentPromotion = async (req, res) => {
