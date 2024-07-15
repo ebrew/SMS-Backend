@@ -250,11 +250,24 @@ exports.promoteClassStudents = async (req, res) => {
       res.status(200).json({ message: 'Class students promoted successfully!', promotions });
     } catch (error) {
       console.error('Error promoting class students:', error);
+
+      // Check for specific error messages
+      if (error.message === 'No active academic year found!') {
+        return res.status(400).json({ message: 'No active academic year found!' });
+      } else if (error.message === 'No promotion academic year found!') {
+        return res.status(400).json({ message: 'No promotion academic year found!' });
+      } else if (error.message === 'Class session not found!') {
+        return res.status(404).json({ message: 'Class session not found!' });
+      } else if (error.message === 'Promotion class session not found!') {
+        return res.status(404).json({ message: 'Promotion class session not found!' });
+      } else if (error.message === 'No students found for this class session and academic year!') {
+        return res.status(404).json({ message: 'No students found for this class session and academic year!' });
+      }
+
       return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
   });
 };
-
 
 // Update a single student's promotion
 exports.updateStudentPromotion = async (req, res) => {

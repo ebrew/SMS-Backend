@@ -11,75 +11,57 @@ const validateAcademicYear = async (academicYearId) => {
 
 const fetchAcademicYears = async () => {
     try {
-        // Fetch active and pending academic years
-        let activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-        let pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
-
-        // Check if the active year needs to be set to inactive
-        if (activeYear && activeYear.endDate <= new Date()) {
-            await activeYear.update({ status: 'Inactive' });
-            activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
-        }
-
-        // Check if the pending year needs to be set to active
-        if (pendingYear && pendingYear.startDate <= new Date()) {
-            await pendingYear.update({ status: 'Active' });
-            pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
-        }
-
-        // If there is no active year, throw an error
-        if (!activeYear) throw new Error('No active academic year found!');
-
-        // If there is no pending year, throw an error
-        if (!pendingYear) throw new Error('No promotion academic year found!');
-
-        // Return both active and pending academic years
-        return { activeYear, pendingYear };
+      let activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      let pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+  
+      if (activeYear && activeYear.endDate <= new Date()) {
+        await activeYear.update({ status: 'Inactive' });
+        activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+      }
+  
+      if (pendingYear && pendingYear.startDate <= new Date()) {
+        await pendingYear.update({ status: 'Active' });
+        pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+      }
+  
+      if (!activeYear) throw new Error('No active academic year found!');
+      if (!pendingYear) throw new Error('No promotion academic year found!');
+  
+      return { activeYear, pendingYear };
     } catch (error) {
-        console.error('Error fetching academic years:', error);
-        return null
+      console.error('Error fetching academic years:', error);
+      throw error; // Re-throw the error to be handled by the calling function
     }
-};
-
+  };  
 
 const validateClassSession = async (classSessionId, nextClassSessionId) => {
     try {
-        const classSession = await Section.findByPk(classSessionId);
-        const nextClassSession = await Section.findByPk(nextClassSessionId);
-
-        if (!classSession) {
-            throw new Error('Class session not found!');
-        }
-
-        if (!nextClassSession) {
-            throw new Error('Promotion class session not found!');
-        }
-
-        // Return both class sessions
-        return { classSession, nextClassSession };
+      const classSession = await Section.findByPk(classSessionId);
+      const nextClassSession = await Section.findByPk(nextClassSessionId);
+  
+      if (!classSession) throw new Error('Class session not found!');
+      if (!nextClassSession) throw new Error('Promotion class session not found!');
+  
+      return { classSession, nextClassSession };
     } catch (error) {
-        console.error('Error validating class sessions:', error);
-        return null;
+      console.error('Error validating class sessions:', error);
+      throw error; // Re-throw the error to be handled by the calling function
     }
-};
-
+  };  
 
 const validateStudents = async (academicYearId, classSessionId) => {
     try {
-      const students = await ClassStudent.findAll({
-        where: { academicYearId, classSessionId },
-        include: { model: Student, attributes: ['id', 'firstName', 'middleName', 'lastName'] }
-      });
-      if (!students.length) {
-        throw new Error('No students found for this class session and academic year!');
-      }
-      return students;
+        const students = await ClassStudent.findAll({
+            where: { academicYearId, classSessionId },
+            include: { model: Student, attributes: ['id', 'firstName', 'middleName', 'lastName'] }
+        });
+        if (!students.length) throw new Error('No students found for this class session and academic year!');
+        return students;
     } catch (error) {
-      console.error('Error validating students:', error);
-      return null
+        console.error('Error validating students:', error);
+        throw error; // Re-throw the error to be handled by the calling function
     }
-  };
-  
+};
 
 const validateGrades = async (studentId, academicTermId) => {
     const grades = await Grade.findAll({
