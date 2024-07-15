@@ -420,6 +420,12 @@ API: << server >>/api/v1/result/single_student/studentId/academicTermId/classSes
 Method: GET
 Authorization: Bearer <token from login>
 
+PROMOTIONS
+74. // Promote class students without pass mark
+API: << server >>/api/v1/promotion/class
+Method: POST
+Content: { classSessionId, nextClassSessionId }
+Authorization: Bearer <token from login>
 
 
 

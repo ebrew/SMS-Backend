@@ -3,7 +3,6 @@ const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { AcademicYear, AcademicTerm, ClassStudent } = require("../db/models/index");
 
-
 // Get all academic years
 exports.allAcademicYears = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -40,39 +39,76 @@ exports.addAcademicYear = async (req, res) => {
       if (!name || !startDate || !endDate)
         return res.status(400).json({ message: 'Incomplete field!' });
 
-      // updating active status if necessary
-      let alreadyExist = await AcademicYear.findOne({ where: { status: 'Active' } });
-      if (alreadyExist)
-        await alreadyExist.setInactiveIfEndDateDue();
-
-      // Fetch the updated active academic year
-      alreadyExist = await AcademicYear.findOne({
-        where: {
-          [Op.or]: [
-            { status: 'Active' },
-            { name: { [Op.iLike]: name } },
-          ],
-        },
+      // Check if an academic year with the same name already exists
+      const existingYear = await AcademicYear.findOne({
+        where: { name: { [Op.iLike]: name } }
       });
 
-      if (alreadyExist && alreadyExist.status === 'Active')
-        return res.status(400).json({ message: `${alreadyExist.name} is currently running!` });
-
-      if (alreadyExist)
+      if (existingYear)
         return res.status(400).json({ message: `${name} already exists!` });
 
-      // Check for existing academic years
-      const latestYear = await AcademicYear.findOne({
-        order: [['endDate', 'DESC']],
-      });
+      // Check if there is an active academic year
+      let activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
 
-      // Ensure the new startDate is greater than the endDate of the latest academic year
-      if (latestYear && new Date(startDate) < new Date(latestYear.endDate))
-        return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
+      if (activeYear) {
+        await activeYear.setInactiveIfEndDateDue();
+        activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });
 
-      // Create a new instance of Academic Year
-      await AcademicYear.create({ name, startDate, endDate });
-      res.status(200).json({ message: 'Academic year created successfully!' });
+        // After updating, if there's still an active year, handle pending year checks
+        if (activeYear) {
+          let pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+          if (pendingYear) {
+            await pendingYear.setInactiveIfEndDateDue();
+            pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
+
+            if (pendingYear) {
+              return res.status(400).json({ message: 'An academic year with status Pending already exists!' });
+            }
+          }
+
+          // Ensure the new start date is after the active academic year's end date
+          if (new Date(startDate) <= new Date(activeYear.endDate)) {
+            return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the current active academic year.' });
+          }
+
+          // Set the new academic year status to 'Pending'
+          const status = 'Pending';
+          await AcademicYear.create({ name, startDate, endDate, status });
+
+        } else {
+          // No active academic year exists, create a new active academic year
+          const status = new Date(startDate) > new Date() ? 'Pending' : 'Active';
+
+          // Check for existing academic years and ensure start date is valid
+          const latestYear = await AcademicYear.findOne({
+            order: [['endDate', 'DESC']],
+          });
+
+          if (latestYear && new Date(startDate) <= new Date(latestYear.endDate)) {
+            return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
+          }
+
+          // Create a new instance of Academic Year
+          await AcademicYear.create({ name, startDate, endDate, status });
+        }
+      } else {
+        // No active academic year exists, create a new active academic year
+        const status = new Date(startDate) > new Date() ? 'Pending' : 'Active';
+
+        // Check for existing academic years and ensure start date is valid
+        const latestYear = await AcademicYear.findOne({
+          order: [['endDate', 'DESC']],
+        });
+
+        if (latestYear && new Date(startDate) <= new Date(latestYear.endDate)) {
+          return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
+        }
+
+        // Create a new instance of Academic Year
+        await AcademicYear.create({ name, startDate, endDate, status });
+      }
+
+      res.status(200).json({ message: 'Academic year created!' });
     } catch (error) {
       console.error('Error creating academic year:', error);
       res.status(500).json({ message: "Can't create academic year at the moment!" });

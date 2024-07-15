@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const promotionController = require('../controllers/promotionController');
+const promotionController = require('../controllers/promotion');
 
-router.post('/promote/all', promotionController.promoteAllStudents);
+// Promote all students with pass mark
+router.post('/all_students', promotionController.promoteAllStudentsWithPassMark);
 
-router.post('/promote/class', promotionController.promoteClassStudents);
+// Promote class students without pass mark
+router.post('/class', promotionController.promoteClassStudents);
 
-router.post('/promote/student', promotionController.promoteSingleStudent);
-
-module.exports = router;
-
+// Update a student's promotion 
+router.put('/student/:id', promotionController.updateStudentPromotion);
 
 
 module.exports = router;

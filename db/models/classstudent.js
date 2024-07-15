@@ -10,16 +10,16 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.Section, { foreignKey: 'classSessionId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
-      this.belongsTo(models.Student, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
-      this.belongsTo(models.AcademicYear, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
+      this.belongsTo(models.Section, { foreignKey: 'classSessionId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.belongsTo(models.Student, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.belongsTo(models.AcademicYear, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
   ClassStudent.init({
     classSessionId: { type: DataTypes.INTEGER, allowNull: false },
     studentId: { type: DataTypes.INTEGER, allowNull: false },
     academicYearId: { type: DataTypes.INTEGER, allowNull: false },
-    // status: { type: DataTypes.ENUM('Promoted', 'Repeated', 'Not Yet'), defaultValue: 'Not Yet', allowNull: false }
+    status: { type: DataTypes.ENUM('Promoted', 'Repeated', 'Graduated', 'Not Yet'), defaultValue: 'Not Yet', allowNull: false }
   }, {
     sequelize,
     modelName: 'ClassStudent',

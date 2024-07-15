@@ -29,76 +29,7 @@ exports.allAcademicTerms = async (req, res) => {
 };
 
 // Create a new academic term
-exports.addAcademicTermOld = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const { name, startDate, endDate, academicYearId } = req.body;
-
-      if (!name || !startDate || !endDate || !academicYearId)
-        return res.status(400).json({ message: 'Incomplete field!' });
-
-      // Check if the academic year exists
-      const academicYear = await AcademicYear.findOne({ where: { id: academicYearId } });
-      if (!academicYear)
-        return res.status(400).json({ message: 'Academic year could not be found!' });
-
-      // Check if the academic year is active
-      if (academicYear.status === 'Inactive')
-        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
-
-      // Validate the term dates fall within year date
-      const termStartDate = new Date(startDate);
-      const termEndDate = new Date(endDate);
-      const yearStartDate = new Date(academicYear.startDate);
-      const yearEndDate = new Date(academicYear.endDate);
-
-      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
-        return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
-
-      // updating active status if necessary
-      let alreadyExist = await AcademicTerm.findOne({ where: { status: 'Active' } });
-      if (alreadyExist)
-        await alreadyExist.setInactiveIfEndDateDue();
-
-      alreadyExist = await AcademicTerm.findOne({
-        where: {
-          [Op.or]: [
-            { status: 'Active' },
-            { name: { [Op.iLike]: name } },
-          ],
-        },
-      });
-
-      if (alreadyExist && alreadyExist.status === 'Active')
-        return res.status(400).json({ message: `${alreadyExist.name} is currently running!` });
-
-      if (alreadyExist)
-        return res.status(400).json({ message: `${name} already exists!` });
-
-      // Check for existing academic terms
-      const latestTerm = await AcademicTerm.findOne({
-        order: [['endDate', 'DESC']],
-      });
-
-      // Ensure the new startDate is greater than the endDate of the latest academic term
-      if (latestTerm && new Date(startDate) < new Date(latestTerm.endDate))
-        return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term.' });
-
-      // Create a new instance of Academic term
-      await AcademicTerm.create({ name, startDate, endDate, academicYearId });
-      res.status(200).json({ message: 'Academic term created successfully!' });
-    } catch (error) {
-      console.error('Error creating term:', error);
-      res.status(500).json({ message: "Can't create academic term at the moment!" });
-    }
-  });
-};
-
-// Create a new academic term
-exports.addAcademicTerm = async (req, res) => {
+exports.addAcademicTerm1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
       return res.status(401).json({ message: 'Unauthorized' });
@@ -168,6 +99,114 @@ exports.addAcademicTerm = async (req, res) => {
 
       // Create a new instance of Academic term
       await AcademicTerm.create({ name, startDate, endDate, academicYearId });
+      res.status(200).json({ message: 'Academic term created successfully!' });
+    } catch (error) {
+      console.error('Error creating term:', error);
+      res.status(500).json({ message: "Can't create academic term at the moment!" });
+    }
+  });
+};
+
+// Create a new academic term
+exports.addAcademicTerm = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { name, startDate, endDate, academicYearId } = req.body;
+
+      if (!name || !startDate || !endDate || !academicYearId)
+        return res.status(400).json({ message: 'Incomplete field!' });
+
+      // Check if the academic year exists
+      const academicYear = await AcademicYear.findOne({ where: { id: academicYearId } });
+      if (!academicYear)
+        return res.status(400).json({ message: 'Academic year could not be found!' });
+
+      // Check if the academic year is active or pending
+      if (academicYear.status === 'Inactive')
+        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
+
+      // Validate the term dates fall within year date
+      const termStartDate = new Date(startDate);
+      const termEndDate = new Date(endDate);
+      const yearStartDate = new Date(academicYear.startDate);
+      const yearEndDate = new Date(academicYear.endDate);
+
+      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
+        return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
+
+      // Check if the term name already exists within the academic year
+      const termExists = await AcademicTerm.findOne({
+        where: {
+          name: { [Op.iLike]: name },
+          academicYearId: academicYearId,
+        },
+      });
+
+      if (termExists)
+        return res.status(400).json({ message: `The term name "${name}" already exists for this academic year!` });
+
+      // Check for overlapping terms within the academic year
+      const overlappingTerm = await AcademicTerm.findOne({
+        where: {
+          academicYearId: academicYearId,
+          [Op.or]: [
+            { startDate: { [Op.between]: [termStartDate, termEndDate] } },
+            { endDate: { [Op.between]: [termStartDate, termEndDate] } },
+            { [Op.and]: [{ startDate: { [Op.lte]: termStartDate } }, { endDate: { [Op.gte]: termEndDate } }] }
+          ],
+        },
+      });
+
+      if (overlappingTerm)
+        return res.status(400).json({ message: 'The term dates overlap with an existing term in the academic year!' });
+
+      // Handle pending and active status updates
+      let activeTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
+
+      if (activeTerm) {
+        await activeTerm.setInactiveIfEndDateDue();
+        activeTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
+
+        // If there's still an active term, check for pending terms
+        if (activeTerm) {
+          let pendingTerm = await AcademicTerm.findOne({ where: { status: 'Pending' } });
+
+          if (pendingTerm) {
+            await pendingTerm.setInactiveIfEndDateDue();
+            pendingTerm = await AcademicTerm.findOne({ where: { status: 'Pending' } });
+
+            if (pendingTerm) {
+              return res.status(400).json({ message: 'An academic term with status Pending already exists!' });
+            }
+          }
+
+          // Ensure the new term's start date is after the active term's end date
+          if (termStartDate <= new Date(activeTerm.endDate)) {
+            return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the current active academic term.' });
+          }
+
+          // Set the new term status to 'Pending'
+          const status = 'Pending';
+          await AcademicTerm.create({ name, startDate, endDate, academicYearId, status });
+
+        } else {
+          // No active term exists, create a new active term
+          const status = new Date(startDate) > new Date() ? 'Pending' : 'Active';
+
+          // Create the new academic term
+          await AcademicTerm.create({ name, startDate, endDate, academicYearId, status });
+        }
+      } else {
+        // No active term exists, create a new active term
+        const status = new Date(startDate) > new Date() ? 'Pending' : 'Active';
+
+        // Create the new academic term
+        await AcademicTerm.create({ name, startDate, endDate, academicYearId, status });
+      }
+
       res.status(200).json({ message: 'Academic term created successfully!' });
     } catch (error) {
       console.error('Error creating term:', error);
