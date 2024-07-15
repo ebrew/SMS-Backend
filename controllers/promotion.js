@@ -247,7 +247,8 @@ exports.promoteClassStudents = async (req, res) => {
       res.status(200).json({ message: 'Class students promoted successfully!', promotions });
     } catch (error) {
       console.error('Error promoting class students:', error);
-      res.status(500).json({ message: "Can't promote class students at the moment!" });
+      // res.status(500).json({ message: "Can't promote class students at the moment!" });
+      return null;
     }
   });
 };

@@ -21,8 +21,8 @@ const fetchAcademicYears = async () => {
     }
 
     // Check if the pending year needs to be set to inactive
-    if (pendingYear && pendingYear.endDate <= new Date()) {
-        await pendingYear.update({ status: 'Inactive' });
+    if (pendingYear && pendingYear.startDate <= new Date()) {
+        await pendingYear.update({ status: 'Active' });
         pendingYear = await AcademicYear.findOne({ where: { status: 'Pending' } });
     }
 
