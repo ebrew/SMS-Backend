@@ -427,6 +427,12 @@ Method: POST
 Content: { students, nextClassSessionId }
 Authorization: Bearer <token from login>
 
+75. // Repeat class students providing studentIds
+API: << server >>/api/v1/promotion/repeat_students
+Method: POST
+Content: { students }
+Authorization: Bearer <token from login>
+
 
 
 

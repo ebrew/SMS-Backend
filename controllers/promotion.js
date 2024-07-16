@@ -302,7 +302,7 @@ exports.promoteClassStudents = async (req, res) => {
       // Update current class session status in batch
       await ClassStudent.update(
         { status: 'Promoted' },
-        { where: { studentId: studentIds, classSessionId: currentClassSession.ClassSession.id } }
+        { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id } }
       );
 
       // Prepare new records for the next academic year
@@ -346,74 +346,76 @@ exports.promoteClassStudents = async (req, res) => {
   });
 };
 
-// Update a single student's promotion
-exports.updateStudentPromotion = async (req, res) => {
+// Repeat class students
+exports.repeatClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+    if (err) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
-      const { classSessionId, nextClassSessionId, studentId } = req.body;
-      if (!classSessionId || !nextClassSessionId || !studentId)
-        return res.status(400).json({ message: 'Incomplete field!' });
-
-      // Validate class sessions
-      const { classSession, nextClassSession } = await validateClassSession(classSessionId, nextClassSessionId);
-
+      const { students } = req.body;
+      if (!students || !Array.isArray(students) || students.length === 0) return res.status(400).json({ message: 'Incomplete or invalid field!' });
+      
+      // Validate student IDs
+      const studentIds = students.map(student => student.id);
+      if (studentIds.length === 0) return res.status(400).json({ message: 'No valid student IDs provided!' });
+      
       // Fetch academic years
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
-      // Validate student
-      const student = await ClassStudent.findOne({
-        where: {
-          academicYearId: activeYear.id,
-          classSessionId,
-          studentId
-        },
-        include: [{ model: Student }]
+      // Determine the current class session based on active year
+      const currentClassSession = await ClassStudent.findOne({
+        where: { studentId: studentIds[0], academicYearId: activeYear.id },
+        include: [{ model: Section }]
       });
-      if (!student) return res.status(404).json({ message: 'Student not found!' });
 
-      // Update current class session status
+      if (!currentClassSession || !currentClassSession.Section) return res.status(404).json({ message: 'Current class session not found for the students!' });
+
+      // Update current class session status in batch to 'Repeated'
       await ClassStudent.update(
-        { status: 'Promoted' },
-        { where: { studentId: student.studentId, classSessionId: classSession.id } }
+        { status: 'Repeated' },
+        { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id } }
       );
 
-      // Check if a record exists for the next class session and academic year
-      const existingRecord = await ClassStudent.findOne({
-        where: {
-          studentId: student.studentId,
-          classSessionId: nextClassSession.id,
-          academicYearId: pendingYear.id,
-        },
+      // Prepare new records for the next academic year
+      const newRecords = students.map(student => ({
+        studentId: student.id,
+        classSessionId: currentClassSession.Section.id,
+        academicYearId: pendingYear.id,
+        status: 'Not Yet'
+      }));
+
+      // Insert new records if they do not exist
+      await ClassStudent.bulkCreate(newRecords, {
+        ignoreDuplicates: true 
       });
 
-      if (existingRecord) {
-        // Update the status if the record exists
-        await ClassStudent.update(
-          { status: 'Not Yet' },
-          { where: { studentId: student.studentId, classSessionId: nextClassSession.id, academicYearId: pendingYear.id } }
-        );
-      } else {
-        // Create a new record if it doesn't exist
-        await ClassStudent.create({
-          studentId: student.studentId,
-          classSessionId: nextClassSession.id,
-          academicYearId: pendingYear.id,
-          status: 'Not Yet'
-        });
+      // Prepare repetition result for response
+      const repetitions = students.map(student => ({
+        studentId: student.id,
+        status: 'Repeated'
+      }));
+
+      res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
+    } catch (error) {
+      console.error('Error repeating class students:', error);
+
+      // Check for specific error messages
+      if (error.message === 'No active academic year found!') {
+        return res.status(400).json({ message: 'No active academic year found!' });
+      } else if (error.message === 'No promotion academic year found!') {
+        return res.status(400).json({ message: 'No promotion academic year found!' });
+      } else if (error.message === 'Current class session not found for the students!') {
+        return res.status(404).json({ message: 'Current class session not found for the students!' });
+      } else if (error.message === 'Next class session not found!') {
+        return res.status(404).json({ message: 'Next class session not found!' });
+      } else if (error.message === 'No students found for this class session and academic year!') {
+        return res.status(404).json({ message: 'No students found for this class session and academic year!' });
       }
 
-      const promotion = {
-        studentId: student.studentId,
-        fullName: getFullName(student.Student),
-        status: 'Promoted'
-      };
-
-      res.status(200).json({ message: 'Student promoted successfully!', promotion });
-    } catch (error) {
-      console.error('Error promoting student:', error);
-      res.status(500).json({ message: "Can't promote student at the moment!" });
+      return res.status(500).json({ message: "Can't repeat class students at the moment!" });
     }
   });
 };
+

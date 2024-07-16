@@ -8,8 +8,7 @@ router.post('/all_students', promotionController.promoteAllStudentsWithPassMark)
 // Promote class students without pass mark
 router.post('/class', promotionController.promoteClassStudents);
 
-// Update a student's promotion 
-router.put('/student/:id', promotionController.updateStudentPromotion);
-
+// Repeat students
+router.post('/repeat_students', promotionController.repeatClassStudents)
 
 module.exports = router;
