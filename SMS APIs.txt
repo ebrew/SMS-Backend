@@ -421,10 +421,10 @@ Method: GET
 Authorization: Bearer <token from login>
 
 PROMOTIONS
-74. // Promote class students without pass mark
+74. // Promote class students without pass mark by providing studentIds
 API: << server >>/api/v1/promotion/class
 Method: POST
-Content: { classSessionId, nextClassSessionId }
+Content: { students, nextClassSessionId }
 Authorization: Bearer <token from login>
 
 

@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
-const { ClassStudent, Student, ClassSession} = require("../db/models/index")
-const { validateAcademicYear, validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
+const { ClassStudent, Student, Section} = require("../db/models/index")
+const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
 
 // function to calculate total score
 const getTotalScore = (grades) => {
@@ -197,7 +197,7 @@ exports.promoteClassStudentsWithPassMark = async (req, res) => {
 };
 
 // Promote class students without pass mark
-exports.promoteClassStudents = async (req, res) => {
+exports.promoteClassStudents1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -258,6 +258,83 @@ exports.promoteClassStudents = async (req, res) => {
         return res.status(400).json({ message: 'No promotion academic year found!' });
       } else if (error.message === 'Class session not found!') {
         return res.status(404).json({ message: 'Class session not found!' });
+      } else if (error.message === 'Promotion class session not found!') {
+        return res.status(404).json({ message: 'Promotion class session not found!' });
+      } else if (error.message === 'No students found for this class session and academic year!') {
+        return res.status(404).json({ message: 'No students found for this class session and academic year!' });
+      }
+
+      return res.status(500).json({ message: "Can't promote class students at the moment!" });
+    }
+  });
+};
+// Promote class students without pass mark
+exports.promoteClassStudents = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { students, nextClassSessionId } = req.body;
+      if (!students || !nextClassSessionId || !Array.isArray(students) || students.length === 0) 
+        return res.status(400).json({ message: 'Incomplete or invalid field!' });
+
+      // Validate student IDs
+      const studentIds = students.map(student => student.id);
+      if (studentIds.length === 0) 
+        return res.status(400).json({ message: 'No valid student IDs provided!' });
+      
+      // Fetch academic years
+      const { activeYear, pendingYear } = await fetchAcademicYears();
+
+      // Determine current class session based on active year
+      const currentClassSession = await ClassStudent.findOne({
+        where: { studentId: studentIds[0], academicYearId: activeYear.id },
+        include: [{ model: Section }]
+      });
+
+      if (!currentClassSession || !currentClassSession.Section) 
+        return res.status(404).json({ message: 'Current class session not found for the students!' });
+      
+      // Validate next class session
+      const nextClassSession = await Section.findByPk(nextClassSessionId);
+      if (!nextClassSession)  return res.status(404).json({ message: 'Promotion class session not found!' });
+      
+      // Update current class session status in batch
+      await ClassStudent.update(
+        { status: 'Promoted' },
+        { where: { studentId: studentIds, classSessionId: currentClassSession.ClassSession.id } }
+      );
+
+      // Prepare new records for the next academic year
+      const newRecords = students.map(student => ({
+        studentId: student.id,
+        classSessionId: nextClassSession.id,
+        academicYearId: pendingYear.id,
+        status: 'Not Yet'
+      }));
+
+      // Insert new records if they do not exist
+      await ClassStudent.bulkCreate(newRecords, {
+        ignoreDuplicates: true 
+      });
+
+      // Prepare promotion result for response
+      const promotions = students.map(student => ({
+        studentId: student.id,
+        status: 'Promoted'
+      }));
+
+      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+    } catch (error) {
+      console.error('Error promoting class students:', error);
+
+      // Check for specific error messages
+      if (error.message === 'No active academic year found!') {
+        return res.status(400).json({ message: 'No active academic year found!' });
+      } else if (error.message === 'No promotion academic year found!') {
+        return res.status(400).json({ message: 'No promotion academic year found!' });
+      } else if (error.message === 'Current class session not found for the students!') {
+        return res.status(404).json({ message: 'Current class session not found for the students!' });
       } else if (error.message === 'Promotion class session not found!') {
         return res.status(404).json({ message: 'Promotion class session not found!' });
       } else if (error.message === 'No students found for this class session and academic year!') {
