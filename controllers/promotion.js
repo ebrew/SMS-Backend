@@ -197,78 +197,6 @@ exports.promoteClassStudentsWithPassMark = async (req, res) => {
 };
 
 // Promote class students without pass mark
-exports.promoteClassStudents1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    try {
-      const { classSessionId, nextClassSessionId } = req.body;
-      if (!classSessionId || !nextClassSessionId) {
-        return res.status(400).json({ message: 'Incomplete field!' });
-      }
-
-      // Validate class sessions
-      const { classSession, nextClassSession } = await validateClassSession(classSessionId, nextClassSessionId);
-
-      // Fetch academic years
-      const { activeYear, pendingYear } = await fetchAcademicYears();
-
-      // Validate students
-      const students = await validateStudents(activeYear.id, classSession.id);
-
-      // Collect student IDs for batch operations
-      const studentIds = students.map(student => student.studentId);
-
-      // Update current class session status in batch
-      await ClassStudent.update(
-        { status: 'Promoted' },
-        { where: { studentId: studentIds, classSessionId: classSession.id } }
-      );
-
-      // Prepare new records for the next academic year
-      const newRecords = students.map(student => ({
-        studentId: student.studentId,
-        classSessionId: nextClassSession.id,
-        academicYearId: pendingYear.id,
-        status: 'Not Yet'
-      }));
-
-      // Insert new records if they do not exist
-      await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true // Ensure this option is available for the Sequelize version you're using
-      });
-
-      // Prepare promotion result for response
-      const promotions = students.map(student => ({
-        studentId: student.studentId,
-        fullName: getFullName(student.Student),
-        status: 'Promoted'
-      }));
-
-      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
-    } catch (error) {
-      console.error('Error promoting class students:', error);
-
-      // Check for specific error messages
-      if (error.message === 'No active academic year found!') {
-        return res.status(400).json({ message: 'No active academic year found!' });
-      } else if (error.message === 'No promotion academic year found!') {
-        return res.status(400).json({ message: 'No promotion academic year found!' });
-      } else if (error.message === 'Class session not found!') {
-        return res.status(404).json({ message: 'Class session not found!' });
-      } else if (error.message === 'Promotion class session not found!') {
-        return res.status(404).json({ message: 'Promotion class session not found!' });
-      } else if (error.message === 'No students found for this class session and academic year!') {
-        return res.status(404).json({ message: 'No students found for this class session and academic year!' });
-      }
-
-      return res.status(500).json({ message: "Can't promote class students at the moment!" });
-    }
-  });
-};
-// Promote class students without pass mark
 exports.promoteClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
@@ -297,34 +225,47 @@ exports.promoteClassStudents = async (req, res) => {
       
       // Validate next class session
       const nextClassSession = await Section.findByPk(nextClassSessionId);
-      if (!nextClassSession)  return res.status(404).json({ message: 'Promotion class session not found!' });
+      if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
       
-      // Update current class session status in batch
-      await ClassStudent.update(
-        { status: 'Promoted' },
-        { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id } }
-      );
+      // Start a transaction
+      const transaction = await sequelize.transaction();
 
-      // Prepare new records for the next academic year
-      const newRecords = students.map(student => ({
-        studentId: student.id,
-        classSessionId: nextClassSession.id,
-        academicYearId: pendingYear.id,
-        status: 'Not Yet'
-      }));
+      try {
+        // Update current class session status in batch
+        await ClassStudent.update(
+          { status: 'Promoted' },
+          { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
+        );
 
-      // Insert new records if they do not exist
-      await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true 
-      });
+        // Prepare new records for the next academic year
+        const newRecords = students.map(student => ({
+          studentId: student.id,
+          classSessionId: nextClassSession.id,
+          academicYearId: pendingYear.id,
+          status: 'Not Yet'
+        }));
 
-      // Prepare promotion result for response
-      const promotions = students.map(student => ({
-        studentId: student.id,
-        status: 'Promoted'
-      }));
+        // Upsert new records to handle duplicates
+        const upsertPromises = newRecords.map(record => 
+          ClassStudent.upsert(record, { transaction })
+        );
+        await Promise.all(upsertPromises);
 
-      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+        // Commit transaction
+        await transaction.commit();
+
+        // Prepare promotion result for response
+        const promotions = students.map(student => ({
+          studentId: student.id,
+          status: 'Promoted'
+        }));
+
+        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+      } catch (error) {
+        // Rollback transaction in case of error
+        await transaction.rollback();
+        throw error;
+      }
     } catch (error) {
       console.error('Error promoting class students:', error);
 
@@ -345,6 +286,7 @@ exports.promoteClassStudents = async (req, res) => {
     }
   });
 };
+
 
 // Repeat class students
 exports.repeatClassStudents = async (req, res) => {
