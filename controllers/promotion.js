@@ -1,6 +1,7 @@
 const passport = require('../db/config/passport')
 const { ClassStudent, Student, Section} = require("../db/models/index")
 const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
+const db = require("../db/models/index")
 
 // function to calculate total score
 const getTotalScore = (grades) => {
@@ -214,9 +215,9 @@ exports.promoteClassStudents = async (req, res) => {
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
       // Determine current class session based on active year
-      const currentClassSessions = await ClassStudent.findAll({
+      const currentClassSessions = await db.ClassStudent.findAll({
         where: { studentId: studentIds, academicYearId: activeYear.id },
-        include: [{ model: Section }]
+        include: [{ model: db.Section }]
       });
 
       if (!currentClassSessions || currentClassSessions.length === 0) 
@@ -225,37 +226,62 @@ exports.promoteClassStudents = async (req, res) => {
       const currentClassSessionIds = currentClassSessions.map(session => session.Section.id);
 
       // Validate next class session
-      const nextClassSession = await Section.findByPk(nextClassSessionId);
+      const nextClassSession = await db.Section.findByPk(nextClassSessionId);
       if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
       
-      // Update current class session status in batch
-      await ClassStudent.update(
-        { status: 'Promoted' },
-        { where: { studentId: studentIds, classSessionId: currentClassSessionIds } }
-      );
+      // Start a transaction
+      const transaction = await db.sequelize.transaction();
 
-      // Prepare new records for the next academic year
-      const newRecords = students.map(student => ({
-        studentId: student.id,
-        classSessionId: nextClassSession.id,
-        academicYearId: pendingYear.id,
-        status: 'Not Yet'
-      }));
+      try {
+        // Update current class session status in batch
+        await db.ClassStudent.update(
+          { status: 'Promoted' },
+          { where: { studentId: studentIds, classSessionId: currentClassSessionIds }, transaction }
+        );
 
-      // Batch size for upsert operations
-      const BATCH_SIZE = 100;
-      for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
-        const batch = newRecords.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(record => ClassStudent.upsert(record)));
+        // Fetch existing records in the next class session
+        const existingRecords = await db.ClassStudent.findAll({
+          where: {
+            studentId: studentIds,
+            classSessionId: nextClassSession.id,
+            academicYearId: pendingYear.id
+          },
+          transaction
+        });
+
+        // Get existing student IDs
+        const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
+
+        // Prepare new records for the next academic year, excluding existing ones
+        const newRecords = students
+          .filter(student => !existingStudentIds.has(student.id))
+          .map(student => ({
+            studentId: student.id,
+            classSessionId: nextClassSession.id,
+            academicYearId: pendingYear.id,
+            status: 'Not Yet'
+          }));
+
+        // Insert new records if any
+        if (newRecords.length > 0) {
+          await db.ClassStudent.bulkCreate(newRecords, { transaction });
+        }
+
+        // Commit transaction
+        await transaction.commit();
+
+        // Prepare promotion result for response
+        const promotions = students.map(student => ({
+          studentId: student.id,
+          status: 'Promoted'
+        }));
+
+        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+      } catch (error) {
+        // Rollback transaction in case of error
+        await transaction.rollback();
+        throw error;
       }
-
-      // Prepare promotion result for response
-      const promotions = students.map(student => ({
-        studentId: student.id,
-        status: 'Promoted'
-      }));
-
-      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
     } catch (error) {
       console.error('Error promoting class students:', error);
 
@@ -276,6 +302,7 @@ exports.promoteClassStudents = async (req, res) => {
     }
   });
 };
+
 
 
 // Repeat class students
