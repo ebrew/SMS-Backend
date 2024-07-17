@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
 const passport = require('../db/config/passport')
 const { ClassStudent, Student, Section} = require("../db/models/index")
 const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
@@ -286,7 +286,6 @@ exports.promoteClassStudents = async (req, res) => {
     }
   });
 };
-
 
 // Repeat class students
 exports.repeatClassStudents = async (req, res) => {
