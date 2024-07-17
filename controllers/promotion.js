@@ -1,6 +1,5 @@
 const passport = require('../db/config/passport')
-const { ClassStudent, Section } = require("../db/models/index")
-const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
+const { validateClassSession, fetchAcademicYears } = require('../utility/promotion');
 const db = require("../db/models/index")
 
 // Promote class students without pass mark
