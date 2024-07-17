@@ -1,4 +1,3 @@
-const { Op, sequelize } = require('sequelize');
 const passport = require('../db/config/passport')
 const { ClassStudent, Student, Section} = require("../db/models/index")
 const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
@@ -215,57 +214,48 @@ exports.promoteClassStudents = async (req, res) => {
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
       // Determine current class session based on active year
-      const currentClassSession = await ClassStudent.findOne({
-        where: { studentId: studentIds[0], academicYearId: activeYear.id },
+      const currentClassSessions = await ClassStudent.findAll({
+        where: { studentId: studentIds, academicYearId: activeYear.id },
         include: [{ model: Section }]
       });
 
-      if (!currentClassSession || !currentClassSession.Section) 
+      if (!currentClassSessions || currentClassSessions.length === 0) 
         return res.status(404).json({ message: 'Current class session not found for the students!' });
       
+      const currentClassSessionIds = currentClassSessions.map(session => session.Section.id);
+
       // Validate next class session
       const nextClassSession = await Section.findByPk(nextClassSessionId);
       if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
       
-      // Start a transaction
-      const transaction = await sequelize.transaction();
+      // Update current class session status in batch
+      await ClassStudent.update(
+        { status: 'Promoted' },
+        { where: { studentId: studentIds, classSessionId: currentClassSessionIds } }
+      );
 
-      try {
-        // Update current class session status in batch
-        await ClassStudent.update(
-          { status: 'Promoted' },
-          { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
-        );
+      // Prepare new records for the next academic year
+      const newRecords = students.map(student => ({
+        studentId: student.id,
+        classSessionId: nextClassSession.id,
+        academicYearId: pendingYear.id,
+        status: 'Not Yet'
+      }));
 
-        // Prepare new records for the next academic year
-        const newRecords = students.map(student => ({
-          studentId: student.id,
-          classSessionId: nextClassSession.id,
-          academicYearId: pendingYear.id,
-          status: 'Not Yet'
-        }));
-
-        // Upsert new records to handle duplicates
-        const upsertPromises = newRecords.map(record => 
-          ClassStudent.upsert(record, { transaction })
-        );
-        await Promise.all(upsertPromises);
-
-        // Commit transaction
-        await transaction.commit();
-
-        // Prepare promotion result for response
-        const promotions = students.map(student => ({
-          studentId: student.id,
-          status: 'Promoted'
-        }));
-
-        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
-      } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        throw error;
+      // Batch size for upsert operations
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
+        const batch = newRecords.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(record => ClassStudent.upsert(record)));
       }
+
+      // Prepare promotion result for response
+      const promotions = students.map(student => ({
+        studentId: student.id,
+        status: 'Promoted'
+      }));
+
+      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
     } catch (error) {
       console.error('Error promoting class students:', error);
 
@@ -286,6 +276,7 @@ exports.promoteClassStudents = async (req, res) => {
     }
   });
 };
+
 
 // Repeat class students
 exports.repeatClassStudents = async (req, res) => {
