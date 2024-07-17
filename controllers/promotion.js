@@ -1,200 +1,7 @@
 const passport = require('../db/config/passport')
-const { ClassStudent, Student, Section} = require("../db/models/index")
+const { ClassStudent, Section } = require("../db/models/index")
 const { validateClassSession, validateStudents, validateGrades, getPromotionEligibility, getNextClassSessionId, fetchAcademicYears } = require('../utility/promotion');
 const db = require("../db/models/index")
-
-// function to calculate total score
-const getTotalScore = (grades) => {
-  return grades.reduce((total, grade) => total + (parseFloat(grade.score) * grade.Assessment.weight / grade.Assessment.marks), 0);
-};
-
-// function to get full name of the student
-const getFullName = (student) => {
-  return student.middleName
-    ? `${student.firstName} ${student.middleName} ${student.lastName}`
-    : `${student.firstName} ${student.lastName}`;
-};
-
-// Promote all students with pass mark
-exports.promoteAllStudentsWithPassMark = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const { passMark } = req.body;
-      if (passMark === undefined)
-        return res.status(400).json({ message: 'Incomplete field!' });
-
-      // Validate academic year
-      const { activeYear, pendingYear } = await fetchAcademicYears();
-
-      // Validate class sessions
-      const classSessions = await ClassSession.findAll({ where: { academicYearId: activeYear.id } });
-
-      const promotions = [];
-      const updates = [];
-      const newRecords = [];
-
-      // Process each class session
-      for (const classSession of classSessions) {
-        const students = await validateStudents(activeYear.id, classSession.id);
-
-        for (const student of students) {
-          const grades = await validateGrades(student.studentId, activeYear.academicTermId);
-          const totalScore = getTotalScore(grades);
-          const isEligible = getPromotionEligibility(totalScore, passMark);
-          const status = isEligible ? 'Promoted' : 'Repeated';
-
-          // Prepare update for current class session status
-          updates.push({
-            studentId: student.studentId,
-            classSessionId: classSession.id,
-            status
-          });
-
-          if (isEligible) {
-            const nextClassSessionId = await getNextClassSessionId(classSession.id);
-            const maxGrade = await ClassSession.max('grade');
-            const nextClassSession = await ClassSession.findByPk(nextClassSessionId);
-
-            if (nextClassSession && nextClassSession.grade > maxGrade) {
-              // Mark as graduated if the next class session grade is greater than the max grade
-              updates.push({
-                studentId: student.studentId,
-                classSessionId: classSession.id,
-                status: 'Graduated'
-              });
-            } else {
-              // Create a new record for the next academic year with 'Not Yet' status
-              const existingRecord = await ClassStudent.findOne({
-                where: {
-                  studentId: student.studentId,
-                  classSessionId: nextClassSessionId,
-                  academicYearId: pendingYear.id,
-                },
-              });
-              if (!existingRecord) {
-                newRecords.push({
-                  studentId: student.studentId,
-                  classSessionId: nextClassSessionId,
-                  academicYearId: pendingYear.id,
-                  status: 'Not Yet'
-                });
-              }
-            }
-          }
-
-          promotions.push({ studentId: student.studentId, fullName: getFullName(student.Student), status });
-        }
-      }
-
-      // Perform batch updates for current class session status
-      for (const update of updates) {
-        await ClassStudent.update(
-          { status: update.status },
-          { where: { studentId: update.studentId, classSessionId: update.classSessionId } }
-        );
-      }
-
-      // Insert new records in batch if they do not exist
-      await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true // Ensure this option is available for the Sequelize version you're using
-      });
-
-      res.status(200).json({ message: 'Students promoted successfully!', promotions });
-    } catch (error) {
-      console.error('Error promoting students:', error);
-      res.status(500).json({ message: "Can't promote students at the moment!" });
-    }
-  });
-};
-
-// Promote class students with pass mark
-exports.promoteClassStudentsWithPassMark = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const { classSessionId, nextClassSessionId, passMark } = req.body;
-      if (!classSessionId || !nextClassSessionId || passMark === undefined)
-        return res.status(400).json({ message: 'Incomplete field!' });
-
-      // Validate class sessions
-      const { classSession, nextClassSession } = await validateClassSession(classSessionId, nextClassSessionId);
-
-      // Fetch academic years
-      const { activeYear, pendingYear } = await fetchAcademicYears();
-
-      // Validate students
-      const students = await validateStudents(activeYear.id, classSession.id);
-
-      const promotions = [];
-      const statusUpdates = [];
-      const newRecords = [];
-
-      for (const student of students) {
-        const grades = await validateGrades(student.studentId, activeYear.academicTermId);
-        const totalScore = getTotalScore(grades);
-        const isEligible = getPromotionEligibility(totalScore, passMark);
-        const status = isEligible ? 'Promoted' : 'Repeated';
-
-        // Collect status updates for batch processing
-        statusUpdates.push({
-          studentId: student.studentId,
-          classSessionId: classSession.id,
-          status
-        });
-
-        if (isEligible) {
-          // Prepare new record for the next academic year with 'Not Yet' status
-          const existingRecord = await ClassStudent.findOne({
-            where: {
-              studentId: student.studentId,
-              classSessionId: nextClassSession.id,
-              academicYearId: pendingYear.id,
-            },
-          });
-          if (!existingRecord) {
-            newRecords.push({
-              studentId: student.studentId,
-              classSessionId: nextClassSession.id,
-              academicYearId: pendingYear.id,
-              status: 'Not Yet'
-            });
-          }
-        }
-
-        promotions.push({
-          studentId: student.studentId,
-          fullName: getFullName(student.Student),
-          status
-        });
-      }
-
-      // Batch update current class session status
-      const studentIdsToUpdate = statusUpdates.map(update => update.studentId);
-      const statusMap = statusUpdates.reduce((acc, update) => {
-        acc[update.studentId] = update.status;
-        return acc;
-      }, {});
-
-      await ClassStudent.update(
-        { status: sequelize.literal(`CASE studentId ${statusMap} END`) },
-        { where: { studentId: studentIdsToUpdate, classSessionId: classSession.id } }
-      );
-
-      // Batch insert new records if they do not exist
-      await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true
-      });
-
-      res.status(200).json({ message: 'Class students promoted successfully!', promotions });
-    } catch (error) {
-      console.error('Error promoting class students:', error);
-      res.status(500).json({ message: "Can't promote class students at the moment!" });
-    }
-  });
-};
 
 // Promote class students without pass mark
 exports.promoteClassStudents = async (req, res) => {
@@ -203,14 +10,14 @@ exports.promoteClassStudents = async (req, res) => {
 
     try {
       const { students, nextClassSessionId } = req.body;
-      if (!students || !nextClassSessionId || !Array.isArray(students) || students.length === 0) 
+      if (!students || !nextClassSessionId || !Array.isArray(students) || students.length === 0)
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
       const studentIds = students.map(student => student.id);
-      if (studentIds.length === 0) 
+      if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
-      
+
       // Fetch academic years
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
@@ -220,15 +27,16 @@ exports.promoteClassStudents = async (req, res) => {
         include: [{ model: db.Section }]
       });
 
-      if (!currentClassSessions || currentClassSessions.length === 0) 
+      if (!currentClassSessions || currentClassSessions.length === 0)
         return res.status(404).json({ message: 'Current class session not found for the students!' });
-      
+
       const currentClassSessionIds = currentClassSessions.map(session => session.Section.id);
 
       // Validate next class session
-      const nextClassSession = await db.Section.findByPk(nextClassSessionId);
-      if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
-      
+      // const nextClassSession = await db.Section.findByPk(nextClassSessionId);
+      // if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
+      const nextClassSession = await validateClassSession(nextClassSessionId);
+
       // Start a transaction
       const transaction = await db.sequelize.transaction();
 
@@ -303,60 +111,86 @@ exports.promoteClassStudents = async (req, res) => {
   });
 };
 
-
-
 // Repeat class students
 exports.repeatClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { students } = req.body;
+    if (!students || !Array.isArray(students) || students.length === 0) 
+      return res.status(400).json({ message: 'Incomplete or invalid field!' });
+
+    const studentIds = students.map(student => student.id);
+    if (studentIds.length === 0) 
+      return res.status(400).json({ message: 'No valid student IDs provided!' });
 
     try {
-      const { students } = req.body;
-      if (!students || !Array.isArray(students) || students.length === 0) return res.status(400).json({ message: 'Incomplete or invalid field!' });
-      
-      // Validate student IDs
-      const studentIds = students.map(student => student.id);
-      if (studentIds.length === 0) return res.status(400).json({ message: 'No valid student IDs provided!' });
-      
-      // Fetch academic years
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
-      // Determine the current class session based on active year
-      const currentClassSession = await ClassStudent.findOne({
+      // Determine the current class session based on the active year
+      const currentClassSession = await db.ClassStudent.findOne({
         where: { studentId: studentIds[0], academicYearId: activeYear.id },
-        include: [{ model: Section }]
+        include: [{ model: db.Section }]
       });
 
-      if (!currentClassSession || !currentClassSession.Section) return res.status(404).json({ message: 'Current class session not found for the students!' });
+      if (!currentClassSession || !currentClassSession.Section) 
+        return res.status(404).json({ message: 'Current class session not found for the students!' });
 
-      // Update current class session status in batch to 'Repeated'
-      await ClassStudent.update(
-        { status: 'Repeated' },
-        { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id } }
-      );
+      const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
 
-      // Prepare new records for the next academic year
-      const newRecords = students.map(student => ({
-        studentId: student.id,
-        classSessionId: currentClassSession.Section.id,
-        academicYearId: pendingYear.id,
-        status: 'Not Yet'
-      }));
+      // Start a transaction
+      const transaction = await db.sequelize.transaction();
 
-      // Insert new records if they do not exist
-      await ClassStudent.bulkCreate(newRecords, {
-        ignoreDuplicates: true 
-      });
+      try {
+        // Update current class session status in batch to 'Repeated'
+        await db.ClassStudent.update(
+          { status: 'Repeated' },
+          { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
+        );
 
-      // Prepare repetition result for response
-      const repetitions = students.map(student => ({
-        studentId: student.id,
-        status: 'Repeated'
-      }));
+        // Fetch existing records in the next class session
+        const existingRecords = await db.ClassStudent.findAll({
+          where: {
+            studentId: studentIds,
+            classSessionId: repeatedClassSession.id,
+            academicYearId: pendingYear.id
+          },
+          transaction
+        });
 
-      res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
+        // Get existing student IDs
+        const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
+
+        // Prepare new records for the next academic year, excluding existing ones
+        const newRecords = students
+          .filter(student => !existingStudentIds.has(student.id))
+          .map(student => ({
+            studentId: student.id,
+            classSessionId: repeatedClassSession.id,
+            academicYearId: pendingYear.id,
+            status: 'Not Yet'
+          }));
+
+        // Insert new records if any
+        if (newRecords.length > 0) {
+          await db.ClassStudent.bulkCreate(newRecords, { transaction });
+        }
+
+        // Commit transaction
+        await transaction.commit();
+
+        // Prepare repetition result for response
+        const repetitions = students.map(student => ({
+          studentId: student.id,
+          status: 'Repeated'
+        }));
+
+        res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
+      } catch (error) {
+        // Rollback transaction in case of error
+        await transaction.rollback();
+        throw error;
+      }
     } catch (error) {
       console.error('Error repeating class students:', error);
 
@@ -377,4 +211,5 @@ exports.repeatClassStudents = async (req, res) => {
     }
   });
 };
+
 

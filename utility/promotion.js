@@ -38,15 +38,13 @@ const fetchAcademicYears = async () => {
     }
 };
 
-const validateClassSession = async (classSessionId, nextClassSessionId) => {
+const validateClassSession = async (classSessionId) => {
     try {
         const classSession = await Section.findByPk(classSessionId);
-        const nextClassSession = await Section.findByPk(nextClassSessionId);
 
-        if (!classSession) throw new Error('Class session not found!');
-        if (!nextClassSession) throw new Error('Promotion class session not found!');
+        if (!classSession) throw new Error('Promotion class session not found!');
 
-        return { classSession, nextClassSession };
+        return classSession
     } catch (error) {
         console.error('Error validating class sessions:', error);
         throw error; // Re-throw the error to be handled by the calling function
