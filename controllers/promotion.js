@@ -36,14 +36,14 @@ exports.promoteClassStudents = async (req, res) => {
       // if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
       const nextClassSession = await validateClassSession(nextClassSessionId);
 
-      // Start a transaction
+      // Start a transaction to ensure atomicity.
       const transaction = await db.sequelize.transaction();
 
       try {
         // Update current class session status in batch
         await db.ClassStudent.update(
           { status: 'Promoted' },
-          { where: { studentId: studentIds, classSessionId: currentClassSessionIds }, transaction }
+          { where: { academicYearId: activeYear.id, studentId: studentIds, classSessionId: currentClassSessionIds }, transaction }
         );
 
         // Fetch existing records in the next class session
@@ -137,14 +137,14 @@ exports.repeatClassStudents = async (req, res) => {
 
       const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
 
-      // Start a transaction
+      // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
 
       try {
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
           { status: 'Repeated' },
-          { where: { studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
+          { where: { academicYearId: activeYear.id, studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
         );
 
         // Fetch existing records in the next class session

@@ -6,7 +6,7 @@ const passport = require('../db/config/passport')
 const { User, Student, Parent, Class, Section, ResetRequest, Department, AssignedTeacher, ClassStudent, AcademicYear } = require("../db/models/index")
 const Mail = require('../utility/email');
 const sendSMS = require('../utility/sendSMS');
-const { normalizeGhPhone, extractIdAndRoleFromToken } = require('../utility/cleaning');
+const { normalizeGhPhone, extractIdAndRoleFromToken, extractJsonFromToken } = require('../utility/cleaning');
 
 
 // Staff Login

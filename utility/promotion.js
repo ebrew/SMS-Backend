@@ -1,13 +1,5 @@
 const { AcademicYear, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
 
-// i'll check the logic later
-const validateAcademicYear = async (academicYearId) => {
-    const academicYear = await AcademicYear.findByPk(academicYearId);
-    if (!academicYear) throw new Error('Academic year not found!');
-    await academicYear.setInactiveIfEndDateDue();
-    if (academicYear.status !== 'Active') throw new Error('Academic year is not active!');
-    return academicYear;
-};
 
 const fetchAcademicYears = async () => {
     try {
@@ -109,7 +101,6 @@ const getNextClassSessionId = async (currentClassSessionId) => {
 };
 
 module.exports = {
-    validateAcademicYear,
     validateClassSession,
     validateStudents,
     validateGrades,
