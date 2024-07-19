@@ -32,18 +32,43 @@ exports.promoteClassStudents = async (req, res) => {
       const currentClassSessionIds = currentClassSessions.map(session => session.Section.id);
 
       // Validate next class session
-      // const nextClassSession = await db.Section.findByPk(nextClassSessionId);
-      // if (!nextClassSession) return res.status(404).json({ message: 'Promotion class session not found!' });
       const nextClassSession = await validateClassSession(nextClassSessionId);
 
       // Start a transaction to ensure atomicity.
       const transaction = await db.sequelize.transaction();
 
       try {
+        // Fetch repeated students for updates on promotions
+        const repeatedStudents = await db.ClassStudent.findAll({
+          where: {
+            studentId: studentIds,
+            classSessionId: currentClassSessionIds[0], // Adjusted to use first current class session ID
+            academicYearId: activeYear.id,
+            status: 'Repeated'
+          },
+          transaction
+        });
+
+        // Delete repeated students' pendingYear records before the actual promotions
+        await db.ClassStudent.destroy({
+          where: {
+            studentId: repeatedStudents.map(student => student.studentId),
+            academicYearId: pendingYear.id
+          },
+          transaction
+        });
+
         // Update current class session status in batch
         await db.ClassStudent.update(
           { status: 'Promoted' },
-          { where: { academicYearId: activeYear.id, studentId: studentIds, classSessionId: currentClassSessionIds }, transaction }
+          { 
+            where: { 
+              academicYearId: activeYear.id, 
+              studentId: studentIds, 
+              classSessionId: currentClassSessionIds 
+            },
+            transaction 
+          }
         );
 
         // Fetch existing records in the next class session
@@ -110,6 +135,7 @@ exports.promoteClassStudents = async (req, res) => {
   });
 };
 
+
 // Repeat class students
 exports.repeatClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -141,10 +167,37 @@ exports.repeatClassStudents = async (req, res) => {
       const transaction = await db.sequelize.transaction();
 
       try {
+        // Fetch promoted students for updates on repeating
+        const promotedStudents = await db.ClassStudent.findAll({
+          where: {
+            studentId: studentIds,
+            classSessionId: repeatedClassSession.id, 
+            academicYearId: activeYear.id,
+            status: 'Promoted'
+          },
+          transaction
+        });
+
+        // Delete promoted students' pendingYear records before the actual repeating
+        await db.ClassStudent.destroy({
+          where: {
+            studentId: promotedStudents.map(student => student.studentId),
+            academicYearId: pendingYear.id
+          },
+          transaction
+        });
+
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
           { status: 'Repeated' },
-          { where: { academicYearId: activeYear.id, studentId: studentIds, classSessionId: currentClassSession.Section.id }, transaction }
+          { 
+            where: { 
+              academicYearId: activeYear.id, 
+              studentId: studentIds, 
+              classSessionId: currentClassSession.Section.id 
+            }, 
+            transaction 
+          }
         );
 
         // Fetch existing records in the next class session
@@ -210,5 +263,6 @@ exports.repeatClassStudents = async (req, res) => {
     }
   });
 };
+
 
 
