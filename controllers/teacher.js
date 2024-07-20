@@ -97,7 +97,8 @@ exports.teacherClassStudents = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           address: student.Student.address,
-          photo: student.Student.passportPhoto
+          photo: student.Student.passportPhoto,
+          status: student.status
         };
       }).filter(student => student !== null);
 
