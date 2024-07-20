@@ -267,15 +267,14 @@ exports.endAcademicYear = async (req, res) => {
       const academicYear = await AcademicYear.findByPk(ayId);
 
       // Check if the academic year exists
-      if (!academicYear) {
-        return res.status(400).json({ message: 'Academic year not found!' });
-      }
+      if (!academicYear) return res.status(400).json({ message: 'Academic year not found!' });
+      
+      // Check if the academic year is pending
+      if (academicYear.status === 'Pending') return res.status(400).json({ message: "Academic year hasn't begun!" });
 
       // Check if the academic year is already inactive
-      if (academicYear.status === 'Inactive') {
-        return res.status(400).json({ message: 'Academic year has already ended!' });
-      }
-
+      if (academicYear.status === 'Inactive') return res.status(400).json({ message: 'Academic year has already ended!' });
+      
       // Check if the academic year has any active academic terms
       const hasActiveTerm = await AcademicTerm.findOne({ where: { academicYearId: ayId, status: 'Active' }, });
       if (hasActiveTerm) {

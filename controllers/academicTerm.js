@@ -346,15 +346,14 @@ exports.endAcademicTerm = async (req, res) => {
       const academicTerm = await AcademicTerm.findByPk(id);
 
       // Check if the academic term exists
-      if (!academicTerm) {
-        return res.status(400).json({ message: 'Academic term not found!' });
-      }
+      if (!academicTerm) return res.status(400).json({ message: 'Academic term not found!' });
+
+      // Check if the academic term is pending
+      if (academicTerm.status === 'Pending') return res.status(400).json({ message: "Academic term hasn't begun!" });
 
       // Check if the academic term is already inactive
-      if (academicTerm.status === 'Inactive') {
-        return res.status(400).json({ message: 'Academic term has already ended!' });
-      }
-
+      if (academicTerm.status === 'Inactive') return res.status(400).json({ message: 'Academic term has already ended!' });
+      
       // Set the end date to today's date
       academicTerm.endDate = new Date();
       academicTerm.status = 'Inactive';
