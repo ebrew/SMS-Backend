@@ -13,7 +13,7 @@ exports.promoteClassStudents = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students.map(student => student.id);
+      const studentIds = students; // Directly use the students array as it contains IDs now
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -49,16 +49,7 @@ exports.promoteClassStudents = async (req, res) => {
           transaction
         });
 
-        // // Delete repeated students' pendingYear records before the actual promotions
-        // await db.ClassStudent.destroy({
-        //   where: {
-        //     studentId: repeatedStudents.map(student => student.studentId),
-        //     academicYearId: pendingYear.id
-        //   },
-        //   transaction
-        // });
-
-        // updating students' pendingYear records before the actual promotions
+        // Update repeated students' pendingYear records before the actual promotions
         await db.ClassStudent.update(
           { classSessionId: nextClassSession.id },
           {
@@ -97,10 +88,10 @@ exports.promoteClassStudents = async (req, res) => {
         const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
 
         // Prepare new records for the next academic year, excluding existing ones
-        const newRecords = students
-          .filter(student => !existingStudentIds.has(student.id))
-          .map(student => ({
-            studentId: student.id,
+        const newRecords = studentIds
+          .filter(studentId => !existingStudentIds.has(studentId))
+          .map(studentId => ({
+            studentId,
             classSessionId: nextClassSession.id,
             academicYearId: pendingYear.id,
             status: 'Not Yet'
@@ -115,8 +106,8 @@ exports.promoteClassStudents = async (req, res) => {
         await transaction.commit();
 
         // Prepare promotion result for response
-        const promotions = students.map(student => ({
-          studentId: student.id,
+        const promotions = studentIds.map(studentId => ({
+          studentId,
           status: 'Promoted'
         }));
 
@@ -158,7 +149,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students.map(student => student.id);
+      const studentIds = students; // Directly use the students array as it contains IDs now
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -194,7 +185,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
           transaction
         });
 
-        // Delete repeated students' pendingYear records before the actual promotions
+        // Update repeated students' pendingYear records before the actual promotions
         await db.ClassStudent.update(
           { classSessionId: nextClassSession.id },
           {
@@ -233,10 +224,10 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
 
         // Prepare new records for the next academic year, excluding existing ones
-        const newRecords = students
-          .filter(student => !existingStudentIds.has(student.id))
-          .map(student => ({
-            studentId: student.id,
+        const newRecords = studentIds
+          .filter(studentId => !existingStudentIds.has(studentId))
+          .map(studentId => ({
+            studentId,
             classSessionId: nextClassSession.id,
             academicYearId: pendingYear.id,
             status: 'Not Yet'
@@ -251,8 +242,8 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         await transaction.commit();
 
         // Prepare promotion result for response
-        const promotions = students.map(student => ({
-          studentId: student.id,
+        const promotions = studentIds.map(studentId => ({
+          studentId,
           status: 'Promoted'
         }));
 
@@ -294,7 +285,7 @@ exports.repeatClassStudents = async (req, res) => {
     if (!students || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-    const studentIds = students.map(student => student.id);
+    const studentIds = students; // Directly use the students array as it contains IDs now
     if (studentIds.length === 0)
       return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -366,10 +357,10 @@ exports.repeatClassStudents = async (req, res) => {
         const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
 
         // Prepare new records for the next academic year, excluding existing ones
-        const newRecords = students
-          .filter(student => !existingStudentIds.has(student.id))
-          .map(student => ({
-            studentId: student.id,
+        const newRecords = studentIds
+          .filter(studentId => !existingStudentIds.has(studentId))
+          .map(studentId => ({
+            studentId,
             classSessionId: repeatedClassSession.id,
             academicYearId: pendingYear.id,
             status: 'Not Yet'
@@ -384,8 +375,8 @@ exports.repeatClassStudents = async (req, res) => {
         await transaction.commit();
 
         // Prepare repetition result for response
-        const repetitions = students.map(student => ({
-          studentId: student.id,
+        const repetitions = studentIds.map(studentId => ({
+          studentId,
           status: 'Repeated'
         }));
 
@@ -416,7 +407,7 @@ exports.repeatClassStudents = async (req, res) => {
   });
 };
 
-// Repeat class students by head teacher by Admin (Complexity)
+// Repeat class students by Admin (Complexity)
 exports.repeatClassStudentsByAdmin = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
@@ -425,7 +416,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-    const studentIds = students.map(student => student.id);
+    const studentIds = students; // Directly use the students array as it contains IDs now
     if (studentIds.length === 0)
       return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -498,10 +489,10 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
         const existingStudentIds = new Set(existingRecords.map(record => record.studentId));
 
         // Prepare new records for the next academic year, excluding existing ones
-        const newRecords = students
-          .filter(student => !existingStudentIds.has(student.id))
-          .map(student => ({
-            studentId: student.id,
+        const newRecords = studentIds
+          .filter(studentId => !existingStudentIds.has(studentId))
+          .map(studentId => ({
+            studentId,
             classSessionId: repeatedClassSession.id,
             academicYearId: pendingYear.id,
             status: 'Not Yet'
@@ -516,8 +507,8 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
         await transaction.commit();
 
         // Prepare repetition result for response
-        const repetitions = students.map(student => ({
-          studentId: student.id,
+        const repetitions = studentIds.map(studentId => ({
+          studentId,
           status: 'Repeated'
         }));
 
@@ -549,6 +540,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     }
   });
 };
+
 
 
 
