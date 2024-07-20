@@ -138,7 +138,6 @@ exports.promoteClassStudents = async (req, res) => {
   });
 };
 
-
 // Promote class students by Admin (Complexity)
 exports.promoteClassStudentsByAdmin = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -146,13 +145,15 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
 
     try {
       const { students, nextAcademicYearId, nextClassSessionId } = req.body;
-      if (!students || !nextAcademicYearId || !nextClassSessionId || !Array.isArray(students) || students.length === 0)
+      if (!students || !nextAcademicYearId || !nextClassSessionId || !Array.isArray(students) || students.length === 0) {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
+      }
 
       // Validate student IDs
       const studentIds = students.map(student => student.id); 
-      if (studentIds.length === 0)
+      if (studentIds.length === 0) {
         return res.status(400).json({ message: 'No valid student IDs provided!' });
+      }
 
       // Validate current and promotional academic years
       const { activeYear, pendingYear } = await validateAcademicYears(nextAcademicYearId);
@@ -163,8 +164,9 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         include: [{ model: db.Section }]
       });
 
-      if (!currentClassSessions || currentClassSessions.length === 0)
+      if (!currentClassSessions || currentClassSessions.length === 0) {
         return res.status(404).json({ message: 'Current class session not found for the students!' });
+      }
 
       const currentClassSessionIds = currentClassSessions.map(session => session.Section.id);
 
@@ -283,26 +285,30 @@ exports.repeatClassStudents = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     const { students } = req.body;
-    if (!students || !Array.isArray(students) || students.length === 0)
+    if (!students || !Array.isArray(students) || students.length === 0) {
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
+    }
 
-    const studentIds = students.map(student => student.id); 
-    if (studentIds.length === 0)
+    const studentIds = students; // Directly use the students array as it contains IDs now
+    if (studentIds.length === 0) {
       return res.status(400).json({ message: 'No valid student IDs provided!' });
+    }
 
     try {
+      // Fetch academic years
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
       // Determine the current class session based on the active year
-      const currentClassSessions = await db.ClassStudent.findAll({
-        where: { studentId: studentIds, academicYearId: activeYear.id },
+      const currentClassSession = await db.ClassStudent.findOne({
+        where: { studentId: studentIds[0], academicYearId: activeYear.id },
         include: [{ model: db.Section }]
       });
 
-      if (!currentClassSessions || currentClassSessions.length === 0)
+      if (!currentClassSession || !currentClassSession.Section) {
         return res.status(404).json({ message: 'Current class session not found for the students!' });
+      }
 
-      const repeatedClassSession = currentClassSessions[0].Section; 
+      const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -319,9 +325,9 @@ exports.repeatClassStudents = async (req, res) => {
           transaction
         });
 
-        // Update promoted students' class session records before the actual repeating
+        // Updating promoted students' pendingYear records before the actual repeating
         await db.ClassStudent.update(
-          { classSessionId: repeatedClassSession.id },
+          { classSessionId: repeatedClassSession.id, promotedTo: null },
           {
             where: {
               studentId: promotedStudents.map(student => student.studentId),
@@ -344,7 +350,7 @@ exports.repeatClassStudents = async (req, res) => {
           }
         );
 
-        // Fetch existing records in the next class session to avoid duplicates
+        // Fetch existing records in the next class session
         const existingRecords = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
@@ -381,7 +387,7 @@ exports.repeatClassStudents = async (req, res) => {
           status: 'Repeated'
         }));
 
-        res.status(200).json({ message: 'Students repeated successfully!', repetitions });
+        res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
@@ -414,12 +420,14 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     const { students, nextAcademicYearId } = req.body;
-    if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0)
+    if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0) {
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
+    }
 
     const studentIds = students.map(student => student.id); 
-    if (studentIds.length === 0)
+    if (studentIds.length === 0) {
       return res.status(400).json({ message: 'No valid student IDs provided!' });
+    }
 
     try {
       // Validate current and promotional academic years
@@ -431,10 +439,11 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
         include: [{ model: db.Section }]
       });
 
-      if (!currentClassSession || !currentClassSession.Section)
+      if (!currentClassSession || !currentClassSession.Section) {
         return res.status(404).json({ message: 'Current class session not found for the students!' });
+      }
 
-      const repeatedClassSession = currentClassSession.Section; 
+      const repeatedClassSession = currentClassSession.Section;
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -465,7 +474,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
 
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
-          { status: 'Repeated' },
+          { status: 'Repeated', promotedTo: null },
           {
             where: {
               academicYearId: activeYear.id,
