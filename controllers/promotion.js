@@ -49,7 +49,7 @@ exports.promoteClassStudents = async (req, res) => {
           transaction
         });
 
-        // Update repeated students' pendingYear records before the actual promotions
+        // Update repeated students' class session records before the actual promotions
         await db.ClassStudent.update(
           { classSessionId: nextClassSession.id },
           {
@@ -138,6 +138,7 @@ exports.promoteClassStudents = async (req, res) => {
   });
 };
 
+
 // Promote class students by Admin (Complexity)
 exports.promoteClassStudentsByAdmin = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -149,7 +150,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students; 
+      const studentIds = students.map(student => student.id); 
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -170,7 +171,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
       // Validate next class session
       const nextClassSession = await validateClassSession(nextClassSessionId);
 
-      // Start a transaction to ensure atomicity.
+      // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
 
       try {
@@ -178,14 +179,14 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         const repeatedStudents = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
-            classSessionId: currentClassSessionIds[0], 
+            classSessionId: currentClassSessionIds[0],
             academicYearId: activeYear.id,
             status: 'Repeated'
           },
           transaction
         });
 
-        // Update repeated students' pendingYear records before the actual promotions
+        // Update repeated students' class session records before the actual promotions
         await db.ClassStudent.update(
           { classSessionId: nextClassSession.id },
           {
@@ -210,7 +211,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
           }
         );
 
-        // Fetch existing records in the next class session
+        // Fetch existing records in the next class session to avoid duplicates
         const existingRecords = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
@@ -285,7 +286,7 @@ exports.repeatClassStudents = async (req, res) => {
     if (!students || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-    const studentIds = students; 
+    const studentIds = students.map(student => student.id); 
     if (studentIds.length === 0)
       return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -293,15 +294,15 @@ exports.repeatClassStudents = async (req, res) => {
       const { activeYear, pendingYear } = await fetchAcademicYears();
 
       // Determine the current class session based on the active year
-      const currentClassSession = await db.ClassStudent.findOne({
-        where: { studentId: studentIds[0], academicYearId: activeYear.id },
+      const currentClassSessions = await db.ClassStudent.findAll({
+        where: { studentId: studentIds, academicYearId: activeYear.id },
         include: [{ model: db.Section }]
       });
 
-      if (!currentClassSession || !currentClassSession.Section)
+      if (!currentClassSessions || currentClassSessions.length === 0)
         return res.status(404).json({ message: 'Current class session not found for the students!' });
 
-      const repeatedClassSession = currentClassSession.Section; 
+      const repeatedClassSession = currentClassSessions[0].Section; 
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -318,7 +319,7 @@ exports.repeatClassStudents = async (req, res) => {
           transaction
         });
 
-        // Updating promoted students' pendingYear records before the actual repeating
+        // Update promoted students' class session records before the actual repeating
         await db.ClassStudent.update(
           { classSessionId: repeatedClassSession.id },
           {
@@ -343,7 +344,7 @@ exports.repeatClassStudents = async (req, res) => {
           }
         );
 
-        // Fetch existing records in the next class session
+        // Fetch existing records in the next class session to avoid duplicates
         const existingRecords = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
@@ -416,7 +417,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-    const studentIds = students; // Directly use the students array as it contains IDs now
+    const studentIds = students.map(student => student.id); 
     if (studentIds.length === 0)
       return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -433,7 +434,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
       if (!currentClassSession || !currentClassSession.Section)
         return res.status(404).json({ message: 'Current class session not found for the students!' });
 
-      const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
+      const repeatedClassSession = currentClassSession.Section; 
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -450,7 +451,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
           transaction
         });
 
-        // Updating promoted students' pendingYear records before the actual repeating
+        // Update promoted students' class session records before the actual repeating
         await db.ClassStudent.update(
           { classSessionId: repeatedClassSession.id },
           {
@@ -475,7 +476,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
           }
         );
 
-        // Fetch existing records in the next class session
+        // Fetch existing records in the next class session to avoid duplicates
         const existingRecords = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
@@ -540,6 +541,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     }
   });
 };
+
 
 
 

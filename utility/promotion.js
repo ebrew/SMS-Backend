@@ -44,17 +44,21 @@ const validateClassSession = async (classSessionId) => {
 
 const validateAcademicYears = async (promotion) => {
     try {
-        const pendingYear = await AcademicYear.findByPk({ promotion });
+        // Fetch the pending academic year using the provided promotion ID
+        const pendingYear = await AcademicYear.findByPk(promotion);
+
+        // Fetch the active academic year, excluding the promotion year
         const activeYear = await AcademicYear.findOne({
             where: {
               id: { [Op.ne]: promotion }, // Exclude the promotion academic year
             },
             order: [['endDate', 'DESC']],
-          });
+        });
 
+        // Validate the pending academic year
         if (!pendingYear) throw new Error('Promotional academic year not found!');
-        if (pendingYear.status !== 'Pending' || pendingYear.status !== 'Active' ) throw new Error('Promotional academic year provided is inactive!');
-        
+        if (pendingYear.status !== 'Pending' && pendingYear.status !== 'Active' ) throw new Error('Promotional academic year provided is inactive!');
+
         if (!activeYear) throw new Error('Promotional academic year provided is the same as the current academic year!');
 
         return { activeYear, pendingYear };
