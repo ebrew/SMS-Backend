@@ -421,16 +421,29 @@ Method: GET
 Authorization: Bearer <token from login>
 
 PROMOTIONS
-74. // Promote class students without pass mark by providing studentIds
+FORMAT: students = [ { "id": 1 } ]
+74. // Promote class students by head teacher
 API: << server >>/api/v1/promotion/class
 Method: POST
 Content: { students, nextClassSessionId }
 Authorization: Bearer <token from login>
 
-75. // Repeat class students providing studentIds
+75. // Repeat class students by head teacher
 API: << server >>/api/v1/promotion/repeat_students
 Method: POST
 Content: { students }
+Authorization: Bearer <token from login>
+
+76. // Promote class students by Admin (Complexity)
+API: << server >>/api/v1/promotion/class/admin
+Method: POST
+Content: { students, nextAcademicYearId, nextClassSessionId }
+Authorization: Bearer <token from login>
+
+77. // Repeat students by Admin (Complexity)
+API: << server >>/api/v1/promotion/repeat_students/admin
+Method: POST
+Content: { students, nextAcademicYearId }
 Authorization: Bearer <token from login>
 
 

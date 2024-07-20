@@ -17,7 +17,6 @@ const fetchAcademicYears = async () => {
         }
 
         if (!pendingYear) throw new Error('No promotion academic year found!');
-        // if (!activeYear) throw new Error('No active academic year found!');
         
         if(!activeYear){
             activeYear = await AcademicYear.findOne({ where: { status: 'Inactive' }, order: [['createdAt', 'DESC']] });
@@ -39,6 +38,28 @@ const validateClassSession = async (classSessionId) => {
         return classSession
     } catch (error) {
         console.error('Error validating class sessions:', error);
+        throw error; // Re-throw the error to be handled by the calling function
+    }
+};
+
+const validateAcademicYears = async (promotion) => {
+    try {
+        const pendingYear = await AcademicYear.findByPk({ promotion });
+        const activeYear = await AcademicYear.findOne({
+            where: {
+              id: { [Op.ne]: promotion }, // Exclude the promotion academic year
+            },
+            order: [['endDate', 'DESC']],
+          });
+
+        if (!pendingYear) throw new Error('Promotional academic year not found!');
+        if (pendingYear.status !== 'Pending' || pendingYear.status !== 'Active' ) throw new Error('Promotional academic year provided is inactive!');
+        
+        if (!activeYear) throw new Error('Promotional academic year provided is the same as the current academic year!');
+
+        return { activeYear, pendingYear };
+    } catch (error) {
+        console.error('Error fetching academic years:', error);
         throw error; // Re-throw the error to be handled by the calling function
     }
 };
@@ -102,9 +123,6 @@ const getNextClassSessionId = async (currentClassSessionId) => {
 
 module.exports = {
     validateClassSession,
-    validateStudents,
-    validateGrades,
-    getPromotionEligibility,
-    getNextClassSessionId,
     fetchAcademicYears,
+    validateAcademicYears
 };
