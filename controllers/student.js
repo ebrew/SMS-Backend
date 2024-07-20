@@ -424,6 +424,7 @@ exports.classStudents = async (req, res) => {
             ? `${student.firstName} ${student.middleName} ${student.lastName}`
             : `${student.firstName} ${student.lastName}`,
           passportPhoto: student.passportPhoto,
+          status: ClassStudent.status
         };
       });
 

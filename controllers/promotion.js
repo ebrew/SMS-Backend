@@ -327,18 +327,9 @@ exports.repeatClassStudents = async (req, res) => {
           transaction
         });
 
-        // // Delete promoted students' pendingYear records before the actual repeating
-        // await db.ClassStudent.destroy({
-        //   where: {
-        //     studentId: promotedStudents.map(student => student.studentId),
-        //     academicYearId: pendingYear.id
-        //   },
-        //   transaction
-        // });
-
         // Updating promoted students' pendingYear records before the actual repeating
         await db.ClassStudent.update(
-          { classSessionId: currentClassSession.Section.id },
+          { classSessionId: repeatedClassSession.id },
           {
             where: {
               studentId: promotedStudents.map(student => student.studentId),
@@ -355,7 +346,7 @@ exports.repeatClassStudents = async (req, res) => {
             where: {
               academicYearId: activeYear.id,
               studentId: studentIds,
-              classSessionId: currentClassSession.Section.id
+              classSessionId: repeatedClassSession.id
             },
             transaction
           }
@@ -470,7 +461,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
 
         // Updating promoted students' pendingYear records before the actual repeating
         await db.ClassStudent.update(
-          { classSessionId: currentClassSession.Section.id },
+          { classSessionId: repeatedClassSession.id },
           {
             where: {
               studentId: promotedStudents.map(student => student.studentId),
@@ -487,7 +478,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
             where: {
               academicYearId: activeYear.id,
               studentId: studentIds,
-              classSessionId: currentClassSession.Section.id
+              classSessionId: repeatedClassSession.id
             },
             transaction
           }
