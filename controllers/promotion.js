@@ -111,7 +111,7 @@ exports.promoteClassStudents = async (req, res) => {
           status: 'Promoted'
         }));
 
-        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+        res.status(200).json({ message: 'Students promoted successfully!', promotions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
@@ -247,7 +247,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
           status: 'Promoted'
         }));
 
-        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
+        res.status(200).json({ message: 'Students promoted successfully!', promotions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
@@ -285,7 +285,7 @@ exports.repeatClassStudents = async (req, res) => {
     if (!students || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-    const studentIds = students; // Directly use the students array as it contains IDs now
+    const studentIds = students; 
     if (studentIds.length === 0)
       return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -301,7 +301,7 @@ exports.repeatClassStudents = async (req, res) => {
       if (!currentClassSession || !currentClassSession.Section)
         return res.status(404).json({ message: 'Current class session not found for the students!' });
 
-      const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
+      const repeatedClassSession = currentClassSession.Section; 
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -380,7 +380,7 @@ exports.repeatClassStudents = async (req, res) => {
           status: 'Repeated'
         }));
 
-        res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
+        res.status(200).json({ message: 'Students repeated successfully!', repetitions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
@@ -512,7 +512,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
           status: 'Repeated'
         }));
 
-        res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
+        res.status(200).json({ message: 'Students repeated successfully!', repetitions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
