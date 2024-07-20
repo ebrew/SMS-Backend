@@ -2,18 +2,18 @@ const passport = require('../db/config/passport')
 const { validateClassSession, fetchAcademicYears, validateAcademicYears } = require('../utility/promotion');
 const db = require("../db/models/index")
 
-// Promote class students by head teacher
 exports.promoteClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { students, nextClassSessionId } = req.body;
+
       if (!students || !nextClassSessionId || !Array.isArray(students) || students.length === 0)
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students; 
+      const studentIds = students;
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -34,7 +34,7 @@ exports.promoteClassStudents = async (req, res) => {
       // Validate next class session
       const nextClassSession = await validateClassSession(nextClassSessionId);
 
-      // Start a transaction to ensure atomicity.
+      // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
 
       try {
@@ -42,14 +42,14 @@ exports.promoteClassStudents = async (req, res) => {
         const repeatedStudents = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
-            classSessionId: currentClassSessionIds[0], 
+            classSessionId: currentClassSessionIds[0], // Adjusted to use first current class session ID
             academicYearId: activeYear.id,
             status: 'Repeated'
           },
           transaction
         });
 
-        // Update repeated students' class session records before the actual promotions
+        // Update repeated students' pendingYear records before the actual promotions
         await db.ClassStudent.update(
           { classSessionId: nextClassSession.id },
           {
@@ -111,7 +111,7 @@ exports.promoteClassStudents = async (req, res) => {
           status: 'Promoted'
         }));
 
-        res.status(200).json({ message: 'Students promoted successfully!', promotions });
+        res.status(200).json({ message: 'Class students promoted successfully!', promotions });
       } catch (error) {
         // Rollback transaction in case of error
         await transaction.rollback();
