@@ -13,7 +13,7 @@ exports.promoteClassStudents = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students; // Directly use the students array as it contains IDs now
+      const studentIds = students; 
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -42,7 +42,7 @@ exports.promoteClassStudents = async (req, res) => {
         const repeatedStudents = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
-            classSessionId: currentClassSessionIds[0], // Adjusted to use first current class session ID
+            classSessionId: currentClassSessionIds[0], 
             academicYearId: activeYear.id,
             status: 'Repeated'
           },
@@ -63,7 +63,7 @@ exports.promoteClassStudents = async (req, res) => {
 
         // Update current class session status in batch
         await db.ClassStudent.update(
-          { status: 'Promoted' },
+          { status: 'Promoted', promotedTo: nextClassSession.id },
           {
             where: {
               academicYearId: activeYear.id,
@@ -149,7 +149,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
       // Validate student IDs
-      const studentIds = students; // Directly use the students array as it contains IDs now
+      const studentIds = students; 
       if (studentIds.length === 0)
         return res.status(400).json({ message: 'No valid student IDs provided!' });
 
@@ -178,7 +178,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         const repeatedStudents = await db.ClassStudent.findAll({
           where: {
             studentId: studentIds,
-            classSessionId: currentClassSessionIds[0], // Adjusted to use first current class session ID
+            classSessionId: currentClassSessionIds[0], 
             academicYearId: activeYear.id,
             status: 'Repeated'
           },
@@ -199,7 +199,7 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
 
         // Update current class session status in batch
         await db.ClassStudent.update(
-          { status: 'Promoted' },
+          { status: 'Promoted', promotedTo: nextClassSession.id },
           {
             where: {
               academicYearId: activeYear.id,

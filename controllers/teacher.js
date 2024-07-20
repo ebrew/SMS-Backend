@@ -77,14 +77,21 @@ exports.teacherClassStudents = async (req, res) => {
       if (!activeAcademicYear)
         return res.status(400).json({ message: "No active academic year available!" });
 
-      // Fetching class students
+      // Fetching class students with promotedTo section only
       const students = await ClassStudent.findAll({
         where: { classSessionId, academicYearId: activeAcademicYear.id },
-        include: {
-          model: Student,
-          attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'passportPhoto'],
-          order: [['firstName', 'ASC']],
-        }
+        include: [
+          {
+            model: Student,
+            attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'passportPhoto']
+          },
+          {
+            model: Section,
+            as: 'PromotedTo',
+            include: [{ model: Class }]
+          }
+        ],
+        order: [[{ model: Student }, 'firstName', 'ASC']]
       });
 
       const classStudents = students.map(student => {
@@ -98,7 +105,10 @@ exports.teacherClassStudents = async (req, res) => {
             : `${student.Student.firstName} ${student.Student.lastName}`,
           address: student.Student.address,
           photo: student.Student.passportPhoto,
-          status: student.status
+          status: student.status,
+          promotedTo: student.PromotedTo 
+            ? `${student.PromotedTo.Class.name} ${student.PromotedTo.name}` 
+            : null
         };
       }).filter(student => student !== null);
 
