@@ -49,14 +49,26 @@ exports.promoteClassStudents = async (req, res) => {
           transaction
         });
 
-        // Delete repeated students' pendingYear records before the actual promotions
-        await db.ClassStudent.destroy({
-          where: {
-            studentId: repeatedStudents.map(student => student.studentId),
-            academicYearId: pendingYear.id
-          },
-          transaction
-        });
+        // // Delete repeated students' pendingYear records before the actual promotions
+        // await db.ClassStudent.destroy({
+        //   where: {
+        //     studentId: repeatedStudents.map(student => student.studentId),
+        //     academicYearId: pendingYear.id
+        //   },
+        //   transaction
+        // });
+
+        // updating students' pendingYear records before the actual promotions
+        await db.ClassStudent.update(
+          { classSessionId: nextClassSession.id },
+          {
+            where: {
+              studentId: repeatedStudents.map(student => student.studentId),
+              academicYearId: pendingYear.id
+            },
+            transaction
+          }
+        );
 
         // Update current class session status in batch
         await db.ClassStudent.update(
@@ -183,13 +195,16 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         });
 
         // Delete repeated students' pendingYear records before the actual promotions
-        await db.ClassStudent.destroy({
-          where: {
-            studentId: repeatedStudents.map(student => student.studentId),
-            academicYearId: pendingYear.id
-          },
-          transaction
-        });
+        await db.ClassStudent.update(
+          { classSessionId: nextClassSession.id },
+          {
+            where: {
+              studentId: repeatedStudents.map(student => student.studentId),
+              academicYearId: pendingYear.id
+            },
+            transaction
+          }
+        );
 
         // Update current class session status in batch
         await db.ClassStudent.update(
@@ -254,10 +269,10 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
       if (error.message === 'Promotional academic year provided is inactive!') {
         return res.status(400).json({ message: 'Promotional academic year provided is inactive!' });
       } else if (error.message === 'Promotional academic year not found!') {
-        return res.status(400).json({ message: 'Promotional academic year not found!' }); 
+        return res.status(400).json({ message: 'Promotional academic year not found!' });
       } else if (error.message === 'Promotional academic year provided is the same as the current academic year!') {
         return res.status(400).json({ message: 'Promotional academic year provided is the same as the current academic year!' });
-      }else if (error.message === 'Current class session not found for the students!') {
+      } else if (error.message === 'Current class session not found for the students!') {
         return res.status(404).json({ message: 'Current class session not found for the students!' });
       } else if (error.message === 'Promotion class session not found!') {
         return res.status(404).json({ message: 'Promotion class session not found!' });
@@ -312,14 +327,26 @@ exports.repeatClassStudents = async (req, res) => {
           transaction
         });
 
-        // Delete promoted students' pendingYear records before the actual repeating
-        await db.ClassStudent.destroy({
-          where: {
-            studentId: promotedStudents.map(student => student.studentId),
-            academicYearId: pendingYear.id
-          },
-          transaction
-        });
+        // // Delete promoted students' pendingYear records before the actual repeating
+        // await db.ClassStudent.destroy({
+        //   where: {
+        //     studentId: promotedStudents.map(student => student.studentId),
+        //     academicYearId: pendingYear.id
+        //   },
+        //   transaction
+        // });
+
+        // Updating promoted students' pendingYear records before the actual repeating
+        await db.ClassStudent.update(
+          { classSessionId: currentClassSession.Section.id },
+          {
+            where: {
+              studentId: promotedStudents.map(student => student.studentId),
+              academicYearId: pendingYear.id
+            },
+            transaction
+          }
+        );
 
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
@@ -404,7 +431,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     const { students, nextAcademicYearId } = req.body;
-    if (!students ||!nextAcademicYearId || !Array.isArray(students) || students.length === 0)
+    if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0)
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
     const studentIds = students.map(student => student.id);
@@ -441,14 +468,17 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
           transaction
         });
 
-        // Delete promoted students' pendingYear records before the actual repeating
-        await db.ClassStudent.destroy({
-          where: {
-            studentId: promotedStudents.map(student => student.studentId),
-            academicYearId: pendingYear.id
-          },
-          transaction
-        });
+        // Updating promoted students' pendingYear records before the actual repeating
+        await db.ClassStudent.update(
+          { classSessionId: currentClassSession.Section.id },
+          {
+            where: {
+              studentId: promotedStudents.map(student => student.studentId),
+              academicYearId: pendingYear.id
+            },
+            transaction
+          }
+        );
 
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
@@ -513,7 +543,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
       if (error.message === 'Promotional academic year provided is inactive!') {
         return res.status(400).json({ message: 'Promotional academic year provided is inactive!' });
       } else if (error.message === 'Promotional academic year not found!') {
-        return res.status(400).json({ message: 'Promotional academic year not found!' }); 
+        return res.status(400).json({ message: 'Promotional academic year not found!' });
       } else if (error.message === 'Promotional academic year provided is the same as the current academic year!') {
         return res.status(400).json({ message: 'Promotional academic year provided is the same as the current academic year!' });
       } else if (error.message === 'Current class session not found for the students!') {
