@@ -32,9 +32,9 @@ module.exports = {
       score: {
         type: Sequelize.DECIMAL
       },
-      total: {
-        type: Sequelize.DECIMAL
-      },
+      // total: {
+      //   type: Sequelize.DECIMAL
+      // },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

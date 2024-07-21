@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     assessmentId: { type: DataTypes.INTEGER, allowNull: false },
     studentId: { type: DataTypes.INTEGER, allowNull: false },
     score: { type: DataTypes.DECIMAL(5, 2), allowNull: false },
-    total: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    // total: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
   }, {
     sequelize,
     modelName: 'Grade',

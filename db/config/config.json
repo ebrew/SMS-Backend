@@ -15,9 +15,9 @@
   },
   "production": {
     "username": "ebrew",
-    "password": "5xrwUXlnWKpNpCjAUpnYVK8OT1XuswBX",
-    "database": "sms_9lno",
-    "host": "dpg-cpq7339u0jms738qgp8g-a.oregon-postgres.render.com",
+    "password": "969jZhsq56kKla2hVTkiwMPJXXCAg50X",
+    "database": "sms_lg7s",
+    "host": "dpg-cqea9r1u0jms7397ft7g-a.oregon-postgres.render.com",
     "dialect": "postgres",
     "port" : 5432,
     "dialectOptions": {

@@ -421,7 +421,6 @@ Method: GET
 Authorization: Bearer <token from login>
 
 PROMOTIONS
-FORMAT: students = [ { "id": 1 } ]
 74. // Promote class students by head teacher
 API: << server >>/api/v1/promotion/class
 Method: POST

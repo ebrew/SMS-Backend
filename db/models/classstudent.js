@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Section, { foreignKey: 'classSessionId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
       this.belongsTo(models.Student, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
       this.belongsTo(models.AcademicYear, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-      this.belongsTo(models.Section, { foreignKey: 'promotedTo', as: 'PromotedTo', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
+      this.belongsTo(models.Section, { foreignKey: 'promotedTo', as: 'PromotedTo', onDelete: 'SET NULL', onUpdate: 'CASCADE' }); 
     }
   }
   ClassStudent.init({

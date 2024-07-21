@@ -13,34 +13,44 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Sections',
+          model: 'Sections', 
           key: 'id'
         },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
+        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE'  
       },
       studentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Students',
+          model: 'Students', 
           key: 'id'
         },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
+        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE'  
       },
       academicYearId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'AcademicYears',
+          model: 'AcademicYears', 
           key: 'id'
         },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
+        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE'  
       },
       status: {
         type: Sequelize.STRING
+      },
+      promotedTo: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Sections', 
+          key: 'id'
+        },
+        onDelete: 'SET NULL', 
+        onUpdate: 'CASCADE'  
       },
       createdAt: {
         allowNull: false,
