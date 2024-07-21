@@ -44,7 +44,7 @@ module.exports = {
       },
       promotedTo: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'Sections', 
           key: 'id'

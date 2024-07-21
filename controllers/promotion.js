@@ -289,7 +289,7 @@ exports.repeatClassStudents = async (req, res) => {
       return res.status(400).json({ message: 'Incomplete or invalid field!' });
     }
 
-    const studentIds = students; // Directly use the students array as it contains IDs now
+    const studentIds = students; 
     if (studentIds.length === 0) {
       return res.status(400).json({ message: 'No valid student IDs provided!' });
     }
@@ -308,7 +308,7 @@ exports.repeatClassStudents = async (req, res) => {
         return res.status(404).json({ message: 'Current class session not found for the students!' });
       }
 
-      const repeatedClassSession = currentClassSession.Section; // Use the same session for repeating students
+      const repeatedClassSession = currentClassSession.Section; 
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -339,7 +339,7 @@ exports.repeatClassStudents = async (req, res) => {
 
         // Update current class session status in batch to 'Repeated'
         await db.ClassStudent.update(
-          { status: 'Repeated' },
+          { status: 'Repeated', promotedTo: null },
           {
             where: {
               academicYearId: activeYear.id,
