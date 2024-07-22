@@ -19,6 +19,7 @@ var studentRouter = require('./routes/student');
 var gradingSystemRouter = require('./routes/gradingPoint');
 var resultRouter = require('./routes/result');
 var promotionRouter = require('./routes/promotion');
+var billingRouter = require('./routes/billing');
 
 var app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/grading_system', gradingSystemRouter);
 app.use('/api/v1/result', resultRouter);
 app.use('/api/v1/promotion', promotionRouter);
+app.use('/api/v1', billingRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

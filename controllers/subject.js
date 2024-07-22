@@ -140,6 +140,10 @@ exports.updateSubject = async (req, res) => {
       if (!subject)
         return res.status(404).json({ message: 'Subject not found!' });
 
+      const alreadyExist = await Subject.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: subjectId } } });
+
+      if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
+
       // Update subject attributes
       subject.name = name;
       subject.code = code;

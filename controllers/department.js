@@ -94,6 +94,10 @@ exports.updateDepartment = async (req, res) => {
         department.hodId = null; // If hodId is 0 or undefined, set it to null
       }
 
+      const alreadyExist = await Department.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: departmentId } } });
+
+      if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
+
       department.name = name;
       department.description = description;
       await department.save(); 

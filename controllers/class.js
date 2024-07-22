@@ -122,8 +122,17 @@ exports.updateClassSection = async (req, res) => {
 
       const result = await Section.findOne({ where: { classId, id: sectionId } });
 
-      if (!result)
-        return res.status(404).json({ message: 'Section not found!' });
+      if (!result) return res.status(404).json({ message: 'Section not found!' });
+
+      const alreadyExist = await Section.findOne({ 
+        where: { 
+          classId, 
+          name: { [Op.iLike]: name }, 
+          id: { [Op.ne]: sectionId } 
+        } 
+      });
+      
+      if (alreadyExist) return res.status(400).json({ message: `${name} already exists for the specified class!` });
 
       result.name = name;
       result.capacity = capacity;

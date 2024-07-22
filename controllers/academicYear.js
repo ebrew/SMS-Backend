@@ -130,8 +130,11 @@ exports.updateAcademicYear = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete field!' });
 
       const result = await AcademicYear.findByPk(academicYearId);
-      if (!result)
-        return res.status(400).json({ message: 'Academic year not found!' });
+      if (!result) return res.status(400).json({ message: 'Academic year not found!' });
+
+      const alreadyExist = await AcademicYear.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: academicYearId } } });
+
+      if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
       // Convert dates to Date objects
       const newStartDate = new Date(startDate);

@@ -16,7 +16,14 @@ module.exports = {
         type: Sequelize.TEXT
       },
       hodId: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Users', 
+          key: 'id'
+        },
+        onDelete: 'SET NULL', 
+        onUpdate: 'CASCADE'  
       },
       createdAt: {
         allowNull: false,

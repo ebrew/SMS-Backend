@@ -1,6 +1,5 @@
 const { AcademicYear, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
 
-
 const fetchAcademicYears = async () => {
     try {
         let activeYear = await AcademicYear.findOne({ where: { status: 'Active' } });

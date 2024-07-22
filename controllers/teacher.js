@@ -167,5 +167,3 @@ exports.teacherClassSubjects = async (req, res) => {
   });
 };
 
-
-

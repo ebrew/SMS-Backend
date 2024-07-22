@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
   class AcademicTerm extends Model {
     static associate(models) {
       this.belongsTo(models.AcademicYear, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
-      this.hasMany(models.Assessment, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });      
+      this.hasMany(models.Assessment, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });  
+      this.hasMany(models.Billing, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });     
     }
 
     // async setInactiveIfEndDateDue() {

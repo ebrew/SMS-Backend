@@ -23,7 +23,8 @@
     "passport-local": "^1.0.0",
     "pg": "^8.11.3",
     "sequelize": "^6.37.1",
-    "twilio": "^4.23.0"
+    "twilio": "^4.23.0",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.2"

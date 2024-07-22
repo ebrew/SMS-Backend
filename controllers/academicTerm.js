@@ -230,8 +230,11 @@ exports.updateAcademicTerm = async (req, res) => {
 
       const result = await AcademicTerm.findByPk(academicTermId, { include: { model: AcademicYear }});
 
-      if (!result)
-        return res.status(400).json({ message: 'Academic term not found!' });
+      if (!result) return res.status(400).json({ message: 'Academic term not found!' });
+
+      const alreadyExist = await AcademicTerm.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: academicTermId } } });
+
+      if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
       // Convert dates to Date objects
       const termStartDate = new Date(startDate);
