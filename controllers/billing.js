@@ -190,6 +190,69 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   });
 };
 
+// Fetch detailed billing view for admin
+exports.getAdminBillingView = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { academicYearId, termId } = req.query;
+
+    if (!academicYearId) {
+      return res.status(400).json({ message: 'Academic year ID and term ID are required!' });
+    }
+
+    try {
+      // Fetch all billing records for the specified academic year and term
+      const billings = await db.Billing.findAll({
+        where: { academicYearId, termId },
+        include: [
+          { model: db.BillingDetail },
+          {
+            model: db.Payment,
+            attributes: ['amount'],
+            required: false,
+            separate: true // To handle payments properly
+          }
+        ],
+        order: [['studentId', 'ASC']]
+      });
+
+      // Aggregate billing data
+      let totalFeesBilled = 0;
+      let totalAmountPaid = 0;
+      let totalOutstandingAmount = 0;
+
+      // Calculate totals based on fetched data
+      const billingResults = billings.map(billing => {
+        const totalPaid = billing.Payments.reduce((sum, payment) => sum + payment.amount, 0);
+        const remainingAmount = billing.totalFees - totalPaid;
+        
+        totalFeesBilled += billing.totalFees;
+        totalAmountPaid += totalPaid;
+        totalOutstandingAmount += remainingAmount;
+
+        return {
+          ...billing.toJSON(),
+          totalPaid,
+          remainingAmount
+        };
+      });
+
+      const response = {
+        billings: billingResults,
+        totalFeesBilled,
+        totalAmountPaid,
+        totalOutstandingAmount
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching detailed billing view:', error);
+      res.status(500).json({ message: "Can't fetch billing details at the moment!" });
+    }
+  });
+};
+
 // Get all fee types with billing details for a specific academic year and term
 exports.getAllFeeTypesWithBillingDetails = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -294,13 +357,7 @@ exports.updateFeeTypeAmountForAllStudents = async (req, res) => {
 
 
 
-const studentIds = [1, 2, 3]; 
-const academicTermId = 1; 
-const academicYearId = 1; 
-const feeDetails = [
-  { feeTypeId: 1, amount: 100 },
-  { feeTypeId: 2, amount: 50 }
-];
+
 
 const getFeeSummaryForStudent  = async (studentId, academicYearId, termId) => {
     try {

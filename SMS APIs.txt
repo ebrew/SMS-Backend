@@ -474,16 +474,22 @@ Method: POST
 Content: { studentIds, academicYearId, termId, feeDetails }
 Authorization: Bearer <token from login>
 
-83. // Get all fee types with billing details for a specific academic year and term
+83. // Fetch detailed billing view for admin
+API: << server >>/api/v1/detailed_billings
+Method: GET
+Authorization: Bearer <token from login>
+
+84. // Get all fee types with billing details for a specific academic year and term
 API: << server >>/api/v1/billing_details/all
 Method: GET
 Authorization: Bearer <token from login>
 
-84. // Update fee type amount from the billing details for all affected students
+85. // Update fee type amount from the billing details for all affected students
 API: << server >>/api/v1/billing_details/fee_type/update_amount
 Method: PUT
 Content: { academicYearId, termId, feeTypeId, newAmount }
 Authorization: Bearer <token from login>
+
 
 
 
