@@ -116,9 +116,11 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
 
     const { studentIds, academicYearId, academicTermId, feeDetails } = req.body;
 
-    if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
-    
-    if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'New fee details are required!' });
+    if (!Array.isArray(studentIds) || studentIds.length === 0) 
+      return res.status(400).json({ message: 'Student IDs are required!' });
+
+    if (!Array.isArray(feeDetails) || feeDetails.length === 0) 
+      return res.status(400).json({ message: 'New fee details are required!' });
 
     const transaction = await db.sequelize.transaction();
 
@@ -133,9 +135,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         include: [{ model: db.BillingDetail }],
         transaction
       });
-
-      // Log fetched billing records for debugging
-      console.log('Existing Billing Records:', existingBillingRecords);
 
       // Create a map to quickly find existing billing records by student ID
       const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
@@ -160,26 +159,18 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         } else {
           // Calculate total amount of new fee details
           const newFeesTotal = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
+          billing.totalFees = existingBillingRecords.find(b => b.studentId === studentId).totalFees; // Reset to avoid duplicate additions
           billing.totalFees += newFeesTotal;
           billing.remainingAmount += newFeesTotal;
           await billing.save({ transaction });
         }
 
-        // Log billing and its details for debugging
-        console.log('Billing:', billing);
-        console.log('Billing Details:', billing.BillingDetails);
-
-        // Ensure BillingDetails is an array before calling find
-        if (!Array.isArray(billing.BillingDetails)) {
-          console.error(`BillingDetails is not an array for studentId ${studentId}`);
-          billing.BillingDetails = [];
-        }
+        // Create a map to quickly find existing billing details by fee type ID
+        const existingDetailsMap = new Map(billing.BillingDetails.map(detail => [detail.feeTypeId, detail]));
 
         // Iterate over each fee detail
         for (const feeDetail of feeDetails) {
-          const existingBillingDetail = billing.BillingDetails.find(
-            detail => detail.feeTypeId === feeDetail.feeTypeId
-          );
+          const existingBillingDetail = existingDetailsMap.get(feeDetail.feeTypeId);
 
           if (existingBillingDetail) {
             // Update existing fee detail amount
@@ -194,6 +185,13 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
             }, { transaction });
           }
         }
+
+        // Retain existing fee details that are not in the new list
+        for (const existingDetail of billing.BillingDetails) {
+          if (!feeDetails.some(fd => fd.feeTypeId === existingDetail.feeTypeId)) {
+            // No action needed; just retaining
+          }
+        }
       }
 
       await transaction.commit();
@@ -201,7 +199,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     } catch (error) {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
-      res.status(500).json({ message: "Can't add fee type to billing records at the moment!" });
+      res.status(500).json({ message: "Can't create or update to billing records at the moment!" });
     }
   });
 };
