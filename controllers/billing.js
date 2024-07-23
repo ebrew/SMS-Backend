@@ -128,7 +128,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         where: {
           studentId: studentIds,
           academicYearId,
-          termId: academicTermId
+          academicTermId
         },
         include: [{ model: db.BillingDetail }],
         transaction
@@ -147,7 +147,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
           billing = await db.Billing.create({
             studentId,
             academicYearId,
-            termId: academicTermId,
+            academicTermId,
             totalFees,
             totalPaid: 0,
             remainingAmount: totalFees
