@@ -157,11 +157,10 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
 
           billingMap.set(studentId, billing);
         } else {
-          // Calculate total amount of new fee details
+          // Calculate the new total fees based on new fee details
           const newFeesTotal = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
-          billing.totalFees = existingBillingRecords.find(b => b.studentId === studentId).totalFees; // Reset to avoid duplicate additions
-          billing.totalFees += newFeesTotal;
-          billing.remainingAmount += newFeesTotal;
+          billing.totalFees = newFeesTotal; // Set to new total fees
+          billing.remainingAmount = newFeesTotal; // Update remaining amount
           await billing.save({ transaction });
         }
 
@@ -186,10 +185,15 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
           }
         }
 
-        // Retain existing fee details that are not in the new list
+        // Remove fee details that are no longer present in the new list
+        const feeTypeIdsInNewList = new Set(feeDetails.map(detail => detail.feeTypeId));
         for (const existingDetail of billing.BillingDetails) {
-          if (!feeDetails.some(fd => fd.feeTypeId === existingDetail.feeTypeId)) {
-            // No action needed; just retaining
+          if (!feeTypeIdsInNewList.has(existingDetail.feeTypeId)) {
+            // Optionally delete the detail if it's not in the new list
+            await db.BillingDetail.destroy({
+              where: { id: existingDetail.id },
+              transaction
+            });
           }
         }
       }
@@ -199,7 +203,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     } catch (error) {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
-      res.status(500).json({ message: "Can't create or update to billing records at the moment!" });
+      res.status(500).json({ message: "Can't create or update billing records at the moment!" });
     }
   });
 };
