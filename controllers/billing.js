@@ -31,6 +31,7 @@ exports.updateFeeType = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
+    const transaction = await db.sequelize.transaction();
     try {
       const { name, description } = req.body;
       const id = req.params.id;
@@ -41,20 +42,30 @@ exports.updateFeeType = async (req, res) => {
 
       if (!feeType) return res.status(404).json({ message: 'Fee type not found!' });
 
-      const alreadyExist = await db.FeeType.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: id } } });
+      // Check if the new name already exists for another fee type
+      const alreadyExist = await db.FeeType.findOne({
+        where: {
+          name: { [Op.iLike]: name },
+          id: { [Op.ne]: id }
+        },
+        transaction
+      });
 
       if (alreadyExist) return res.status(400).json({ message: `${name} fee type already exists!` });
 
-      await feeType.update({ name, description });
+      await feeType.update({ name, description }, { transaction });
 
+      await transaction.commit();
       res.status(200).json({ message: 'Fee type updated successfully!' });
 
     } catch (error) {
+      await transaction.rollback();
       console.error('Error updating fee type:', error);
       res.status(500).json({ message: "Can't update fee type at the moment!" });
     }
   });
 };
+
 
 // Get all Fee Types for multi selection when billing
 exports.allFeeTypes = async (req, res) => {
