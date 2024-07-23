@@ -119,7 +119,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
     
     if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'New fee details are required!' });
-    
+
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -133,6 +133,9 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         include: [{ model: db.BillingDetail }],
         transaction
       });
+
+      // Log fetched billing records for debugging
+      console.log('Existing Billing Records:', existingBillingRecords);
 
       // Create a map to quickly find existing billing records by student ID
       const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
@@ -160,6 +163,16 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
           billing.totalFees += newFeesTotal;
           billing.remainingAmount += newFeesTotal;
           await billing.save({ transaction });
+        }
+
+        // Log billing and its details for debugging
+        console.log('Billing:', billing);
+        console.log('Billing Details:', billing.BillingDetails);
+
+        // Ensure BillingDetails is an array before calling find
+        if (!Array.isArray(billing.BillingDetails)) {
+          console.error(`BillingDetails is not an array for studentId ${studentId}`);
+          billing.BillingDetails = [];
         }
 
         // Iterate over each fee detail
