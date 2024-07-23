@@ -471,7 +471,7 @@ Authorization: Bearer <token from login>
 82. // Add fee type to billing records or create new records if not found
 API: << server >>/api/v1/billing/create_update
 Method: POST
-Content: { studentIds, academicYearId, termId, feeDetails }
+Content: { studentIds, academicYearId, academicTermId, feeDetails }
 Authorization: Bearer <token from login>
 
 83. // Fetch detailed billing view for admin
@@ -487,7 +487,7 @@ Authorization: Bearer <token from login>
 85. // Update fee type amount from the billing details for all affected students
 API: << server >>/api/v1/billing_details/fee_type/update_amount
 Method: PUT
-Content: { academicYearId, termId, feeTypeId, newAmount }
+Content: { academicYearId, academicTermId, feeTypeId, newAmount }
 Authorization: Bearer <token from login>
 
 
