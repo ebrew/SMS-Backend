@@ -218,21 +218,25 @@ exports.addAcademicTerm = async (req, res) => {
 // Update an existing academic term
 exports.updateAcademicTerm = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const academicTermId = req.params.id;
       const { name, startDate, endDate } = req.body;
 
-      if (!name || !startDate || !endDate)
-        return res.status(400).json({ message: 'Incomplete field!' });
+      if (!name || !startDate || !endDate) return res.status(400).json({ message: 'Incomplete field!' });
 
-      const result = await AcademicTerm.findByPk(academicTermId, { include: { model: AcademicYear }});
+      const result = await AcademicTerm.findByPk(academicTermId, { include: { model: AcademicYear } });
 
-      if (!result) return res.status(400).json({ message: 'Academic term not found!' });
+      if (!result) return res.status(404).json({ message: 'Academic term not found!' });
 
-      const alreadyExist = await AcademicTerm.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: academicTermId } } });
+      // Ensure the new name is unique
+      const alreadyExist = await AcademicTerm.findOne({
+        where: {
+          name: { [Op.iLike]: name },
+          id: { [Op.ne]: academicTermId } // Exclude the current academic term
+        }
+      });
 
       if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
@@ -254,14 +258,20 @@ exports.updateAcademicTerm = async (req, res) => {
       if (termStartDate < yearStartDate || termEndDate > yearEndDate)
         return res.status(400).json({ message: "Invalid date range for term's academic year!" });
 
-      if (result.status !== 'Active')
+      if (result.status === 'Inactive')
         return res.status(400).json({ message: 'Academic term has already ended!' });
 
       // Check for existing academic terms
+      const whereClause = {
+        id: { [Op.ne]: academicTermId }, // Exclude the current academic term
+      };
+
+      if (result.status === 'Active') {
+        whereClause.status = { [Op.ne]: 'Pending' }; // Exclude 'Pending' status if current term is 'Active'
+      }
+
       const latestTerm = await AcademicTerm.findOne({
-        where: {
-          id: { [Op.ne]: academicTermId }, // Exclude the current academic term
-        },
+        where: whereClause,
         order: [['endDate', 'DESC']],
       });
 

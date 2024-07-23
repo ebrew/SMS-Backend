@@ -468,7 +468,7 @@ API: << server >>/api/v1/fee_type/all
 Method: GET
 Authorization: Bearer <token from login>
 
-82. // Add fee type to billing records or create new records if not found
+82. // Create billing records or create new records if not found
 API: << server >>/api/v1/billing/create_update
 Method: POST
 Content: { studentIds, academicYearId, academicTermId, feeDetails }

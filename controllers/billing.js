@@ -66,7 +66,6 @@ exports.updateFeeType = async (req, res) => {
   });
 };
 
-
 // Get all Fee Types for multi selection when billing
 exports.allFeeTypes = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -117,10 +116,10 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
 
     const { studentIds, academicYearId, academicTermId, feeDetails } = req.body;
 
-    if (!Array.isArray(feeDetails) || feeDetails.length === 0) {
-      return res.status(400).json({ message: 'New fee details are required!' });
-    }
-
+    if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
+    
+    if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'New fee details are required!' });
+    
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -193,6 +192,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
+
 
 // Fetch detailed billing view for admin
 exports.getAdminBillingView = async (req, res) => {

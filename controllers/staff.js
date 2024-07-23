@@ -194,6 +194,16 @@ exports.updateStaff = async (req, res) => {
         }
       }
 
+      // Ensure the new username is unique
+      const alreadyExist = await User.findOne({
+        where: { 
+          userName: { [Op.iLike]: userName }, 
+          id: { [Op.ne]: staffId } 
+        }
+      });
+
+      if (alreadyExist) return res.status(400).json({ message: `${userName} already exists!` });
+
       // Update staff attributes
       user.userName = userName;
       user.firstName = firstName;
@@ -218,6 +228,7 @@ exports.updateStaff = async (req, res) => {
     }
   });
 };
+
 
 // Deleting an existing staff
 exports.deleteStaff = async (req, res) => {

@@ -132,7 +132,7 @@ exports.updateSubject = async (req, res) => {
 
       // Validate request body
       if (!name || !code)
-        return res.status(400).json({ message: 'Subject name or code cannot be blank!' });
+        return res.status(400).json({ message: 'Subject name and code cannot be blank!' });
 
       // Find the subject by ID
       const subject = await Subject.findByPk(subjectId);
@@ -140,7 +140,13 @@ exports.updateSubject = async (req, res) => {
       if (!subject)
         return res.status(404).json({ message: 'Subject not found!' });
 
-      const alreadyExist = await Subject.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: subjectId } } });
+      // Ensure the new name is unique
+      const alreadyExist = await Subject.findOne({
+        where: { 
+          name: { [Op.iLike]: name }, 
+          id: { [Op.ne]: subjectId } 
+        }
+      });
 
       if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
@@ -160,6 +166,7 @@ exports.updateSubject = async (req, res) => {
     }
   });
 };
+
 
 // Delete a subject
 exports.deleteSubject = async (req, res) => {

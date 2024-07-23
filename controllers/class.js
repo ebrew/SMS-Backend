@@ -124,6 +124,7 @@ exports.updateClassSection = async (req, res) => {
 
       if (!result) return res.status(404).json({ message: 'Section not found!' });
 
+      // Ensure the new name is unique within the same class
       const alreadyExist = await Section.findOne({ 
         where: { 
           classId, 
@@ -145,6 +146,7 @@ exports.updateClassSection = async (req, res) => {
     }
   });
 };
+
 
 // Deleting a class section 
 exports.deleteClassSection = async (req, res) => {

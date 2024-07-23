@@ -94,7 +94,13 @@ exports.updateDepartment = async (req, res) => {
         department.hodId = null; // If hodId is 0 or undefined, set it to null
       }
 
-      const alreadyExist = await Department.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: departmentId } } });
+      // Ensure the new name is unique
+      const alreadyExist = await Department.findOne({ 
+        where: { 
+          name: { [Op.iLike]: name }, 
+          id: { [Op.ne]: departmentId } 
+        } 
+      });
 
       if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
@@ -102,13 +108,14 @@ exports.updateDepartment = async (req, res) => {
       department.description = description;
       await department.save(); 
 
-      return res.status(200).json({ message: 'Department updated successfully!'});
+      return res.status(200).json({ message: 'Department updated successfully!' });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update department at the moment!' });
     }
   });
 };
+
 
 // Delete a department
 exports.deleteDepartment = async (req, res) => {

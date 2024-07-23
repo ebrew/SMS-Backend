@@ -119,20 +119,24 @@ exports.addAcademicYear = async (req, res) => {
 // Update an existing academic year
 exports.updateAcademicYear = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { name, startDate, endDate } = req.body;
       const academicYearId = req.params.id;
 
-      if (!name || !startDate || !endDate)
-        return res.status(400).json({ message: 'Incomplete field!' });
+      if (!name || !startDate || !endDate) return res.status(400).json({ message: 'Incomplete field!' });
 
       const result = await AcademicYear.findByPk(academicYearId);
-      if (!result) return res.status(400).json({ message: 'Academic year not found!' });
+      if (!result) return res.status(404).json({ message: 'Academic year not found!' });
 
-      const alreadyExist = await AcademicYear.findOne({ where: { name: { [Op.iLike]: name }, id: { [Op.ne]: academicYearId } } });
+      // Ensure the new name is unique
+      const alreadyExist = await AcademicYear.findOne({
+        where: {
+          name: { [Op.iLike]: name },
+          id: { [Op.ne]: academicYearId } // Exclude the current academic year
+        }
+      });
 
       if (alreadyExist) return res.status(400).json({ message: `${name} already exists!` });
 
@@ -148,14 +152,19 @@ exports.updateAcademicYear = async (req, res) => {
         return res.status(200).json({ message: 'Academic year updated successfully!' });
       }
 
-      if (result.status !== 'Active')
-        return res.status(400).json({ message: 'Academic year has already ended!' });
+      if (result.status !== 'Active') return res.status(400).json({ message: 'Academic year has already ended!' });
 
       // Check for existing academic years
+      const whereClause = {
+        id: { [Op.ne]: academicYearId } // Exclude the current academic year
+      };
+
+      if (result.status === 'Active') {
+        whereClause.status = { [Op.ne]: 'Pending' }; // Exclude 'Pending' status if current year is 'Active'
+      }
+
       const latestYear = await AcademicYear.findOne({
-        where: {
-          id: { [Op.ne]: academicYearId }, // Exclude the current academic year
-        },
+        where: whereClause,
         order: [['endDate', 'DESC']],
       });
 
@@ -163,6 +172,7 @@ exports.updateAcademicYear = async (req, res) => {
       if (latestYear && newStartDate <= new Date(latestYear.endDate))
         return res.status(400).json({ message: 'The start date of the new academic year must be after the end date of the last academic year.' });
 
+      // Update academic year
       result.name = name;
       result.startDate = newStartDate;
       result.endDate = newEndDate;
