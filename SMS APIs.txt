@@ -487,10 +487,24 @@ Authorization: Bearer <token from login>
 85. // Update fee type amount from the billing details for all affected students
 API: << server >>/api/v1/billing_details/fee_type/update_amount
 Method: PUT
-Content: { academicYearId, academicTermId, feeTypeId, newAmount }
+Content: { academicYearId, academicTermId, feeTypeId, newAmount, studentIds }
 Authorization: Bearer <token from login>
 
+86. // Delete fee type from the billing details for all affected students
+API: << server >>/api/v1/billing_details/fee_type/delete
+Method: DELETE
+Content: { academicYearId, academicTermId, feeTypeId, studentIds }
+Authorization: Bearer <token from login>
 
+87. // Fetch fee summary for all students in a specified academic term and year
+API: << server >>/api/v1/billing/fee_summary/students
+Method: GET
+Authorization: Bearer <token from login>
+
+88. // Fetch fee summary for a student term and year
+API: << server >>/api/v1/billing/fee_summary/student
+Method: GET
+Authorization: Bearer <token from login>
 
 
 

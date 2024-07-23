@@ -26,4 +26,13 @@ router.get('/billing_details/all', billingController.getAllFeeTypesWithBillingDe
 // Update fee type amount from the billing details for all affected students
 router.put('/billing_details/fee_type/update_amount', billingController.updateFeeTypeAmountForAllStudents)
 
+// Delete fee type from the billing details for all affected students
+router.delete('/billing_details/fee_type/delete', billingController.deleteFeeTypeFromAllStudents)
+
+// Fetch fee summary for all students in a specified academic term and year
+router.get('/billing/fee_summary/students', billingController.getFeeSummaryForAllStudents)
+
+// Fetch fee summary for a student term and year
+router.get('/billing/fee_summary/student', billingController.getFeeSummaryForStudent)
+
 module.exports = router;

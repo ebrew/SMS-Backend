@@ -197,7 +197,7 @@ exports.getAdminBillingView = async (req, res) => {
     try {
       // Fetch all billing records for the specified academic year and term
       const billings = await db.Billing.findAll({
-        where: { academicYearId, termId: academicTermId },
+        where: { academicYearId, academicTermId },
         include: [
           { model: db.BillingDetail },
           {
@@ -252,9 +252,9 @@ exports.getAllFeeTypesWithBillingDetails = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { academicYearId, termId } = req.query;
+      const { academicYearId, academicTermId } = req.query;
 
-      if (!academicYearId || !termId) {
+      if (!academicYearId || !academicTermId) {
         return res.status(400).json({ message: 'Academic year ID and term ID are required!' });
       }
 
@@ -267,7 +267,7 @@ exports.getAllFeeTypesWithBillingDetails = async (req, res) => {
             attributes: [],
             where: {
               academicYearId,
-              termId
+              academicTermId
             }
           }]
         }],
@@ -354,86 +354,182 @@ exports.updateFeeTypeAmountForAllStudents = async (req, res) => {
   });
 };
 
+// Delete fee type amount from the billing details for all affected students
+exports.deleteFeeTypeFromAllStudents = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
 
+    const { academicYearId, academicTermId, feeTypeId, studentIds } = req.body;
 
+    if (!academicYearId || !academicTermId || !feeTypeId || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ message: 'Academic year ID, term ID, fee type ID, and student IDs are required!' });
+    }
 
+    const transaction = await db.sequelize.transaction();
 
+    try {
+      // Fetch all billing details for the given fee type and academic term
+      const billingDetails = await db.BillingDetail.findAll({
+        where: { feeTypeId },
+        include: [
+          {
+            model: db.Billing,
+            where: {
+              academicYearId,
+              academicTermId,
+              studentId: studentIds // Only include the specified students
+            }
+          }
+        ],
+        transaction
+      });
 
+      // Delete each billing detail and recalculate billing totals
+      const billingUpdates = billingDetails.map(async (detail) => {
+        const amountToRemove = detail.amount;
+        const billing = detail.Billing;
 
+        // Delete the billing detail
+        await detail.destroy({ transaction });
 
+        // Recalculate the total fees and remaining amount for the billing record
+        const totalFees = billing.totalFees - amountToRemove;
+        const remainingAmount = billing.remainingAmount - amountToRemove;
 
-const getFeeSummaryForStudent  = async (studentId, academicYearId, termId) => {
+        // Update the billing record
+        await billing.update({ totalFees, remainingAmount }, { transaction });
+
+        return billing;
+      });
+
+      // Wait for all updates to complete
+      const updatedBillings = await Promise.all(billingUpdates);
+
+      await transaction.commit();
+      return res.status(200).json({ updatedBillings });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error deleting fee type from billing records:', error);
+      return res.status(500).json({ message: "Can't delete fee type from billing records at the moment!" });
+    }
+  });
+};
+
+// Fetch fee summary for all students in a specified academic term and year
+exports.getFeeSummaryForAllStudents = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { academicYearId, academicTermId } = req.body;
+
+    if (!academicYearId || !academicTermId) {
+      return res.status(400).json({ message: 'Academic year ID and academic term ID are required!' });
+    }
+
+    try {
+      const billingRecords = await db.Billing.findAll({
+        where: {
+          academicYearId,
+          academicTermId
+        },
+        include: [
+          { model: db.BillingDetail, as: 'billingDetails' },
+          {
+            model: db.Payment,
+            attributes: ['amount'],
+            required: false,
+            separate: true // To handle payments properly
+          }
+        ]
+      });
+
+      if (!billingRecords || billingRecords.length === 0) {
+        return res.status(404).json({ message: 'No billing records found for the given criteria!' });
+      }
+
+      const summaries = billingRecords.map(billingRecord => {
+        const totalFees = billingRecord.totalFees;
+        const totalPaid = billingRecord.Payments.reduce((sum, payment) => sum + payment.amount, 0);
+        const remainingAmount = billingRecord.remainingAmount;
+        const feeOwed = totalFees - totalPaid;
+
+        return {
+          studentId: billingRecord.studentId,
+          totalFees,
+          totalPaid,
+          remainingAmount,
+          feeOwed,
+          billingDetails: billingRecord.billingDetails
+        };
+      });
+
+      return res.status(200).json(summaries);
+    } catch (error) {
+      console.error('Error fetching fee summaries:', error);
+      return res.status(500).json({ message: "Can't fetch fee summaries at the moment!" });
+    }
+  });
+};
+
+// Fetch fee summary for a student
+exports.getFeeSummaryForStudent = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { studentId, academicYearId, academicTermId } = req.body;
+
+    if (!studentId || !academicYearId || !academicTermId) {
+      return res.status(400).json({ message: 'Student ID, academic year ID, and academic term ID are required!' });
+    }
+
     try {
       const billingRecord = await db.Billing.findOne({
         where: {
           studentId,
           academicYearId,
-          termId
+          academicTermId
         },
-        include: [{ model: db.BillingDetail, as: 'billingDetails' }]
+        include: [
+          { model: db.BillingDetail, as: 'billingDetails' },
+          {
+            model: db.Payment,
+            attributes: ['amount'],
+            required: false,
+            separate: true // To handle payments properly
+          }
+        ]
       });
-  
+
       if (!billingRecord) {
-        throw new Error('No billing record found for the given criteria!');
+        return res.status(404).json({ message: 'No billing record found for the given criteria!' });
       }
-  
+
       const totalFees = billingRecord.totalFees;
-      const totalPaid = billingRecord.totalPaid;
+      const totalPaid = billingRecord.Payments.reduce((sum, payment) => sum + payment.amount, 0);
       const remainingAmount = billingRecord.remainingAmount;
-  
-      return {
+      const feeOwed = totalFees - totalPaid;
+
+      return res.status(200).json({
         totalFees,
         totalPaid,
         remainingAmount,
+        feeOwed,
         billingDetails: billingRecord.billingDetails
-      };
+      });
     } catch (error) {
-      throw error;
+      console.error('Error fetching fee summary:', error);
+      return res.status(500).json({ message: "Can't fetch fee summary at the moment!" });
     }
-  };
-  
-
-const getFeeSummaryForTerm = async (termId, academicYearId) => {
-  try {
-    // Fetch all billing records for the specified term and academic year
-    const billingRecords = await db.Billing.findAll({
-      where: {
-        termId,
-        academicYearId
-      },
-      include: [
-        {
-          model: db.BillingDetail,
-          as: 'billingDetails'
-        },
-        {
-          model: db.Student,
-          as: 'student'
-        }
-      ]
-    });
-
-    // Process each billing record to compute the fee summary
-    const feeSummary = billingRecords.map(billing => {
-      const totalFees = billing.totalFees;
-      const totalPaid = billing.totalPaid;
-      const remainingAmount = billing.remainingAmount;
-
-      return {
-        studentId: billing.studentId,
-        studentName: `${billing.student.firstName} ${billing.student.lastName}`,
-        totalFees,
-        totalPaid,
-        remainingAmount
-      };
-    });
-
-    return feeSummary;
-  } catch (error) {
-    console.error('Error fetching fee summary:', error);
-    throw error;
-  }
+  });
 };
+
+
+
+
+
+
+
+
 
 
 // Record a payment
@@ -517,70 +613,6 @@ const processPayment2 = async (invoiceNumber, studentId, amount) => {
   }
 };
 
-
-const getFeeSummaryForStudent2 = async (studentId, academicYearId, termId) => {
-  try {
-    const billings = await db.Billing.findAll({
-      where: {
-        studentId,
-        academicYearId,
-        termId
-      },
-      include: [db.Payment, db.BillingDetail]
-    });
-
-    const totalFees = billings.reduce((sum, billing) => sum + billing.totalFees, 0);
-    const totalPaid = billings.reduce((sum, billing) => sum + billing.totalPaid, 0);
-    const remainingAmount = totalFees - totalPaid;
-
-    return {
-      totalFees,
-      totalPaid,
-      remainingAmount,
-      payments: billings.flatMap(billing => billing.Payments),
-      feeDetails: billings.flatMap(billing => billing.BillingDetails)
-    };
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Get billing and payment summary for a student
-exports.getBillingSummary = async (req, res) => {
-  const { studentId } = req.params;
-
-  try {
-    // Fetch all billing records for the student
-    const billings = await db.Billing.findAll({
-      where: { studentId },
-      include: [{ model: db.Payment }]
-    });
-
-    if (!billings.length) {
-      return res.status(404).json({ message: 'No billing records found for this student!' });
-    }
-
-    let totalFees = 0;
-    let totalPaid = 0;
-    let remainingAmount = 0;
-
-    // Aggregate fees and payments
-    billings.forEach(billing => {
-      totalFees += billing.totalFees;
-      totalPaid += billing.Payments.reduce((acc, payment) => acc + payment.amount, 0);
-      remainingAmount = totalFees - totalPaid;
-    });
-
-    res.status(200).json({
-      totalFees,
-      totalPaid,
-      remainingAmount,
-      billings
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error retrieving billing summary', error });
-  }
-};
 
 
 
