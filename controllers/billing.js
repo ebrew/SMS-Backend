@@ -1,5 +1,5 @@
 const passport = require('../db/config/passport')
-const { validateClassSession, fetchAcademicYears, validateAcademicYears } = require('../utility/promotion');
+const { Op } = require('sequelize');
 const db = require("../db/models/index")
 
 // Create a new fee type
@@ -530,7 +530,7 @@ exports.getFeeSummaryForStudent = async (req, res) => {
 
 
 
-
+// method: { type: DataTypes.ENUM('Cash', 'Card', 'Bank Transfer', 'Mobile Money'), defaultValue: 'Cash', allowNull: false },
 
 // Record a payment
 exports.recordPayment = async (req, res) => {

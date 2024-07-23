@@ -19,8 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     billingId: { type: DataTypes.INTEGER, allowNull: false },
     amount: { type: DataTypes.FLOAT, allowNull: false },
     date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, allowNull: false },
-    method: { type: DataTypes.STRING, allowNull: false }
-    // method: { type: DataTypes.ENUM('Cash', 'Card', 'Bank Transfer', 'Mobile Money'), allowNull: false },
+    method: { type: DataTypes.ENUM('Cash', 'Card', 'Bank Transfer', 'Mobile Money'), defaultValue: 'Cash', allowNull: false },
   }, {
     sequelize,
     modelName: 'Payment',
