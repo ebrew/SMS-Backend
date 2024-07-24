@@ -115,10 +115,13 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { studentIds, academicYearId, academicTermId, feeDetails } = req.body;
+    const { studentIds, feeDetails } = req.body;
 
     if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
     if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
+
+    let { academicYearId, academicTermId } = req.body;
+
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
     let academicYear, academicTerm;
@@ -242,7 +245,7 @@ exports.classStudentsBillings = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { academicYearId, academicTermId, classSessionId } = req.params;
+      let { academicYearId, academicTermId, classSessionId } = req.params;
 
       const section = await db.Section.findByPk(classSessionId, {
         include: {
