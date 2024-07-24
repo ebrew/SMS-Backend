@@ -118,20 +118,25 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     const { studentIds, academicYearId, academicTermId, feeDetails } = req.body;
 
     if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
-
     if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
-
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
-    // Validate term and year
-    if (!academicTermId) {
-      const academicYear = await validateTermAndYear(0, academicYearId);
-      academicTermId = null;
-      academicYearId = academicYear.id
-    } else {
-      const { academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId);
-      academicTermId = academicTerm.id;
-      academicYearId = academicYear.id
+    let academicYear, academicTerm;
+
+    try {
+      // Validate term and year
+      if (!academicTermId) {
+        academicYear = await validateTermAndYear(0, academicYearId);
+        academicTermId = null;
+        academicYearId = academicYear.id;
+      } else {
+        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+        academicTermId = academicTerm.id;
+        academicYearId = academicYear.id;
+      }
+    } catch (validationError) {
+      console.error('Validation Error:', validationError.message);
+      return res.status(400).json({ message: validationError.message });
     }
 
     const transaction = await db.sequelize.transaction();
@@ -230,6 +235,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   });
 };
 
+
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -240,7 +246,7 @@ exports.classStudentsBillings = async (req, res) => {
 
       const section = await db.Section.findByPk(classSessionId, {
         include: {
-          model: Class,
+          model: db.Class,
           attributes: ['name'],
         },
       });

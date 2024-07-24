@@ -20,6 +20,8 @@ router.post('/billing/create_update', billingController.createOrUpdateBillingRec
 // Fetch class students billing details for a particular academic term or year
 router.get('/bills/class_students', billingController.classStudentsBillings)
 
+
+
 // Get all fee types with billing details for a specific academic year and term
 router.get('/billing_details/all', billingController.getAllFeeTypesWithBillingDetails)
 
