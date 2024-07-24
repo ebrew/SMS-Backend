@@ -121,8 +121,8 @@ exports.promoteClassStudents = async (req, res) => {
       console.error('Error promoting class students:', error);
 
       // Check for specific error messages
-      if (error.message === 'No active academic year found!') {
-        return res.status(400).json({ message: 'No active academic year found!' });
+      if (error.message === 'Academic year not found!') {
+        return res.status(400).json({ message: 'Academic year not found!' });
       } else if (error.message === 'No promotion academic year found!') {
         return res.status(400).json({ message: 'No promotion academic year found!' });
       } else if (error.message === 'Current class session not found for the students!') {

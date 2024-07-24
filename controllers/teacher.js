@@ -107,7 +107,7 @@ exports.teacherClassStudents = async (req, res) => {
           photo: student.Student.passportPhoto,
           status: student.status,
           promotedTo: student.PromotedTo 
-            ? `${student.PromotedTo.Class.name} ${student.PromotedTo.name}` 
+            ? `${student.PromotedTo.Class.name} (${student.PromotedTo.name})` 
             : null
         };
       }).filter(student => student !== null);

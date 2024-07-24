@@ -299,10 +299,11 @@ exports.classStudentsResults = async (req, res) => {
           fullName: student.Student.middleName
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
-          photo: {
-            url: student.Student.passportPhoto,
-            public_id: `SMS/students/${student.Student.id}`
-          },
+          // photo: {
+          //   url: student.Student.passportPhoto,
+          //   public_id: `SMS/students/${student.Student.id}`
+          // },
+          photo: student.Student.passportPhoto,
           subjectScores: subjectScores,
           totalScore: totalScore.toFixed(2)
         };

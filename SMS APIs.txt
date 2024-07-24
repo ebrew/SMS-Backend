@@ -474,8 +474,8 @@ Method: POST
 Content: { studentIds, academicYearId, academicTermId, feeDetails }
 Authorization: Bearer <token from login>
 
-83. // Fetch detailed billing view for admin
-API: << server >>/api/v1/detailed_billings
+83. // Fetch class students billing details for a particular academic term or year
+API: << server >>/api/v1/bills/class_students
 Method: GET
 Authorization: Bearer <token from login>
 

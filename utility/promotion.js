@@ -1,4 +1,4 @@
-const { AcademicYear, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
+const { AcademicYear, AcademicTerm, Class, Section, ClassStudent, Student, Grade, Assessment } = require("../db/models/index");
 
 const fetchAcademicYears = async () => {
     try {
@@ -67,6 +67,33 @@ const validateAcademicYears = async (promotion) => {
     }
 };
 
+const validateTermAndYear = async (term, year) => {
+    try {
+        if (term === 0) {
+            const academicYear = await AcademicYear.findByPk(year);
+            if (!academicYear) throw new Error('Academic year not found!');
+            return academicYear;
+        }
+
+        const academicTerm = await AcademicTerm.findByPk(term, {
+            include: { model: AcademicYear }
+        });
+        const academicYear = await AcademicYear.findByPk(year);
+
+        if (!academicYear) throw new Error('Academic year not found!');
+        if (!academicTerm) throw new Error('Academic term not found!');
+
+        if (academicTerm.AcademicYear.id !== academicYear.id) {
+            throw new Error('Academic term does not belong to the academic year!');
+        }
+
+        return { academicTerm, academicYear };
+    } catch (error) {
+        console.error('Error fetching academic years:', error);
+        throw error; // Re-throw the error to be handled by the calling function
+    }
+};
+
 const validateStudents = async (academicYearId, classSessionId) => {
     try {
         const students = await ClassStudent.findAll({
@@ -127,5 +154,6 @@ const getNextClassSessionId = async (currentClassSessionId) => {
 module.exports = {
     validateClassSession,
     fetchAcademicYears,
-    validateAcademicYears
+    validateAcademicYears,
+    validateTermAndYear
 };
