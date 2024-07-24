@@ -475,8 +475,9 @@ Content: { studentIds, academicYearId, academicTermId, feeDetails }
 Authorization: Bearer <token from login>
 
 83. // Fetch class students billing details for a particular academic term or year
-API: << server >>/api/v1/bills/class_students/academicYearId/academicTermId/classSessionId
+API: << server >>/api/v1/bills/class_students
 Method: GET
+{ academicYearId, academicTermId, classSessionId } as body
 Authorization: Bearer <token from login>
 
 84. // Get all fee types with billing details for a specific academic year and term

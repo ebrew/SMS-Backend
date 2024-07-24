@@ -238,14 +238,13 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   });
 };
 
-
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      let { academicYearId, academicTermId, classSessionId } = req.params;
+      let { academicYearId, academicTermId, classSessionId } = req.body;
 
       const section = await db.Section.findByPk(classSessionId, {
         include: {
@@ -297,6 +296,24 @@ exports.classStudentsBillings = async (req, res) => {
         }
       });
 
+      // Fetch payments in bulk
+      const payments = await db.Payment.findAll({
+        where: {
+          studentId: studentIds,
+          academicYearId,
+          academicTermId
+        }
+      });
+
+      // Create a map of payments for quick access
+      const paymentMap = new Map();
+      payments.forEach(payment => {
+        if (!paymentMap.has(payment.studentId)) {
+          paymentMap.set(payment.studentId, 0);
+        }
+        paymentMap.set(payment.studentId, paymentMap.get(payment.studentId) + payment.amount);
+      });
+
       // Create a map of billings for quick access
       const billingMap = new Map();
       billings.forEach(billing => {
@@ -321,9 +338,11 @@ exports.classStudentsBillings = async (req, res) => {
         const studentBillings = billingMap.get(student.Student.id) || [];
 
         const totalFees = studentBillings.reduce((sum, billing) => sum + billing.totalBill, 0);
-        // Fetch totalPaid and remainingAmount from the payment model if needed
-        const totalPaid = 0; // This should be fetched from the payment model
+        const totalPaid = paymentMap.get(student.Student.id) || 0;
         const remainingAmount = totalFees - totalPaid;
+
+        // Fetch old debt from previous academic years if needed (example logic)
+        const oldDebt = totalPaid - totalFees < 0 ? totalFees - totalPaid : 0;
 
         return {
           studentId: student.Student.id,
@@ -332,6 +351,7 @@ exports.classStudentsBillings = async (req, res) => {
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
           billings: studentBillings,
+          oldDebt, // Check the Payment model and do the calculation to reference or update the new bill
           totalFees,
           totalPaid,
           remainingAmount,
@@ -359,6 +379,7 @@ exports.classStudentsBillings = async (req, res) => {
     }
   });
 };
+
 
 
 
