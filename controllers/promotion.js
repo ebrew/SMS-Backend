@@ -1,6 +1,7 @@
 const passport = require('../db/config/passport')
 const { validateClassSession, fetchAcademicYears, validateAcademicYears } = require('../utility/promotion');
 const db = require("../db/models/index")
+const logUserAction = require('../utility/logUserAction');
 
 exports.promoteClassStudents = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -118,6 +119,8 @@ exports.promoteClassStudents = async (req, res) => {
           studentId,
           status: 'Promoted'
         }));
+
+        await logUserAction('User', req.user.id, `Promoted students to ${nextClassSession.name}`, `${promotions}`)
 
         res.status(200).json({ message: 'Class students promoted successfully!', promotions });
       } catch (error) {
@@ -265,6 +268,8 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
           status: 'Promoted'
         }));
 
+        await logUserAction('User', req.user.id, `Promoted students to ${nextClassSession.name}`, `${promotions}`)
+
         res.status(200).json({ message: 'Students promoted successfully!', promotions });
       } catch (error) {
         // Rollback transaction in case of error
@@ -409,6 +414,8 @@ exports.repeatClassStudents = async (req, res) => {
           status: 'Repeated'
         }));
 
+        await logUserAction('User', req.user.id, `Repeated students`, `${repetitions}`)
+
         res.status(200).json({ message: 'Class students repeated successfully!', repetitions });
       } catch (error) {
         // Rollback transaction in case of error
@@ -550,6 +557,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
           studentId,
           status: 'Repeated'
         }));
+        await logUserAction('User', req.user.id, `Repeated students`, `${repetitions}`)
 
         res.status(200).json({ message: 'Students repeated successfully!', repetitions });
       } catch (error) {

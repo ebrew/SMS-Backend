@@ -229,7 +229,6 @@ exports.updateStaff = async (req, res) => {
   });
 };
 
-
 // Deleting an existing staff
 exports.deleteStaff = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
