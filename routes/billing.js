@@ -17,8 +17,14 @@ router.get('/fee_type/all', billingController.allFeeTypes)
 // Add fee type to billing records or create new records if not found
 router.post('/billing/create_update', billingController.createOrUpdateBillingRecord);
 
-// Fetch class students billing details for a particular academic term or year
-router.get('/bills/class_students', billingController.classStudentsBillings)
+// Fetch class students billing details for a particular academic term 
+router.get('/bills/class_students/:academicYearId/:academicTermId/:classSessionId', billingController.classStudentsBillings);
+
+// Fetch class students billing details for a particular academic year
+router.get('/bills/class_students/:academicYearId/:classSessionId', billingController.classStudentsBillings);
+
+module.exports = router;
+
 
 
 

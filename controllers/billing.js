@@ -233,7 +233,10 @@ exports.classStudentsBillings = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      let { academicYearId, academicTermId, classSessionId } = req.body;
+      let { academicYearId, academicTermId, classSessionId } = req.params;
+      
+      // Convert academicTermId to null if not provided (for year-based billing)
+      academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
 
       const section = await db.Section.findByPk(classSessionId, {
         include: {
