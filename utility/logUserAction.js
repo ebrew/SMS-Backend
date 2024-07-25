@@ -1,8 +1,8 @@
 const { History } = require("../db/models/index");
 
-const logUserAction = async (user, id, action, description) => {
+const logUserAction = async (role, id, action, description) => {
   try {
-    user === 'Student' ? 
+    role === 'Student' ? 
     await History.create({ studentId: id, action, description }) :
     await History.create({ userId: id, action, description });
     

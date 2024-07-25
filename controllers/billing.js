@@ -354,8 +354,9 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       for (const detail of updatedBillingDetails) await detail.save({ transaction });
 
       await transaction.commit();
-      // await logUserAction('User', req.user.id, 'Created a billing record', `${feeDetails} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
-      return res.status(200).json({ message: "Success!" });
+      await logUserAction(req.user.role, req.user.id, 'Created a billing record', `${feeDetails} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
+      return res.status(200).json({ message: "Billing record created successfully!" });
+      // res.status(200).json({ billings: [...billingMap.values()] });
     } catch (error) {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
@@ -363,7 +364,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
-
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
@@ -485,21 +485,11 @@ exports.classStudentsBillings = async (req, res) => {
       return res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching students assessments:', error);
-      // if (error.message === 'Academic year not found!') {
-      //   return res.status(400).json({ message: 'Academic year not found!' });
-      // } else if (error.message === 'Academic term not found!') {
-      //   return res.status(400).json({ message: 'Academic term not found!' });
-      // } else if (error.message === 'Academic term does not belong to the academic year!') {
-      //   return res.status(404).json({ message: 'Academic term does not belong to the academic year!' });
-      // }
+
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
-
-
-
-
 
 
 
@@ -508,63 +498,98 @@ exports.getAdminBillingView = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { academicYearId, academicTermId } = req.query;
+    let { academicYearId, academicTermId, classSessionId } = req.params;
 
-    if (!academicYearId) {
-      return res.status(400).json({ message: 'Academic year ID and term ID are required!' });
-    }
+    // Convert academicTermId to null if not provided (for year-based billing)
+    academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
 
+    const section = await db.Section.findByPk(classSessionId, {
+      include: {
+        model: db.Class,
+        attributes: ['name'],
+      },
+    });
+    if (!section) return res.status(400).json({ message: "Class section not found!" });
+
+    let academicYear, academicTerm;
     try {
-      // Fetch all billing records for the specified academic year and term
-      const billings = await db.Billing.findAll({
-        where: { academicYearId, academicTermId },
-        include: [
-          { model: db.BillingDetail },
-          {
-            model: db.Payment,
-            attributes: ['amount'],
-            required: false,
-            separate: true // To handle payments properly
-          }
-        ],
-        order: [['studentId', 'ASC']]
-      });
-
-      // Aggregate billing data
-      let totalFeesBilled = 0;
-      let totalAmountPaid = 0;
-      let totalOutstandingAmount = 0;
-
-      // Calculate totals based on fetched data
-      const billingResults = billings.map(billing => {
-        const totalPaid = billing.Payments.reduce((sum, payment) => sum + payment.amount, 0);
-        const remainingAmount = billing.totalFees - totalPaid;
-
-        totalFeesBilled += billing.totalFees;
-        totalAmountPaid += totalPaid;
-        totalOutstandingAmount += remainingAmount;
-
-        return {
-          ...billing.toJSON(),  // Spread all properties of billing instance
-          totalPaid,            // Add new property
-          remainingAmount       // Add new property
-        };
-      });
-
-      const response = {
-        billings: billingResults,
-        totalFeesBilled,
-        totalAmountPaid,
-        totalOutstandingAmount
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      console.error('Error fetching detailed billing view:', error);
-      res.status(500).json({ message: "Can't fetch billing details at the moment!" });
+      // Validate term and year
+      if (!academicTermId) {
+        academicYear = await validateTermAndYear(0, academicYearId);
+        academicTermId = null;
+      } else {
+        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+      }
+    } catch (validationError) {
+      console.error('Validation Error:', validationError.message);
+      return res.status(400).json({ message: validationError.message });
     }
+
+    // Fetching class students
+    const students = await db.ClassStudent.findAll({
+      where: {
+        classSessionId,
+        academicYearId
+      },
+      include: {
+        model: db.Student,
+        attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+      },
+      order: [['studentId', 'ASC']]
+    });
+
+    const studentIds = students.map(student => student.Student.id);
+
+    // Fetch all billing records for the specified academic year, term, and class session
+    const billings = await db.Billing.findAll({
+      where: {
+        studentId: studentIds,
+        academicYearId,
+        academicTermId,
+      },
+      include: [
+        { model: db.BillingDetail }
+      ],   
+    });
+
+    // Aggregate billing data
+    let totalFeesBilled = 0;
+    let totalAmountPaid = 0;
+    let totalOutstandingAmount = 0;
+
+    // Calculate totals based on fetched data
+    const billingResults = billings.map(billing => {
+      const totalPaid = 0; // No Payment model included
+      const remainingAmount = billing.totalFees - totalPaid;
+
+      totalFeesBilled += billing.totalFees;
+      totalAmountPaid += totalPaid;
+      totalOutstandingAmount += remainingAmount;
+
+      return {
+        ...billing.toJSON(),  // Spread all properties of billing instance
+        totalPaid,            // Add new property
+        remainingAmount       // Add new property
+      };
+    });
+
+    const response = {
+      billings: billingResults,
+      totalFeesBilled,
+      totalAmountPaid,
+      totalOutstandingAmount
+    };
+
+    res.status(200).json(response);
   });
 };
+
+
+
+
+
+
+
 
 // Get all fee types with billing details for a specific academic year and term
 exports.getAllFeeTypesWithBillingDetails = async (req, res) => {
