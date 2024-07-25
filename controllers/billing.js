@@ -230,127 +230,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
- 
-// Fetch class students billing details for a particular academic term or year
-exports.classStudentsBillings1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      let { academicYearId, academicTermId, classSessionId } = req.body; 
-
-      const section = await db.Section.findByPk(classSessionId, {
-        include: {
-          model: db.Class,
-          attributes: ['name'],
-        },
-      });
-      if (!section) return res.status(400).json({ message: "Class section not found!" });
-
-      // Validate term and year
-      let academicYear, academicTerm;
-      if (!academicTermId) {
-        academicYear = await validateTermAndYear(0, academicYearId);
-        academicTermId = null;
-        academicYearId = academicYear.id;
-      } else {
-        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-        academicTermId = academicTerm.id;
-        academicYearId = academicYear.id;
-      }
-
-      // Fetching class students
-      const students = await db.ClassStudent.findAll({
-        where: {
-          classSessionId,
-          academicYearId
-        },
-        include: {
-          model: db.Student,
-          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
-        }
-      });
-
-      const studentIds = students.map(student => student.Student.id);
-
-      // Fetch billings in bulk
-      const billings = await db.Billing.findAll({
-        where: {
-          studentId: studentIds,
-          academicYearId,
-          academicTermId
-        },
-        include: {
-          model: db.BillingDetail,
-          include: {
-            model: db.FeeType,
-            attributes: ['name']
-          }
-        }
-      });
-
-      // Create a map of billings for quick access
-      const billingMap = new Map();
-      billings.forEach(billing => {
-        if (!billingMap.has(billing.studentId)) {
-          billingMap.set(billing.studentId, []);
-        }
-        billingMap.get(billing.studentId).push({
-          billingId: billing.id,
-          status: academicTermId ? 'Termly' : 'Yearly',
-          totalBill: billing.BillingDetails.reduce((sum, detail) => sum + detail.amount, 0),
-          BillingDetails: billing.BillingDetails.map(detail => ({
-            // id: detail.id, 
-            feeTypeId: detail.feeTypeId,
-            name: detail.FeeType.name,
-            amount: detail.amount
-          }))
-        });
-      });
-
-      // Process the students and their billing details
-      const classStudents = students.map(student => {
-        const studentBillings = billingMap.get(student.Student.id) || [];
-        const totalFees = studentBillings.reduce((sum, billing) => sum + billing.totalBill, 0);
-        const totalPaid = 0; // Placeholder for total paid amount
-        const remainingAmount = totalFees - totalPaid;
-
-        return {
-          studentId: student.Student.id,
-          fullName: student.Student.middleName
-            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
-            : `${student.Student.firstName} ${student.Student.lastName}`,
-          photo: student.Student.passportPhoto,
-          billings: studentBillings,
-          oldDebt: 0, // Placeholder for old debt calculation
-          totalFees,
-          totalPaid,
-          remainingAmount,
-        };
-      });
-
-      const result = {
-        academicYear: academicYear.name,
-        academicTerm: academicTerm ? academicTerm.name : undefined,
-        status: academicTermId ? 'Termly' : 'Yearly',
-        classSession: `${section.Class.name} (${section.name})`,
-        classStudents
-      };
-
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error('Error fetching students assessments:', error);
-      // if (error.message === 'Academic year not found!') {
-      //   return res.status(400).json({ message: 'Academic year not found!' });
-      // } else if (error.message === 'Academic term not found!') {
-      //   return res.status(400).json({ message: 'Academic term not found!' });
-      // } else if (error.message === 'Academic term does not belong to the academic year!') {
-      //   return res.status(404).json({ message: 'Academic term does not belong to the academic year!' });
-      // }
-      return res.status(500).json({ message: "Can't fetch data at the moment!" });
-    }
-  });
-};
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
@@ -368,16 +247,31 @@ exports.classStudentsBillings = async (req, res) => {
       });
       if (!section) return res.status(400).json({ message: "Class section not found!" });
 
-      // Validate term and year
+      // // Validate term and year
+      // let academicYear, academicTerm;
+      // if (!academicTermId) {
+      //   academicYear = await validateTermAndYear(0, academicYearId);
+      //   academicTermId = null;
+      //   academicYearId = academicYear.id;
+      // } else {
+      //   ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+      //   academicTermId = academicTerm.id;
+      //   academicYearId = academicYear.id;
+      // }
+
       let academicYear, academicTerm;
-      if (!academicTermId) {
-        academicYear = await validateTermAndYear(0, academicYearId);
-        academicTermId = null;
-        academicYearId = academicYear.id;
-      } else {
-        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-        academicTermId = academicTerm.id;
-        academicYearId = academicYear.id;
+
+      try {
+        // Validate term and year
+        if (!academicTermId) {
+          academicYear = await validateTermAndYear(0, academicYearId);
+          academicTermId = null;
+        } else {
+          ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+        }
+      } catch (validationError) {
+        console.error('Validation Error:', validationError.message);
+        return res.status(400).json({ message: validationError.message });
       }
 
       // Fetching class students
@@ -466,6 +360,13 @@ exports.classStudentsBillings = async (req, res) => {
       return res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching students assessments:', error);
+      // if (error.message === 'Academic year not found!') {
+      //   return res.status(400).json({ message: 'Academic year not found!' });
+      // } else if (error.message === 'Academic term not found!') {
+      //   return res.status(400).json({ message: 'Academic term not found!' });
+      // } else if (error.message === 'Academic term does not belong to the academic year!') {
+      //   return res.status(404).json({ message: 'Academic term does not belong to the academic year!' });
+      // }
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
