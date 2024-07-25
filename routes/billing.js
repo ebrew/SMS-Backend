@@ -27,7 +27,7 @@ router.get('/bills/class_students/:academicYearId/:classSessionId', billingContr
 
 
 // Get all fee types with billing details for a specific academic year and term
-router.get('/billing_details/test', billingController.getAdminBillingView)
+router.get('/billing_details/test/:academicYearId/:academicTermId/:classSessionId', billingController.getAdminBillingView)
 
 // Get all fee types with billing details for a specific academic year and term
 router.get('/billing_details/all', billingController.getAllFeeTypesWithBillingDetails)
