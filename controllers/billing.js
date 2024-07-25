@@ -162,10 +162,10 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       // Create or update billing records for each student
       for (const studentId of studentIds) {
         let billing = billingMap.get(studentId);
-        const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
 
         if (!billing) {
           // Create a new billing record if none exists for this student
+          const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
           billing = {
             studentId,
             academicYearId,
@@ -175,32 +175,36 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
             remainingAmount: totalFees
           };
           newBillings.push(billing);
+          billingMap.set(studentId, billing); // Update the map with the new billing
         } else {
           // Update existing billing record
-          billing.totalFees += totalFees; // Add new total fees
-          billing.remainingAmount += totalFees; // Update remaining amount
-          updatedBillings.push(billing);
-        }
+          const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
 
-        // Create a map to quickly find existing billing details by fee type ID
-        const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
+          let updatedTotalFees = 0;
 
-        // Iterate over each fee detail and create or update accordingly
-        for (const feeDetail of feeDetails) {
-          const existingBillingDetail = existingDetailsMap.get(feeDetail.feeTypeId);
+          // Iterate over each fee detail and create or update accordingly
+          for (const feeDetail of feeDetails) {
+            const existingBillingDetail = existingDetailsMap.get(feeDetail.feeTypeId);
 
-          if (existingBillingDetail) {
-            // Update existing fee detail amount
-            existingBillingDetail.amount = feeDetail.amount;
-            updatedBillingDetails.push(existingBillingDetail);
-          } else {
-            // Create new fee detail
-            newBillingDetails.push({
-              billingId: billing.id,
-              feeTypeId: feeDetail.feeTypeId,
-              amount: feeDetail.amount
-            });
+            if (existingBillingDetail) {
+              // Update existing fee detail amount
+              existingBillingDetail.amount = feeDetail.amount;
+              updatedBillingDetails.push(existingBillingDetail);
+            } else {
+              // Create new fee detail
+              newBillingDetails.push({
+                billingId: billing.id,
+                feeTypeId: feeDetail.feeTypeId,
+                amount: feeDetail.amount
+              });
+            }
+
+            updatedTotalFees += feeDetail.amount;
           }
+
+          billing.totalFees = updatedTotalFees;
+          billing.remainingAmount = updatedTotalFees - billing.totalPaid;
+          updatedBillings.push(billing);
         }
       }
 
@@ -218,19 +222,11 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
 
-      // Check for specific error messages
-      if (error.message === 'Academic year not found!') {
-        return res.status(400).json({ message: 'Academic year not found!' });
-      } else if (error.message === 'Academic term not found!') {
-        return res.status(400).json({ message: 'Academic term not found!' });
-      } else if (error.message === 'Academic term does not belong to the academic year!') {
-        return res.status(404).json({ message: 'Academic term does not belong to the academic year!' });
-      }
-
       res.status(500).json({ message: "Can't create or update billing records at the moment!" });
     }
   });
 };
+
 
 
 // Fetch class students billing details for a particular academic term or year
@@ -248,18 +244,6 @@ exports.classStudentsBillings = async (req, res) => {
         },
       });
       if (!section) return res.status(400).json({ message: "Class section not found!" });
-
-      // // Validate term and year
-      // let academicYear, academicTerm;
-      // if (!academicTermId) {
-      //   academicYear = await validateTermAndYear(0, academicYearId);
-      //   academicTermId = null;
-      //   academicYearId = academicYear.id;
-      // } else {
-      //   ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-      //   academicTermId = academicTerm.id;
-      //   academicYearId = academicYear.id;
-      // }
 
       let academicYear, academicTerm;
 
