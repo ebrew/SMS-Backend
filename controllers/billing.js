@@ -122,7 +122,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
     let academicYear, academicTerm;
-
+    
     try {
       // Validate term and year
       if (!academicTermId) {
@@ -170,7 +170,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
             studentId,
             academicYearId,
             academicTermId,
-            totalFees,
+            totalFees,  
             totalPaid: 0,
             remainingAmount: totalFees
           };
@@ -226,8 +226,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
-
-
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
