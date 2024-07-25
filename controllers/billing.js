@@ -440,6 +440,7 @@ exports.classStudentsBillings = async (req, res) => {
           status: academicTermId ? 'Termly' : 'Yearly',
           totalBill: billing.BillingDetails.reduce((sum, detail) => sum + detail.amount, 0),
           BillingDetails: billing.BillingDetails.map(detail => ({
+            Id: detail.id,
             feeTypeId: detail.feeTypeId,
             name: detail.FeeType.name,
             amount: detail.amount
@@ -491,98 +492,6 @@ exports.classStudentsBillings = async (req, res) => {
   });
 };
 
-
-
-// Fetch detailed billing view for admin
-exports.getAdminBillingView = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    let { academicYearId, academicTermId, classSessionId } = req.params;
-
-    // Convert academicTermId to null if not provided (for year-based billing)
-    academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
-
-    const section = await db.Section.findByPk(classSessionId, {
-      include: {
-        model: db.Class,
-        attributes: ['name'],
-      },
-    });
-    if (!section) return res.status(400).json({ message: "Class section not found!" });
-
-    let academicYear, academicTerm;
-    try {
-      // Validate term and year
-      if (!academicTermId) {
-        academicYear = await validateTermAndYear(0, academicYearId);
-        academicTermId = null;
-      } else {
-        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-      }
-    } catch (validationError) {
-      console.error('Validation Error:', validationError.message);
-      return res.status(400).json({ message: validationError.message });
-    }
-
-    // Fetching class students
-    const students = await db.ClassStudent.findAll({
-      where: {
-        classSessionId,
-        academicYearId
-      },
-      include: {
-        model: db.Student,
-        attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
-      },
-      order: [['studentId', 'ASC']]
-    });
-
-    const studentIds = students.map(student => student.Student.id);
-
-    // Fetch all billing records for the specified academic year, term, and class session
-    const billings = await db.Billing.findAll({
-      where: {
-        studentId: studentIds,
-        academicYearId,
-        academicTermId,
-      },
-      include: [
-        { model: db.BillingDetail }
-      ],   
-    });
-
-    // Aggregate billing data
-    let totalFeesBilled = 0;
-    let totalAmountPaid = 0;
-    let totalOutstandingAmount = 0;
-
-    // Calculate totals based on fetched data
-    const billingResults = billings.map(billing => {
-      const totalPaid = 0; // No Payment model included
-      const remainingAmount = billing.totalFees - totalPaid;
-
-      totalFeesBilled += billing.totalFees;
-      totalAmountPaid += totalPaid;
-      totalOutstandingAmount += remainingAmount;
-
-      return {
-        ...billing.toJSON(),  // Spread all properties of billing instance
-        totalPaid,            // Add new property
-        remainingAmount       // Add new property
-      };
-    });
-
-    const response = {
-      billings: billingResults,
-      totalFeesBilled,
-      totalAmountPaid,
-      totalOutstandingAmount
-    };
-
-    res.status(200).json(response);
-  });
-};
 
 
 
