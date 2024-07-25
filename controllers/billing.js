@@ -153,33 +153,37 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       // Create a map to quickly find existing billing records by student ID
       const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
 
+      // Data to be used for bulk insert/update
+      const newBillings = [];
+      const newBillingDetails = [];
+      const updatedBillings = [];
+      const updatedBillingDetails = [];
+
       // Create or update billing records for each student
       for (const studentId of studentIds) {
         let billing = billingMap.get(studentId);
+        const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
 
         if (!billing) {
           // Create a new billing record if none exists for this student
-          const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
-          billing = await db.Billing.create({
+          billing = {
             studentId,
             academicYearId,
             academicTermId,
             totalFees,
             totalPaid: 0,
             remainingAmount: totalFees
-          }, { transaction });
-
-          billingMap.set(studentId, billing);
+          };
+          newBillings.push(billing);
         } else {
           // Update existing billing record
-          const newFeesTotal = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
-          billing.totalFees = newFeesTotal; // Set to new total fees
-          billing.remainingAmount = newFeesTotal; // Update remaining amount
-          await billing.save({ transaction });
+          billing.totalFees += totalFees; // Add new total fees
+          billing.remainingAmount += totalFees; // Update remaining amount
+          updatedBillings.push(billing);
         }
 
         // Create a map to quickly find existing billing details by fee type ID
-        const existingDetailsMap = new Map(billing.BillingDetails.map(detail => [detail.feeTypeId, detail]));
+        const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
 
         // Iterate over each fee detail and create or update accordingly
         for (const feeDetail of feeDetails) {
@@ -188,28 +192,25 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
           if (existingBillingDetail) {
             // Update existing fee detail amount
             existingBillingDetail.amount = feeDetail.amount;
-            await existingBillingDetail.save({ transaction });
+            updatedBillingDetails.push(existingBillingDetail);
           } else {
             // Create new fee detail
-            await db.BillingDetail.create({
+            newBillingDetails.push({
               billingId: billing.id,
               feeTypeId: feeDetail.feeTypeId,
               amount: feeDetail.amount
-            }, { transaction });
-          }
-        }
-
-        // Remove fee details that are no longer present in the new list
-        const feeTypeIdsInNewList = new Set(feeDetails.map(detail => detail.feeTypeId));
-        for (const existingDetail of billing.BillingDetails) {
-          if (!feeTypeIdsInNewList.has(existingDetail.feeTypeId)) {
-            await db.BillingDetail.destroy({
-              where: { id: existingDetail.id },
-              transaction
             });
           }
         }
       }
+
+      // Perform bulk insert for new records
+      if (newBillings.length > 0) await db.Billing.bulkCreate(newBillings, { transaction });
+      if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
+
+      // Perform bulk update for existing records
+      for (const billing of updatedBillings) await billing.save({ transaction });
+      for (const detail of updatedBillingDetails) await detail.save({ transaction });
 
       await transaction.commit();
       res.status(200).json({ billings: [...billingMap.values()] });
@@ -230,6 +231,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
+
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
