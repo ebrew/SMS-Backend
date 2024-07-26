@@ -163,6 +163,8 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
       const newBillingDetails = [];
       const updatedBillings = [];
       const updatedBillingDetails = [];
+      let newBillingRecordsCreated = false;
+      let existingBillingRecordsUpdated = false;
 
       // Create or update billing records for each student
       for (const studentId of studentIds) {
@@ -188,6 +190,8 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
               amount: feeDetail.amount
             });
           }
+
+          newBillingRecordsCreated = true;
         } else {
           // Update existing billing record
           const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
@@ -217,6 +221,7 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
           billing.totalFees = updatedTotalFees;
           billing.remainingAmount = updatedTotalFees - billing.totalPaid;
           updatedBillings.push(billing);
+          existingBillingRecordsUpdated = true;
         }
       }
 
@@ -228,9 +233,16 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
       for (const detail of updatedBillingDetails) await detail.save({ transaction });
 
       await transaction.commit();
-      
-      await logUserAction(req.user.role, req.user.id, 'Created a billing record', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
-      return res.status(200).json({ message: "Billing record created successfully!" });
+
+      // Conditional logging
+      if (newBillingRecordsCreated) {
+        await logUserAction(req.user.role, req.user.id, 'Created billing records', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
+      }
+      if (existingBillingRecordsUpdated) {
+        await logUserAction(req.user.role, req.user.id, 'Updated billing records', `${JSON.stringify(feeDetails)} was updated in ${academicYear.name} ${academicTerm.name} bills for specified students`);
+      }
+
+      return res.status(200).json({ message: "Billing record created or updated successfully!" });
     } catch (error) {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
