@@ -116,125 +116,6 @@ exports.deleteFeeType = async (req, res) => {
 };
 
 // Add fee type to billing records or create new records if not found
-exports.createOrUpdateBillingRecord1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    const { studentIds, feeDetails, academicYearId, academicTermId } = req.body;
-
-    if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
-    if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
-    if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
-
-    let academicYear, academicTerm;
-    
-    try {
-      // Validate term and year
-      if (!academicTermId) {
-        academicYear = await validateTermAndYear(0, academicYearId);
-        academicTermId = null;
-      } else {
-        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-      }
-    } catch (validationError) {
-      console.error('Validation Error:', validationError.message);
-      return res.status(400).json({ message: validationError.message });
-    }
-
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      // Fetch existing billing records for the given students, academic year, and term
-      const existingBillingRecords = await db.Billing.findAll({
-        where: {
-          studentId: studentIds,
-          academicYearId,
-          academicTermId
-        },
-        include: [{ model: db.BillingDetail }],
-        transaction
-      });
-
-      // Create a map to quickly find existing billing records by student ID
-      const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
-
-      // Data to be used for bulk insert/update
-      const newBillings = [];
-      const newBillingDetails = [];
-      const updatedBillings = [];
-      const updatedBillingDetails = [];
-
-      // Create or update billing records for each student
-      for (const studentId of studentIds) {
-        let billing = billingMap.get(studentId);
-
-        if (!billing) {
-          // Create a new billing record if none exists for this student
-          const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
-          billing = {
-            studentId,
-            academicYearId,
-            academicTermId,
-            totalFees,  
-            totalPaid: 0,
-            remainingAmount: totalFees
-          };
-          newBillings.push(billing);
-          billingMap.set(studentId, billing); // Update the map with the new billing
-        } else {
-          // Update existing billing record
-          const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
-
-          let updatedTotalFees = 0;
-
-          // Iterate over each fee detail and create or update accordingly
-          for (const feeDetail of feeDetails) {
-            const existingBillingDetail = existingDetailsMap.get(feeDetail.feeTypeId);
-
-            if (existingBillingDetail) {
-              // Update existing fee detail amount
-              existingBillingDetail.amount = feeDetail.amount;
-              updatedBillingDetails.push(existingBillingDetail);
-            } else {
-              // Create new fee detail
-              newBillingDetails.push({
-                billingId: billing.id,
-                feeTypeId: feeDetail.feeTypeId,
-                amount: feeDetail.amount
-              });
-            }
-
-            updatedTotalFees += feeDetail.amount;
-          }
-
-          billing.totalFees = updatedTotalFees;
-          billing.remainingAmount = updatedTotalFees - billing.totalPaid;
-          updatedBillings.push(billing);
-        }
-      }
-
-      // Perform bulk insert for new records
-      if (newBillings.length > 0) await db.Billing.bulkCreate(newBillings, { transaction });
-      if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
-
-      // Perform bulk update for existing records
-      for (const billing of updatedBillings) await billing.save({ transaction });
-      for (const detail of updatedBillingDetails) await detail.save({ transaction });
-
-      await transaction.commit();
-      await logUserAction('User', req.user.id, 'Created a billing record', `${feeDetails} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`)
-      // res.status(200).json({ billings: [...billingMap.values()] });
-      return res.status(200).json({ message: "Success!" });
-    } catch (error) {
-      await transaction.rollback();
-      console.error('Error adding fee type to billing records:', error);
-
-      res.status(500).json({ message: "Can't create or update billing records at the moment!" });
-    }
-  });
-};
-
-// Add fee type to billing records or create new records if not found
 exports.createOrUpdateBillingRecord = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
@@ -246,7 +127,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
     let academicYear, academicTerm;
-    
+
     try {
       // Validate term and year
       if (!academicTermId) {
@@ -290,16 +171,23 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         if (!billing) {
           // Create a new billing record if none exists for this student
           const totalFees = feeDetails.reduce((sum, detail) => sum + detail.amount, 0);
-          billing = {
+          billing = await db.Billing.create({
             studentId,
             academicYearId,
             academicTermId,
             totalFees,
             totalPaid: 0,
             remainingAmount: totalFees
-          };
-          newBillings.push(billing);
-          billingMap.set(studentId, billing); // Update the map with the new billing
+          }, { transaction });
+
+          // Create billing details for new billing
+          for (const feeDetail of feeDetails) {
+            newBillingDetails.push({
+              billingId: billing.id,
+              feeTypeId: feeDetail.feeTypeId,
+              amount: feeDetail.amount
+            });
+          }
         } else {
           // Update existing billing record
           const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
@@ -313,7 +201,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
             if (existingBillingDetail) {
               // Update existing fee detail amount
               existingBillingDetail.amount = feeDetail.amount;
-              existingBillingDetail.updatedAt = new Date(); // Update the timestamp
               updatedBillingDetails.push(existingBillingDetail);
             } else {
               // Create new fee detail
@@ -333,30 +220,17 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
         }
       }
 
-      // Perform bulk insert for new records
-      if (newBillings.length > 0) {
-        const insertedBillings = await db.Billing.bulkCreate(newBillings, { transaction, returning: true });
-
-        // Add the new billing ids to the new billing details
-        for (const billing of insertedBillings) {
-          newBillingDetails.forEach(detail => {
-            if (detail.billingId === undefined) {
-              detail.billingId = billing.id;
-            }
-          });
-        }
-      }
-
+      // Perform bulk insert for new billing details
       if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
 
-      // Perform bulk update for existing records
+      // Perform updates for existing billing and billing details
       for (const billing of updatedBillings) await billing.save({ transaction });
       for (const detail of updatedBillingDetails) await detail.save({ transaction });
 
       await transaction.commit();
-      await logUserAction(req.user.role, req.user.id, 'Created a billing record', `${feeDetails} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
+      
+      await logUserAction(req.user.role, req.user.id, 'Created a billing record', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
       return res.status(200).json({ message: "Billing record created successfully!" });
-      // res.status(200).json({ billings: [...billingMap.values()] });
     } catch (error) {
       await transaction.rollback();
       console.error('Error adding fee type to billing records:', error);
@@ -364,6 +238,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
+
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
