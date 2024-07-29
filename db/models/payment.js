@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Payment.init({
     studentId: { type: DataTypes.INTEGER, allowNull: false },
-    billingId: { type: DataTypes.INTEGER, allowNull: false },
+    referenceNumber: { type: DataTypes.STRING, allowNull: true },
     amount: { type: DataTypes.FLOAT, allowNull: false },
     date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, allowNull: false },
     method: { type: DataTypes.ENUM('Cash', 'Card', 'Bank Transfer', 'Mobile Money'), defaultValue: 'Cash', allowNull: false },
@@ -26,3 +26,4 @@ module.exports = (sequelize, DataTypes) => {
   });
   return Payment;
 };
+

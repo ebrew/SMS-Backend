@@ -126,7 +126,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
-    // Parse IDs as integers inn base 10
+    // Parse IDs as integers in base 10
     studentIds = studentIds.map(id => parseInt(id, 10));
     academicYearId = parseInt(academicYearId, 10);
     academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
@@ -149,7 +149,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     const transaction = await db.sequelize.transaction();
 
     try {
-      // Fetch existing billing records for the given students, academic year, and term
+      // Fetch existing billing records for the given students, academic year and term
       const existingBillingRecords = await db.Billing.findAll({
         where: {
           studentId: studentIds,
@@ -258,11 +258,137 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   });
 };
 
-
-
-
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      let { academicYearId, academicTermId, classSessionId } = req.params;
+      
+      // Convert academicTermId to null if not provided (for year-based billing)
+      academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
+      academicYearId = parseInt(academicYearId, 10);
+      classSessionId = parseInt(classSessionId, 10);
+
+      const section = await db.Section.findByPk(classSessionId, {
+        include: {
+          model: db.Class,
+          attributes: ['name'],
+        },
+      });
+      if (!section) return res.status(400).json({ message: "Class section not found!" });
+
+      let academicYear, academicTerm;
+
+      try {
+        // Validate term and year
+        if (!academicTermId) {
+          academicYear = await validateTermAndYear(0, academicYearId);
+          academicTermId = null;
+        } else {
+          ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+        }
+      } catch (validationError) {
+        console.error('Validation Error:', validationError.message);
+        return res.status(400).json({ message: validationError.message });
+      }
+
+      // Fetching class students
+      const students = await db.ClassStudent.findAll({
+        where: {
+          classSessionId,
+          academicYearId
+        },
+        include: {
+          model: db.Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        }
+      });
+
+      const studentIds = students.map(student => student.Student.id);
+
+      // Fetch billings in bulk
+      const billings = await db.Billing.findAll({
+        where: {
+          studentId: studentIds,
+          academicYearId,
+          academicTermId
+        },
+        include: {
+          model: db.BillingDetail,
+          include: {
+            model: db.FeeType,
+            attributes: ['name']
+          }
+        }
+      });
+
+      // Create a map of billings for quick access
+      const billingMap = new Map();
+      billings.forEach(billing => {
+        if (!billingMap.has(billing.studentId)) {
+          billingMap.set(billing.studentId, []);
+        }
+        billingMap.get(billing.studentId).push({
+          billingId: billing.id,
+          status: academicTermId ? 'Termly' : 'Yearly',
+          totalBill: billing.BillingDetails.reduce((sum, detail) => sum + detail.amount, 0),
+          BillingDetails: billing.BillingDetails.map(detail => ({
+            Id: detail.id,
+            feeTypeId: detail.feeTypeId,
+            name: detail.FeeType.name,
+            amount: detail.amount
+          }))
+        });
+      });
+
+      // Process the students and their billing details
+      const classStudents = students.map(student => {
+        const studentBillings = billingMap.get(student.Student.id) || [];
+
+        const totalFees = studentBillings.reduce((sum, billing) => sum + billing.totalBill, 0);
+        const totalPaid = 0; // Placeholder for total paid amount
+        const remainingAmount = totalFees - totalPaid;
+
+        return {
+          studentId: student.Student.id,
+          fullName: student.Student.middleName
+            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+            : `${student.Student.firstName} ${student.Student.lastName}`,
+          photo: student.Student.passportPhoto,
+          billing: studentBillings.length > 0 ? studentBillings[0] : {
+            billingId: null,
+            status: academicTermId ? 'Termly' : 'Yearly',
+            totalBill: 0,
+            BillingDetails: []
+          },
+          oldDebt: 0, // Placeholder for old debt calculation
+          totalFees,
+          totalPaid,
+          remainingAmount,
+        };
+      });
+
+      const result = {
+        academicYear: academicYear.name,
+        academicTerm: academicTerm ? academicTerm.name : undefined,
+        status: academicTermId ? 'Termly' : 'Yearly',
+        classSession: `${section.Class.name} (${section.name})`,
+        classStudents
+      };
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching students assessments:', error);
+
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Fetch class students billing details for a particular academic term or year
+exports.classStudentsBillings1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 

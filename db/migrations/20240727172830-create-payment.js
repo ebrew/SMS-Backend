@@ -10,24 +10,10 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       studentId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Students', 
-          key: 'id'
-        },
-        onDelete: 'CASCADE', 
-        onUpdate: 'CASCADE'  
+        type: Sequelize.INTEGER
       },
-      billingId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Billings', 
-          key: 'id'
-        },
-        onDelete: 'CASCADE', 
-        onUpdate: 'CASCADE'  
+      referenceNumber: {
+        type: Sequelize.STRING
       },
       amount: {
         type: Sequelize.FLOAT
