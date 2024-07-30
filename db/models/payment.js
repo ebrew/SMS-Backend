@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      this.belongsTo(models.Billing, { foreignKey: 'billingId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      this.belongsTo(models.Student, { foreignKey: 'studentId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
   }
   Payment.init({
