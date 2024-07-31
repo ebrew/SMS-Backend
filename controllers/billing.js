@@ -115,6 +115,7 @@ exports.deleteFeeType = async (req, res) => {
   });
 };
 
+
 // Add fee type to billing records or create new records if not found
 exports.createOrUpdateBillingRecord1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -122,11 +123,12 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
 
     let { studentIds, feeDetails, academicYearId, academicTermId } = req.body;
 
+    // Validate input
     if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
     if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
     if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
 
-    // Parse IDs as integers in base 10
+    // Parse IDs as integers
     studentIds = studentIds.map(id => parseInt(id, 10));
     academicYearId = parseInt(academicYearId, 10);
     academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
@@ -149,7 +151,7 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
     const transaction = await db.sequelize.transaction();
 
     try {
-      // Fetch existing billing records for the given students, academic year and term
+      // Fetch existing billing records for the given students, academic year, and term
       const existingBillingRecords = await db.Billing.findAll({
         where: {
           studentId: studentIds,
@@ -164,9 +166,7 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
       const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
 
       // Data to be used for bulk insert/update
-      const newBillings = [];
       const newBillingDetails = [];
-      const updatedBillings = [];
       const updatedBillingDetails = [];
       let newBillingRecordsCreated = false;
       let existingBillingRecordsUpdated = false;
@@ -222,12 +222,13 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
               });
             }
 
-            updatedTotalFees += amount;
+            updatedTotalFees += amount; 
           }
 
+          // Update totalFees and remainingAmount for the billing record
           billing.totalFees = updatedTotalFees;
           billing.remainingAmount = updatedTotalFees - billing.totalPaid;
-          updatedBillings.push(billing);
+          await billing.save({ transaction });
           existingBillingRecordsUpdated = true;
         }
       }
@@ -235,18 +236,17 @@ exports.createOrUpdateBillingRecord1 = async (req, res) => {
       // Perform bulk insert for new billing details
       if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
 
-      // Perform updates for existing billing and billing details
-      for (const billing of updatedBillings) await billing.save({ transaction });
-      for (const detail of updatedBillingDetails) await detail.save({ transaction });
+      // Perform updates for existing billing details
+      await Promise.all(updatedBillingDetails.map(detail => detail.save({ transaction })));
 
       await transaction.commit();
 
       // Conditional logging
       if (newBillingRecordsCreated) {
-        await logUserAction(req.user.role, req.user.id, 'Created billing records', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm.name} bills for specified students`);
+        await logUserAction(req.user.role, req.user.id, 'Created billing records', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm ? academicTerm.name : ''} bills for specified students`);
       }
       if (existingBillingRecordsUpdated) {
-        await logUserAction(req.user.role, req.user.id, 'Updated billing records', `${JSON.stringify(feeDetails)} was updated in ${academicYear.name} ${academicTerm.name} bills for specified students`);
+        await logUserAction(req.user.role, req.user.id, 'Updated billing records', `${JSON.stringify(feeDetails)} was updated in ${academicYear.name} ${academicTerm ? academicTerm.name : ''} bills for specified students`);
       }
 
       return res.status(200).json({ message: "Billing record created or updated successfully!" });
@@ -364,7 +364,16 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
               });
             }
 
+            // Accumulate amount for total fees calculation
             updatedTotalFees += amount;
+          }
+
+          // Include all existing BillingDetails in the total fees calculation
+          for (const existingDetail of billing.BillingDetails) {
+            if (!feeDetails.some(feeDetail => parseInt(feeDetail.feeTypeId, 10) === existingDetail.feeTypeId)) {
+              updatedTotalFees += existingDetail.amount;
+              updatedBillingDetails.push(existingDetail); // Keep existing details
+            }
           }
 
           // Update totalFees and remainingAmount for the billing record
@@ -379,7 +388,7 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
 
       // Perform updates for existing billing details
-      await Promise.all(updatedBillingDetails.map(detail => detail.save({ transaction })));
+      if (updatedBillingDetails.length > 0) await Promise.all(updatedBillingDetails.map(detail => detail.save({ transaction })));
 
       await transaction.commit();
 
@@ -399,6 +408,8 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
+
+
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
@@ -505,7 +516,6 @@ exports.classStudentsBillings = async (req, res) => {
             totalBill: 0,
             BillingDetails: []
           },
-          oldDebt: 0, // Placeholder for old debt calculation
           totalFees,
           totalPaid,
           remainingAmount,
@@ -742,30 +752,3 @@ exports.processFeePayment = async (req, res) => {
     }
   });
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
