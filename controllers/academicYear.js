@@ -129,6 +129,7 @@ exports.updateAcademicYear = async (req, res) => {
 
       const result = await AcademicYear.findByPk(academicYearId);
       if (!result) return res.status(404).json({ message: 'Academic year not found!' });
+      if (result.status === 'Inactive') return res.status(400).json({ message: 'Academic year has already ended!' });
 
       // Ensure the new name is unique
       const alreadyExist = await AcademicYear.findOne({
@@ -151,8 +152,6 @@ exports.updateAcademicYear = async (req, res) => {
 
         return res.status(200).json({ message: 'Academic year updated successfully!' });
       }
-
-      if (result.status !== 'Active') return res.status(400).json({ message: 'Academic year has already ended!' });
 
       // Check for existing academic years
       const whereClause = {
@@ -305,6 +304,41 @@ exports.endAcademicYear = async (req, res) => {
     } catch (error) {
       console.error('Error ending academic year:', error);
       return res.status(500).json({ message: 'Cannot end at the moment' });
+    }
+  });
+};
+
+// Activate pending academic term
+exports.activatePendingAcademicYear = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      // Check if the ID is valid
+      if (isNaN(id)) return res.status(400).json({ message: 'Invalid academic term ID!' });
+
+      const academicYear = await AcademicYear.findByPk(id);
+      const activeAcademicYear = await AcademicYear.findOne({ where: { status: 'Active' } });
+
+      // Check if the academic year exists
+      if (!academicYear) return res.status(404).json({ message: 'Academic year not found!' });
+
+      // Check the status of the academic year
+      if (academicYear.status === 'Active') return res.status(400).json({ message: 'Academic year is already active!' });
+      if (academicYear.status === 'Inactive') return res.status(400).json({ message: 'Academic year has already ended!' });
+
+      // Check if there is already an active academic year
+      if (activeAcademicYear) return res.status(400).json({ message: 'There is already an active academic year running!' });
+
+      // Activate the pending academic year
+      await academicYear.update({ startDate: new Date(), status: 'Active' });
+
+      return res.status(200).json({ message: 'Academic year activated successfully!' });
+    } catch (error) {
+      console.error('Error activating academic year:', error);
+      return res.status(500).json({ message: 'Cannot activate academic year at the moment' });
     }
   });
 };

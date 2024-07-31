@@ -266,8 +266,18 @@ API: << server >>/api/v1/academic_term/delete/academicTermId
 Method: DELETE
 Authorization: Bearer <token from login>
 
+48. // Activating a pending academic term
+API: << server >>/api/v1/academic_term/activate/academicTermId
+Method: PUT
+Authorization: Bearer <token from login>
+
+49. // Activating a pending academic year
+API: << server >>/api/v1/academic_year/activate/academicYearId
+Method: PUT
+Authorization: Bearer <token from login>
+
 STUDENT ADMISSION
-48. // Creating a new student, parent/guidian and assigninig to a class
+50. // Creating a new student, parent/guidian and assigninig to a class
 API: << server >>/api/v1/student/new_admission
 Method: POST
 Content: { 
@@ -279,237 +289,228 @@ Content: {
 }
 Authorization: Bearer <token from login>
 
-49. // Update a student's DP url
+51. // Update a student's DP url
 API: << server >>/api/v1/student/update_dp/studentId
 Content: passportPhoto as json
 Method: POST
 Authorization: Bearer <token from login>
 
-50. // Fetch all students for active academic year
+52. // Fetch all students for active academic year
 API: << server >>/api/v1/student/all
 Method: GET
 Authorization: Bearer <token from login>
 
-51. // Update student details
+53. // Update student details
 API: << server >>/api/v1/student/update_details/studentId
 Content: { firstName, middleName, lastName, email, phone, address, dob, gender, nationality }
 Method: PUT
 Authorization: Bearer <token from login>
 
-52. // Update student emegency contact info
+54. // Update student emegency contact info
 API: << server >>/api/v1/student/update_emergency_info/studentId
 Content: { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-53. // Update student's parent's info
+55. // Update student's parent's info
 API: << server >>/api/v1/student/update_parent_details/parentId
 Content: { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-54. // Update student's parent's employment info
+56. // Update student's parent's employment info
 API: << server >>/api/v1/student/update_parent_employment/parentId
 Content: { occupation, employer, employerAddress, workPhone }
 Method: PUT
 Authorization: Bearer <token from login>
 
-55. // Update a student's class section
+57. // Update a student's class section
 API: << server >>/api/v1/student/update_student_class/assignedClassId
 Content: { classSessionId }
 Method: PUT
 Authorization: Bearer <token from login>
 
-56. // Fetch academic year classSession students
+58. // Fetch academic year classSession students
 API: << server >>/api/v1/student/class_students/academicYearId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
 GRADING SYSTEM
-57. // Create a new Grading point
+59. // Create a new Grading point
 API: << server >>/api/v1/grading_system/create
 Method: POST
 Content: { minScore, maxScore, grade, remarks }
 Authorization: Bearer <token from login>
 
-58. // Update an already created GradePoint
+60. // Update an already created GradePoint
 API: << server >>/api/v1/grading_system/update/GradePointId
 Content: { minScore, maxScore, grade, remarks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-59. // Delete Grade Point
+61. // Delete Grade Point
 API: << server >>/api/v1/grading_system/delete/GradePointId
 Method: DELETE
 Authorization: Bearer <token from login>
 
-60. // Fetch all GradePoints in descending order of grade
+62. // Fetch all GradePoints in descending order of grade
 API: << server >>/api/v1/grading_system/all
 Method: GET
 Authorization: Bearer <token from login>
 
 
 TEACHER ROLE
-61. // Get a teacher's assigned classes after login
+63. // Get a teacher's assigned classes after login
 API: << server >>/api/v1/teacher/assigned_classes/teacherId
 Method: GET
 Authorization: Bearer <token from login>
 
-62. // Get a teacher's assigned class's students
+64. // Get a teacher's assigned class's students
 API: << server >>/api/v1/teacher/class_students/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-63. // Get a teacher's assigned class's subjects
+65. // Get a teacher's assigned class's subjects
 API: << server >>/api/v1/teacher/class_subjects/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
 GRADING AND ASSESSMENT
-64. // Create a new assessment
+66. // Create a new assessment
 API: << server >>/api/v1/teacher/assessment/create
 Method: POST
 Content: { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks }
 Authorization: Bearer <token from login>
 
-65. // Fetching a particular subject assessment
+67. // Fetching a particular subject assessment
 API: << server >>/api/v1/teacher/get_assessment/id
 Method: GET
 Authorization: Bearer <token from login>
 
-66. // Updating a particular subject assessment
+68. // Updating a particular subject assessment
 API: << server >>/api/v1/teacher/update_assessment/id
 Content: { name, description, academicTermId, classSessionId, subjectId, weight, marks }
 Method: PUT
 Authorization: Bearer <token from login>
 
-67. // Deleting a particular subject assessment
+69. // Deleting a particular subject assessment
 API: << server >>/api/v1/teacher/delete_assessment/id
 Method: DELETE
 Authorization: Bearer <token from login>
 
-68. // Get all subject assessments for the active academic term
+70. // Get all subject assessments for the active academic term
 API: << server >>/api/v1/teacher/subject_assessments/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
-69. // Grade student
+71. // Grade student
 API: << server >>/api/v1/teacher/grade_student
 Method: POST
 Content: { assessmentId, studentId, score }
 Authorization: Bearer <token from login>
 
-70. // Students' grades for a particular assessment
+72. // Students' grades for a particular assessment
 API: << server >>/api/v1/teacher/assessment_grades/assessmentId
 Method: GET
 Authorization: Bearer <token from login>
 
-71. // Students' grades for a particular subject's assessments for a teacher
+73. // Students' grades for a particular subject's assessments for a teacher
 API: << server >>/api/v1/teacher/subject_assessment_grades/academicTermId/classSessionId/subjectId
 Method: GET
 Authorization: Bearer <token from login>
 
 RESULTS
-72. // Fetch class students' results for a particular academic term
+74. // Fetch class students' results for a particular academic term
 API: << server >>/api/v1/result/class_students/academicTermId/classSessioId
 Method: GET
 Authorization: Bearer <token from login>
 
-73. // Fetch a single student results for a particular academic term
+75. // Fetch a single student results for a particular academic term
 API: << server >>/api/v1/result/single_student/studentId/academicTermId/classSessioId/
 Method: GET
 Authorization: Bearer <token from login>
 
 PROMOTIONS
-74. // Promote class students by head teacher
+76. // Promote class students by head teacher
 API: << server >>/api/v1/promotion/class
 Method: POST
 Content: { students, nextClassSessionId }
 Authorization: Bearer <token from login>
 
-75. // Repeat class students by head teacher
+77. // Repeat class students by head teacher
 API: << server >>/api/v1/promotion/repeat_students
 Method: POST
 Content: { students }
 Authorization: Bearer <token from login>
 
-76. // Promote class students by Admin (Complexity)
+78. // Promote class students by Admin (Complexity)
 API: << server >>/api/v1/promotion/class/admin
 Method: POST
 Content: { students, nextAcademicYearId, nextClassSessionId }
 Authorization: Bearer <token from login>
 
-77. // Repeat students by Admin (Complexity)
+79. // Repeat students by Admin (Complexity)
 API: << server >>/api/v1/promotion/repeat_students/admin
 Method: POST
 Content: { students, nextAcademicYearId }
 Authorization: Bearer <token from login>
 
 BILLING OF STUDENTS
-78. // Create a new fee type
+80. // Create a new fee type
 API: << server >>/api/v1/fee_type/create
 Method: POST
 Content: { name, description }
 Authorization: Bearer <token from login>
 
-79. // Update an existing fee type
+81. // Update an existing fee type
 API: << server >>/api/v1/fee_type/update/feeTypeId
 Method: PUT
 Content: { name, description }
 Authorization: Bearer <token from login>
 
-80. // Delete an existing fee type
+82. // Delete an existing fee type
 API: << server >>/api/v1/fee_type/delete/feeTypeId
 Method: DELETE
 Authorization: Bearer <token from login>
 
-81. // Fetch all FeeTypes for multiselection when Billing
+83. // Fetch all FeeTypes for multiselection when Billing
 API: << server >>/api/v1/fee_type/all
 Method: GET
 Authorization: Bearer <token from login>
 
-82. // Create billing records or create new records if not found
+84. // Create billing records or create new records if not found
 API: << server >>/api/v1/billing/create_update
 Method: POST
 Content: { studentIds, academicYearId, academicTermId, feeDetails }
 Authorization: Bearer <token from login>
 
-83A. // Fetch class students billing details for a particular academic term
+85A. // Fetch class students billing details for a particular academic term
 API: << server >>/api/v1/bills/class_students/academicYearId/academicTermId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-83B. // Fetch class students billing details for a particular academic year
+85B. // Fetch class students billing details for a particular academic year
 API: << server >>/api/v1/bills/class_students/academicYearId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-84. // Get all fee types with billing details for a specific academic year and term
-API: << server >>/api/v1/billing_details/all
+86. // Calculate total amount owed by a student and check for overpayment
+API: << server >>/api/v1/billings/student/owed/studentId
 Method: GET
 Authorization: Bearer <token from login>
 
-85. // Update fee type amount from the billing details for all affected students
-API: << server >>/api/v1/billing_details/fee_type/update_amount
-Method: PUT
-Content: { academicYearId, academicTermId, feeTypeId, newAmount, studentIds }
-Authorization: Bearer <token from login>
-
-86. // Delete fee type from the billing details for all affected students
-API: << server >>/api/v1/billing_details/fee_type/delete
-Method: DELETE
-Content: { academicYearId, academicTermId, feeTypeId, studentIds }
-Authorization: Bearer <token from login>
-
-87. // Fetch fee summary for all students in a specified academic term and year
-API: << server >>/api/v1/billing/fee_summary/students
+87. // Calculate total amount owed by class students and check for overpayment
+API: << server >>/api/v1/billings/students/owed/academicYearId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
-88. // Fetch fee summary for a student term and year
-API: << server >>/api/v1/billing/fee_summary/student
-Method: GET
+88. // Process fee payment for a student
+API: << server >>/api/v1/payments/student/process
+Method: POST
+Content: { studentId, amount }
 Authorization: Bearer <token from login>
+
+
 
 
 

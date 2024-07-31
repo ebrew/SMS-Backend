@@ -68,6 +68,91 @@ exports.login = async (req, res) => {
   }
 }
 
+// Staff Login
+exports.loginPendingLogoutMethod = async (req, res) => {
+  try {
+    const { userID, password } = req.body;
+
+    if (!userID || !password)
+      return res.status(400).json({ message: 'Incomplete fields!' });
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { userName: userID },
+          { email: userID.toLowerCase() },
+          { phone: normalizeGhPhone(userID) },
+        ],
+      },
+    });
+
+    if (!user)
+      return res.status(400).json({ message: 'Staff not found!' });
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid)
+      return res.status(400).json({ message: 'Invalid Credentials!' });
+
+    const token = jwt.sign(
+      { id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role },
+      process.env.SECRET_KEY,
+      { expiresIn: '1h' }
+    );
+
+    let oldTokens = user.tokens || [];
+    if (oldTokens.length) {
+      oldTokens = oldTokens.filter(t => {
+        const tokenCreationTime = parseInt(t.signedAt);
+        const currentTime = Date.now();
+        const timeDiff = (currentTime - tokenCreationTime) / 1000; // Difference in seconds
+        return timeDiff < 3600; // Filter out tokens created more than an hour ago
+      });
+    }
+
+    await user.update({
+      tokens: [...oldTokens, { token, signedAt: Date.now().toString() }]
+    });
+
+    const result = {
+      message: 'Logged in successfully!',
+      isPasswordReset: user.isPasswordReset,
+      token: token,
+      id: user.id,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName
+    };
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error:', error.message);
+    return res.status(500).json({ message: "Can't login at the moment!" });
+  }
+};
+
+// Logout Method
+exports.logout = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const token = req.header('Authorization').replace('Bearer ', '');
+      const decoded = jwt.verify(token, process.env.SECRET_KEY);
+      const user = await User.findByPk(decoded.id);
+
+      if (!user) return res.status(400).json({ message: 'User not found!' });
+
+      const newTokens = user.tokens.filter(t => t.token !== token);
+      await user.update({ tokens: newTokens });
+
+      return res.status(200).json({ message: 'Logged out successfully!' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: "Can't log out at the moment!" });
+    }
+  });
+};
+
 // Staff Registration
 exports.register = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {

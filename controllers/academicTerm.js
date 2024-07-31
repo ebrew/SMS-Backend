@@ -29,85 +29,6 @@ exports.allAcademicTerms = async (req, res) => {
 };
 
 // Create a new academic term
-exports.addAcademicTerm1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
-    try {
-      const { name, startDate, endDate, academicYearId } = req.body;
-
-      if (!name || !startDate || !endDate || !academicYearId)
-        return res.status(400).json({ message: 'Incomplete field!' });
-
-      // Check if the academic year exists
-      const academicYear = await AcademicYear.findOne({ where: { id: academicYearId } });
-      if (!academicYear)
-        return res.status(400).json({ message: 'Academic year could not be found!' });
-
-      // Check if the academic year is active
-      if (academicYear.status === 'Inactive')
-        return res.status(400).json({ message: `${academicYear.name} has already ended!` });
-
-      // Validate the term dates fall within year date
-      const termStartDate = new Date(startDate);
-      const termEndDate = new Date(endDate);
-      const yearStartDate = new Date(academicYear.startDate);
-      const yearEndDate = new Date(academicYear.endDate);
-
-      if (termStartDate < yearStartDate || termEndDate > yearEndDate)
-        return res.status(400).json({ message: 'Invalid date range for the specified academic year!' });
-
-      // Check if the term name already exists within the academic year
-      const termExists = await AcademicTerm.findOne({
-        where: {
-          name: { [Op.iLike]: name },
-          academicYearId: academicYearId,
-        },
-      });
-
-      if (termExists)
-        return res.status(400).json({ message: `The term name "${name}" already exists for this academic year!` });
-
-      // Check for overlapping terms within the academic year
-      const overlappingTerm = await AcademicTerm.findOne({
-        where: {
-          academicYearId: academicYearId,
-          [Op.or]: [
-            { startDate: { [Op.between]: [termStartDate, termEndDate] } },
-            { endDate: { [Op.between]: [termStartDate, termEndDate] } },
-            { [Op.and]: [{ startDate: { [Op.lte]: termStartDate } }, { endDate: { [Op.gte]: termEndDate } }] }
-          ],
-        },
-      });
-
-      if (overlappingTerm)
-        return res.status(400).json({ message: 'The term dates overlap with an existing term in the academic year!' });
-
-      // updating active status if necessary
-      let alreadyExist = await AcademicTerm.findOne({ where: { status: 'Active' } });
-      if (alreadyExist)
-        await alreadyExist.setInactiveIfEndDateDue();
-
-      // Ensure the new startDate is greater than the endDate of the latest academic term
-      const latestTerm = await AcademicTerm.findOne({
-        order: [['endDate', 'DESC']],
-      });
-
-      if (latestTerm && termStartDate < new Date(latestTerm.endDate))
-        return res.status(400).json({ message: 'The start date of the new academic term must be after the end date of the last academic term.' });
-
-      // Create a new instance of Academic term
-      await AcademicTerm.create({ name, startDate, endDate, academicYearId });
-      res.status(200).json({ message: 'Academic term created successfully!' });
-    } catch (error) {
-      console.error('Error creating term:', error);
-      res.status(500).json({ message: "Can't create academic term at the moment!" });
-    }
-  });
-};
-
-// Create a new academic term
 exports.addAcademicTerm = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err)
@@ -229,6 +150,7 @@ exports.updateAcademicTerm = async (req, res) => {
       const result = await AcademicTerm.findByPk(academicTermId, { include: { model: AcademicYear } });
 
       if (!result) return res.status(404).json({ message: 'Academic term not found!' });
+      if (result.status === 'Inactive') return res.status(400).json({ message: 'Academic term has already ended!' });
 
       // Ensure the new name is unique
       const alreadyExist = await AcademicTerm.findOne({
@@ -257,10 +179,7 @@ exports.updateAcademicTerm = async (req, res) => {
       // Validate the term dates against its academic year date
       if (termStartDate < yearStartDate || termEndDate > yearEndDate)
         return res.status(400).json({ message: "Invalid date range for term's academic year!" });
-
-      if (result.status === 'Inactive')
-        return res.status(400).json({ message: 'Academic term has already ended!' });
-
+      
       // Check for existing academic terms
       const whereClause = {
         id: { [Op.ne]: academicTermId }, // Exclude the current academic term
@@ -378,6 +297,41 @@ exports.endAcademicTerm = async (req, res) => {
     } catch (error) {
       console.error('Error ending academic term:', error);
       return res.status(500).json({ message: 'Cannot end at the moment' });
+    }
+  });
+};
+
+// Activate pending academic term
+exports.activatePendingAcademicTerm = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      // Check if the ID is valid
+      if (isNaN(id)) return res.status(400).json({ message: 'Invalid academic term ID!' });
+
+      const academicTerm = await AcademicTerm.findByPk(id);
+      const activeAcademicTerm = await AcademicTerm.findOne({ where: { status: 'Active' } });
+
+      // Check if the academic term exists
+      if (!academicTerm) return res.status(404).json({ message: 'Academic term not found!' });
+
+      // Check the status of the academic term
+      if (academicTerm.status === 'Active') return res.status(400).json({ message: 'Academic term is already active!' });
+      if (academicTerm.status === 'Inactive') return res.status(400).json({ message: 'Academic term has already ended!' });
+
+      // Check if there is already an active academic term
+      if (activeAcademicTerm) return res.status(400).json({ message: 'There is already an active academic term running!' });
+
+      // Activate the pending academic term
+      await academicTerm.update({ startDate: new Date(), status: 'Active' });
+
+      return res.status(200).json({ message: 'Academic term activated successfully!' });
+    } catch (error) {
+      console.error('Error activating academic term:', error);
+      return res.status(500).json({ message: 'Cannot activate academic term at the moment' });
     }
   });
 };

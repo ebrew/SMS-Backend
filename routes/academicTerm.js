@@ -20,5 +20,8 @@ router.put('/end/:id', academicTermController.endAcademicTerm);
 // Delete academic term
 router.delete('/delete/:id', academicTermController.deleteAcademicTerm);
 
+// Activate a pending academic term
+router.put('/activate/:id', academicTermController.activatePendingAcademicTerm);
+
 
 module.exports = router;

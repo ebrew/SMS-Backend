@@ -116,7 +116,7 @@ exports.deleteFeeType = async (req, res) => {
 };
 
 // Add fee type to billing records or create new records if not found
-exports.createOrUpdateBillingRecord = async (req, res) => {
+exports.createOrUpdateBillingRecord1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -258,6 +258,148 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
   });
 };
 
+// Add fee type to billing records or create new records if not found
+exports.createOrUpdateBillingRecord = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    let { studentIds, feeDetails, academicYearId, academicTermId } = req.body;
+
+    // Validate input
+    if (!Array.isArray(studentIds) || studentIds.length === 0) return res.status(400).json({ message: 'Student IDs are required!' });
+    if (!Array.isArray(feeDetails) || feeDetails.length === 0) return res.status(400).json({ message: 'Fee details are required!' });
+    if (!academicYearId) return res.status(400).json({ message: 'Academic year ID is required!' });
+
+    // Parse IDs as integers
+    studentIds = studentIds.map(id => parseInt(id, 10));
+    academicYearId = parseInt(academicYearId, 10);
+    academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
+
+    let academicYear, academicTerm;
+
+    try {
+      // Validate term and year
+      if (!academicTermId) {
+        academicYear = await validateTermAndYear(0, academicYearId);
+        academicTermId = null;
+      } else {
+        ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
+      }
+    } catch (validationError) {
+      console.error('Validation Error:', validationError.message);
+      return res.status(400).json({ message: validationError.message });
+    }
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+      // Fetch existing billing records for the given students, academic year, and term
+      const existingBillingRecords = await db.Billing.findAll({
+        where: {
+          studentId: studentIds,
+          academicYearId,
+          academicTermId
+        },
+        include: [{ model: db.BillingDetail }],
+        transaction
+      });
+
+      // Create a map to quickly find existing billing records by student ID
+      const billingMap = new Map(existingBillingRecords.map(billing => [billing.studentId, billing]));
+
+      // Data to be used for bulk insert/update
+      const newBillingDetails = [];
+      const updatedBillingDetails = [];
+      let newBillingRecordsCreated = false;
+      let existingBillingRecordsUpdated = false;
+
+      // Create or update billing records for each student
+      for (const studentId of studentIds) {
+        let billing = billingMap.get(studentId);
+
+        if (!billing) {
+          // Create a new billing record if none exists for this student
+          const totalFees = feeDetails.reduce((sum, detail) => sum + parseFloat(detail.amount), 0);
+          billing = await db.Billing.create({
+            studentId,
+            academicYearId,
+            academicTermId,
+            totalFees,
+            totalPaid: 0,
+            remainingAmount: totalFees
+          }, { transaction });
+
+          // Create billing details for new billing
+          for (const feeDetail of feeDetails) {
+            newBillingDetails.push({
+              billingId: billing.id,
+              feeTypeId: parseInt(feeDetail.feeTypeId, 10),
+              amount: parseFloat(feeDetail.amount)
+            });
+          }
+
+          newBillingRecordsCreated = true;
+        } else {
+          // Update existing billing record
+          const existingDetailsMap = new Map((billing.BillingDetails || []).map(detail => [detail.feeTypeId, detail]));
+
+          let updatedTotalFees = 0;
+
+          // Iterate over each fee detail and create or update accordingly
+          for (const feeDetail of feeDetails) {
+            const feeTypeId = parseInt(feeDetail.feeTypeId, 10);
+            const amount = parseFloat(feeDetail.amount);
+            const existingBillingDetail = existingDetailsMap.get(feeTypeId);
+
+            if (existingBillingDetail) {
+              // Update existing fee detail amount
+              existingBillingDetail.amount = amount;
+              updatedBillingDetails.push(existingBillingDetail);
+            } else {
+              // Create new fee detail
+              newBillingDetails.push({
+                billingId: billing.id,
+                feeTypeId,
+                amount
+              });
+            }
+
+            updatedTotalFees += amount;
+          }
+
+          // Update totalFees and remainingAmount for the billing record
+          billing.totalFees = updatedTotalFees;
+          billing.remainingAmount = updatedTotalFees - billing.totalPaid;
+          await billing.save({ transaction });
+          existingBillingRecordsUpdated = true;
+        }
+      }
+
+      // Perform bulk insert for new billing details
+      if (newBillingDetails.length > 0) await db.BillingDetail.bulkCreate(newBillingDetails, { transaction });
+
+      // Perform updates for existing billing details
+      await Promise.all(updatedBillingDetails.map(detail => detail.save({ transaction })));
+
+      await transaction.commit();
+
+      // Conditional logging
+      if (newBillingRecordsCreated) {
+        await logUserAction(req.user.role, req.user.id, 'Created billing records', `${JSON.stringify(feeDetails)} was added to ${academicYear.name} ${academicTerm ? academicTerm.name : ''} bills for specified students`);
+      }
+      if (existingBillingRecordsUpdated) {
+        await logUserAction(req.user.role, req.user.id, 'Updated billing records', `${JSON.stringify(feeDetails)} was updated in ${academicYear.name} ${academicTerm ? academicTerm.name : ''} bills for specified students`);
+      }
+
+      return res.status(200).json({ message: "Billing record created or updated successfully!" });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error adding fee type to billing records:', error);
+      res.status(500).json({ message: "Can't create or update billing records at the moment!" });
+    }
+  });
+};
+
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -387,17 +529,72 @@ exports.classStudentsBillings = async (req, res) => {
   });
 };
 
-// Fetch class students billing details for a particular academic term or year
-exports.classStudentsBillings1 = async (req, res) => {
+// Calculate total amount owed by a student and check for overpayment
+exports.getTotalAmountOwed = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const studentId = req.params.id;
+
+    if (!studentId || isNaN(studentId) || parseInt(studentId, 10) <= 0) return res.status(400).json({ message: 'Valid Student ID is required!' });
+
+    try {
+      const studentIdParsed = parseInt(studentId, 10);
+
+      // Fetch total fees from all billing records for the student
+      const totalFeesResult = await db.Billing.findAll({
+        where: { studentId: studentIdParsed },
+        attributes: [
+          [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
+        ],
+        raw: true
+      });
+
+      const totalFees = totalFeesResult[0].totalFees || 0;
+
+      // Fetch total payments made by the student
+      const totalPaymentsResult = await db.Payment.findAll({
+        where: { studentId: studentIdParsed },
+        attributes: [
+          [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPayments']
+        ],
+        raw: true
+      });
+
+      const totalPayments = totalPaymentsResult[0].totalPayments || 0;
+
+      // Determine if there is overpayment
+      const isOverpaid = totalPayments > totalFees;
+      let totalAmountOwed = 0
+      let overpaidAmount = 0
+
+      isOverpaid ? overpaidAmount = totalPayments - totalFees : totalAmountOwed = totalFees - totalPayments;
+
+      return res.status(200).json({
+        isOverpaid: isOverpaid,
+        totalOwed: totalAmountOwed,
+        overpaidAmount: overpaidAmount
+      });
+    } catch (error) {
+      console.error('Error calculating total amount owed:', error);
+      return res.status(500).json({ message: "Can't calculate the total amount owed at the moment!" });
+    }
+  });
+};
+
+// Calculate total amount owed by class students and check for overpayment
+exports.classStudentsTotalAmountOwed = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      let { academicYearId, academicTermId, classSessionId } = req.params;
-      
-      // Convert academicTermId to null if not provided (for year-based billing)
-      academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
+      let { academicYearId, classSessionId } = req.params;
 
+      academicYearId = parseInt(academicYearId, 10);
+      classSessionId = parseInt(classSessionId, 10);
+
+      // Fetch academic year and class section
+      const year = await db.AcademicYear.findByPk(academicYearId);
       const section = await db.Section.findByPk(classSessionId, {
         include: {
           model: db.Class,
@@ -405,21 +602,7 @@ exports.classStudentsBillings1 = async (req, res) => {
         },
       });
       if (!section) return res.status(400).json({ message: "Class section not found!" });
-
-      let academicYear, academicTerm;
-
-      try {
-        // Validate term and year
-        if (!academicTermId) {
-          academicYear = await validateTermAndYear(0, academicYearId);
-          academicTermId = null;
-        } else {
-          ({ academicTerm, academicYear } = await validateTermAndYear(academicTermId, academicYearId));
-        }
-      } catch (validationError) {
-        console.error('Validation Error:', validationError.message);
-        return res.status(400).json({ message: validationError.message });
-      }
+      if (!year) return res.status(400).json({ message: "Academic year not found!" });
 
       // Fetching class students
       const students = await db.ClassStudent.findAll({
@@ -435,366 +618,127 @@ exports.classStudentsBillings1 = async (req, res) => {
 
       const studentIds = students.map(student => student.Student.id);
 
-      // Fetch billings in bulk
-      const billings = await db.Billing.findAll({
-        where: {
-          studentId: studentIds,
-          academicYearId,
-          academicTermId
-        },
-        include: {
-          model: db.BillingDetail,
-          include: {
-            model: db.FeeType,
-            attributes: ['name']
-          }
-        }
+      // Fetch total fees from all billing records for the students
+      const totalFeesResult = await db.Billing.findAll({
+        where: { studentId: studentIds },
+        attributes: [
+          'studentId',
+          [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
+        ],
+        group: ['studentId'],
+        raw: true
       });
 
-      // Create a map of billings for quick access
-      const billingMap = new Map();
-      billings.forEach(billing => {
-        if (!billingMap.has(billing.studentId)) {
-          billingMap.set(billing.studentId, []);
+      // Fetch total payments made by the students
+      const totalPaymentsResult = await db.Payment.findAll({
+        where: { studentId: studentIds },
+        attributes: [
+          'studentId',
+          [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPayments']
+        ],
+        group: ['studentId'],
+        raw: true
+      });
+
+      // Create maps for quick lookup
+      const totalFeesMap = new Map(totalFeesResult.map(item => [item.studentId, item.totalFees]));
+      const totalPaymentsMap = new Map(totalPaymentsResult.map(item => [item.studentId, item.totalPayments]));
+
+      const result = [];
+
+      students.forEach(student => {
+        const studentId = student.Student.id;
+        const totalFees = parseFloat(totalFeesMap.get(studentId) || 0);
+        const totalPayments = parseFloat(totalPaymentsMap.get(studentId) || 0);
+
+        // Calculate total amount owed and determine overpayment
+        const isOverpaid = totalPayments > totalFees;
+        let totalAmountOwed = 0;
+        let overpaidAmount = 0;
+
+        if (isOverpaid) {
+          overpaidAmount = totalPayments - totalFees;
+        } else {
+          totalAmountOwed = totalFees - totalPayments;
         }
-        billingMap.get(billing.studentId).push({
-          billingId: billing.id,
-          status: academicTermId ? 'Termly' : 'Yearly',
-          totalBill: billing.BillingDetails.reduce((sum, detail) => sum + detail.amount, 0),
-          BillingDetails: billing.BillingDetails.map(detail => ({
-            Id: detail.id,
-            feeTypeId: detail.feeTypeId,
-            name: detail.FeeType.name,
-            amount: detail.amount
-          }))
+
+        result.push({
+          studentId,
+          firstName: student.Student.firstName,
+          middleName: student.Student.middleName,
+          lastName: student.Student.lastName,
+          passportPhoto: student.Student.passportPhoto,
+          isOverpaid: isOverpaid,
+          totalOwed: totalAmountOwed,
+          overpaidAmount: overpaidAmount
         });
       });
 
-      // Process the students and their billing details
-      const classStudents = students.map(student => {
-        const studentBillings = billingMap.get(student.Student.id) || [];
-
-        const totalFees = studentBillings.reduce((sum, billing) => sum + billing.totalBill, 0);
-        const totalPaid = 0; // Placeholder for total paid amount
-        const remainingAmount = totalFees - totalPaid;
-
-        return {
-          studentId: student.Student.id,
-          fullName: student.Student.middleName
-            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
-            : `${student.Student.firstName} ${student.Student.lastName}`,
-          photo: student.Student.passportPhoto,
-          billing: studentBillings.length > 0 ? studentBillings[0] : {
-            billingId: null,
-            status: academicTermId ? 'Termly' : 'Yearly',
-            totalBill: 0,
-            BillingDetails: []
-          },
-          oldDebt: 0, // Placeholder for old debt calculation
-          totalFees,
-          totalPaid,
-          remainingAmount,
-        };
-      });
-
-      const result = {
-        academicYear: academicYear.name,
-        academicTerm: academicTerm ? academicTerm.name : undefined,
-        status: academicTermId ? 'Termly' : 'Yearly',
-        classSession: `${section.Class.name} (${section.name})`,
-        classStudents
-      };
+      // Sort students based on the amount they owe in descending order
+      result.sort((a, b) => b.totalOwed - a.totalOwed);
 
       return res.status(200).json(result);
     } catch (error) {
-      console.error('Error fetching students assessments:', error);
-
+      console.error('Error fetching total amount owed by class students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   });
 };
 
-
-
-
-
-
-
-
-
-// Get all fee types with billing details for a specific academic year and term
-exports.getAllFeeTypesWithBillingDetails = async (req, res) => {
+// Process fee payment for a student
+exports.processFeePayment = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-    try {
-      const { academicYearId, academicTermId } = req.query;
+    const { studentId, amount } = req.body;
 
-      if (!academicYearId || !academicTermId) {
-        return res.status(400).json({ message: 'Academic year ID and term ID are required!' });
-      }
-
-      const feeTypes = await db.FeeType.findAll({
-        include: [{
-          model: db.BillingDetail,
-          attributes: ['amount'],
-          include: [{
-            model: db.Billing,
-            attributes: [],
-            where: {
-              academicYearId,
-              academicTermId
-            }
-          }]
-        }],
-        order: [['name', 'ASC']]
-      });
-
-      // Summarize billing amounts for each fee type
-      const feeTypesWithBillingDetails = feeTypes.map(feeType => {
-        const totalBilled = feeType.BillingDetails.reduce((sum, detail) => sum + detail.amount, 0);
-        return {
-          id: feeType.id,
-          name: feeType.name,
-          description: feeType.description,
-          totalBilled,
-        };
-      });
-
-      res.status(200).json({ feeTypes: feeTypesWithBillingDetails });
-    } catch (error) {
-      console.error('Error fetching fee types with billing details:', error);
-      res.status(500).json({ message: "Can't fetch fee types at the moment!" });
-    }
-  });
-};
-
-// Update fee type amount from the billing details for all affected students
-exports.updateFeeTypeAmountForAllStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    const { academicYearId, academicTermId, feeTypeId, newAmount, studentIds } = req.body;
-
-    if (!academicYearId || !academicTermId || !feeTypeId || newAmount == null || !Array.isArray(studentIds) || studentIds.length === 0) {
-      return res.status(400).json({ message: 'Academic year ID, term ID, fee type ID, new amount, and student IDs are required!' });
-    }
+    if (!studentId || isNaN(studentId) || parseInt(studentId, 10) <= 0) return res.status(400).json({ message: 'Valid Student ID is required!' });
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return res.status(400).json({ message: 'Valid amount is required!' });
 
     const transaction = await db.sequelize.transaction();
 
     try {
-      // Fetch all billing details for the given fee type and academic term
-      const billingDetails = await db.BillingDetail.findAll({
-        where: { feeTypeId },
-        include: [
-          {
-            model: db.Billing,
-            where: {
-              academicYearId,
-              academicTermId,
-              studentId: studentIds // Only include the specified students
-            }
-          }
-        ],
-        transaction
-      });
+      const studentIdParsed = parseInt(studentId, 10);
+      const paymentAmount = parseFloat(amount);
 
-      // Update each billing detail and recalculate billing totals
-      const billingUpdates = billingDetails.map(async (detail) => {
-        const oldAmount = detail.amount;
+      // Create a new payment record
+      const payment = await db.Payment.create({ studentId: studentIdParsed, amount: paymentAmount }, { transaction });
 
-        // Update the billing detail amount
-        await detail.update({ amount: newAmount }, { transaction });
-
-        // Recalculate the total fees and remaining amount for the billing record
-        const billing = detail.Billing;
-        const totalFees = billing.totalFees - oldAmount + newAmount;
-        const remainingAmount = billing.remainingAmount - oldAmount + newAmount;
-
-        // Update the billing record
-        await billing.update({ totalFees, remainingAmount }, { transaction });
-
-        return billing;
-      });
-
-      // Wait for all updates to complete
-      const updatedBillings = await Promise.all(billingUpdates);
-
-      await transaction.commit();
-      return res.status(200).json({ updatedBillings });
-    } catch (error) {
-      await transaction.rollback();
-      console.error('Error updating fee amounts:', error);
-      return res.status(500).json({ message: "Can't update fee amounts at the moment!" });
-    }
-  });
-};
-
-// Delete fee type amount from the billing details for all affected students
-exports.deleteFeeTypeFromAllStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    const { academicYearId, academicTermId, feeTypeId, studentIds } = req.body;
-
-    if (!academicYearId || !academicTermId || !feeTypeId || !Array.isArray(studentIds) || studentIds.length === 0) {
-      return res.status(400).json({ message: 'Academic year ID, term ID, fee type ID, and student IDs are required!' });
-    }
-
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      // Fetch all billing details for the given fee type and academic term
-      const billingDetails = await db.BillingDetail.findAll({
-        where: { feeTypeId },
-        include: [
-          {
-            model: db.Billing,
-            where: {
-              academicYearId,
-              academicTermId,
-              studentId: studentIds // Only include the specified students
-            }
-          }
-        ],
-        transaction
-      });
-
-      // Delete each billing detail and recalculate billing totals
-      const billingUpdates = billingDetails.map(async (detail) => {
-        const amountToRemove = detail.amount;
-        const billing = detail.Billing;
-
-        // Delete the billing detail
-        await detail.destroy({ transaction });
-
-        // Recalculate the total fees and remaining amount for the billing record
-        const totalFees = billing.totalFees - amountToRemove;
-        const remainingAmount = billing.remainingAmount - amountToRemove;
-
-        // Update the billing record
-        await billing.update({ totalFees, remainingAmount }, { transaction });
-
-        return billing;
-      });
-
-      // Wait for all updates to complete
-      const updatedBillings = await Promise.all(billingUpdates);
-
-      await transaction.commit();
-      return res.status(200).json({ updatedBillings });
-    } catch (error) {
-      await transaction.rollback();
-      console.error('Error deleting fee type from billing records:', error);
-      return res.status(500).json({ message: "Can't delete fee type from billing records at the moment!" });
-    }
-  });
-};
-
-// Fetch fee summary for all students in a specified academic term and year
-exports.getFeeSummaryForAllStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    const { academicYearId, academicTermId } = req.body;
-
-    if (!academicYearId || !academicTermId) {
-      return res.status(400).json({ message: 'Academic year ID and academic term ID are required!' });
-    }
-
-    try {
+      // Fetch billing records for the student
       const billingRecords = await db.Billing.findAll({
-        where: {
-          academicYearId,
-          academicTermId
-        },
-        include: [
-          { model: db.BillingDetail, as: 'billingDetails' },
-          {
-            model: db.Payment,
-            attributes: ['amount'],
-            required: false,
-            separate: true // To handle payments properly
-          }
-        ]
+        where: { studentId: studentIdParsed },
+        order: [['id', 'ASC']], // Ensure consistent ordering
+        transaction
       });
 
-      if (!billingRecords || billingRecords.length === 0) {
-        return res.status(404).json({ message: 'No billing records found for the given criteria!' });
+      let remainingAmount = paymentAmount;
+
+      for (const billing of billingRecords) {
+        if (remainingAmount <= 0) break;
+
+        const billingRemaining = billing.remainingAmount;
+
+        if (billingRemaining > 0) {
+          const amountToDeduct = Math.min(remainingAmount, billingRemaining);
+          billing.totalPaid += amountToDeduct;
+          billing.remainingAmount -= amountToDeduct;
+          remainingAmount -= amountToDeduct;
+
+          await billing.save({ transaction });
+        }
       }
 
-      const summaries = billingRecords.map(billingRecord => {
-        const totalFees = billingRecord.totalFees;
-        const totalPaid = billingRecord.Payments.reduce((sum, payment) => sum + payment.amount, 0);
-        const remainingAmount = billingRecord.remainingAmount;
-        const feeOwed = totalFees - totalPaid;
-
-        return {
-          studentId: billingRecord.studentId,
-          totalFees,
-          totalPaid,
-          remainingAmount,
-          feeOwed,
-          billingDetails: billingRecord.billingDetails
-        };
-      });
-
-      return res.status(200).json(summaries);
-    } catch (error) {
-      console.error('Error fetching fee summaries:', error);
-      return res.status(500).json({ message: "Can't fetch fee summaries at the moment!" });
-    }
-  });
-};
-
-// Fetch fee summary for a student
-exports.getFeeSummaryForStudent = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    const { studentId, academicYearId, academicTermId } = req.body;
-
-    if (!studentId || !academicYearId || !academicTermId) {
-      return res.status(400).json({ message: 'Student ID, academic year ID, and academic term ID are required!' });
-    }
-
-    try {
-      const billingRecord = await db.Billing.findOne({
-        where: {
-          studentId,
-          academicYearId,
-          academicTermId
-        },
-        include: [
-          { model: db.BillingDetail, as: 'billingDetails' },
-          {
-            model: db.Payment,
-            attributes: ['amount'],
-            required: false,
-            separate: true // To handle payments properly
-          }
-        ]
-      });
-
-      if (!billingRecord) {
-        return res.status(404).json({ message: 'No billing record found for the given criteria!' });
-      }
-
-      const totalFees = billingRecord.totalFees;
-      const totalPaid = billingRecord.Payments.reduce((sum, payment) => sum + payment.amount, 0);
-      const remainingAmount = billingRecord.remainingAmount;
-      const feeOwed = totalFees - totalPaid;
+      // Commit the transaction
+      await transaction.commit();
 
       return res.status(200).json({
-        totalFees,
-        totalPaid,
-        remainingAmount,
-        feeOwed,
-        billingDetails: billingRecord.billingDetails
+        message: 'Payment processed successfully!',
+        payment
       });
     } catch (error) {
-      console.error('Error fetching fee summary:', error);
-      return res.status(500).json({ message: "Can't fetch fee summary at the moment!" });
+      if (transaction) await transaction.rollback();
+      console.error('Error processing payment:', error);
+      return res.status(500).json({ message: "Can't process payment at the moment!" });
     }
   });
 };
@@ -806,88 +750,15 @@ exports.getFeeSummaryForStudent = async (req, res) => {
 
 
 
-// method: { type: DataTypes.ENUM('Cash', 'Card', 'Bank Transfer', 'Mobile Money'), defaultValue: 'Cash', allowNull: false },
 
-// Record a payment
-exports.recordPayment = async (req, res) => {
-  const { studentId, billingId, amount, paymentDate, paymentMethod } = req.body;
 
-  if (!studentId || !billingId || !amount || !paymentDate) {
-    return res.status(400).json({ message: 'Required fields are missing!' });
-  }
 
-  const transaction = await db.sequelize.transaction();
 
-  try {
-    // Create payment record
-    const payment = await db.Payment.create({
-      studentId,
-      billingId,
-      amount,
-      paymentDate,
-      paymentMethod
-    }, { transaction });
 
-    // Update billing record
-    const billingRecord = await db.Billing.findByPk(billingId, { transaction });
-    if (!billingRecord) {
-      throw new Error('Billing record not found!');
-    }
 
-    billingRecord.totalPaid += amount;
-    billingRecord.remainingAmount = billingRecord.totalFees - billingRecord.totalPaid;
 
-    await billingRecord.save({ transaction });
 
-    // Commit transaction
-    await transaction.commit();
-    res.status(200).json({ message: 'Payment recorded successfully!', payment });
-  } catch (error) {
-    // Rollback transaction in case of error
-    await transaction.rollback();
-    res.status(500).json({ message: 'Error recording payment', error });
-  }
-};
 
-const processPayment2 = async (invoiceNumber, studentId, amount) => {
-  const transaction = await db.sequelize.transaction();
-
-  try {
-    // Retrieve the billing record using invoice number and student ID
-    const billing = await db.Billing.findOne({
-      where: { invoiceNumber, studentId },
-      transaction
-    });
-
-    if (!billing) {
-      throw new Error('Billing record not found!');
-    }
-
-    // Update the billing record
-    const newTotalPaid = billing.totalPaid + amount;
-    const newRemainingAmount = billing.totalFees - newTotalPaid;
-
-    await db.Billing.update({
-      totalPaid: newTotalPaid,
-      remainingAmount: newRemainingAmount
-    }, {
-      where: { id: billing.id },
-      transaction
-    });
-
-    // Create the payment record
-    await db.Payment.create({
-      billingId: billing.id,
-      studentId: billing.studentId,
-      amount
-    }, { transaction });
-
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
-};
 
 
 

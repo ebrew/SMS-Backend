@@ -23,4 +23,7 @@ router.put('/end/:id', academicYearController.endAcademicYear);
 // Delete academic year
 router.delete('/delete/:id', academicYearController.deleteAcademicYear);
 
+// Activate a pending academic year
+router.put('/activate/:id', academicYearController.activatePendingAcademicYear);
+
 module.exports = router;

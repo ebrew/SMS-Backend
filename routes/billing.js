@@ -23,24 +23,14 @@ router.get('/bills/class_students/:academicYearId/:academicTermId/:classSessionI
 // Fetch class students billing details for a particular academic year
 router.get('/bills/class_students/:academicYearId/:classSessionId', billingController.classStudentsBillings);
 
+// Calculate total amount owed by a student and check for overpayment
+router.get('/billings/student/owed/:id', billingController.getTotalAmountOwed)
 
+// Calculate total amount owed by class students and check for overpayment
+router.get('/billings/students/owed/:academicYearId/:classSessionId', billingController.classStudentsTotalAmountOwed)
 
+// Process fee payment for a student
+router.post('/payments/student/process', billingController.processFeePayment);
 
-
-
-// Get all fee types with billing details for a specific academic year and term
-router.get('/billing_details/all', billingController.getAllFeeTypesWithBillingDetails)
-
-// Update fee type amount from the billing details for all affected students
-router.put('/billing_details/fee_type/update_amount', billingController.updateFeeTypeAmountForAllStudents)
-
-// Delete fee type from the billing details for all affected students
-router.delete('/billing_details/fee_type/delete', billingController.deleteFeeTypeFromAllStudents)
-
-// Fetch fee summary for all students in a specified academic term and year
-router.get('/billing/fee_summary/students', billingController.getFeeSummaryForAllStudents)
-
-// Fetch fee summary for a student term and year
-router.get('/billing/fee_summary/student', billingController.getFeeSummaryForStudent)
 
 module.exports = router;
