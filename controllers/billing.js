@@ -115,7 +115,6 @@ exports.deleteFeeType = async (req, res) => {
   });
 };
 
-
 // Add fee type to billing records or create new records if not found
 exports.createOrUpdateBillingRecord1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -408,8 +407,6 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
     }
   });
 };
-
-
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
