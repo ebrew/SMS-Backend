@@ -527,9 +527,16 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       let { classSessionId } = req.params;
       classSessionId = parseInt(classSessionId, 10);
 
-      // Fetch academic year and class section
-      const [year, section ] = await Promise.all([
-        db.AcademicYear.findOne({ where: { status: 'Active' } }),
+      // Fetch academic year with its active academic term
+      const [year, section] = await Promise.all([
+        db.AcademicYear.findOne({
+          where: { status: 'Active' },
+          include: {
+            model: db.AcademicTerm,
+            where: { status: 'Active' },
+            attributes: ['name'] // Include any other attributes you need
+          }
+        }),
         db.Section.findByPk(classSessionId, {
           include: {
             model: db.Class,
@@ -614,9 +621,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
         let billingDetails = [];
         let totalFees = parseFloat(totalFeesMap.get(studentId) || 0);
 
-        if (!currentBill) {
-          currentBill = { totalFees: 0, billingDetails: [] };
-        } else {
+        if (currentBill) {
           billingDetails = currentBill.BillingDetails.map(detail => ({
             id: detail.id,
             feeTypeId: detail.FeeType.id,
@@ -638,9 +643,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          // currentBill: billingDetails,
-          currentBill: currentBill.totalFees,
-          payable: currentBill.totalFees + totalAmountOwed
+          currentBill: currentBill ? currentBill.totalFees : 0,
+          payable: (currentBill ? currentBill.totalFees : 0) + totalAmountOwed
         };
 
         if (totalAmountOwed > 0) {
@@ -656,8 +660,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       classStudents.sort((a, b) => b.previousOwed - a.previousOwed);
 
       const result = {
-        academicYear: classStudents ? classStudents[0].AcademicYear.name : 'N/A',
-        academicTerm: classStudents ? classStudents[0].AcademicTerm.name : 'N/A',
+        academicYear: year.name || 'N/A',
+        academicTerm: year.AcademicTerms.length > 0 ? year.AcademicTerms[0].name : 'N/A', 
         classSession: `${section.Class.name} (${section.name})`,
         classStudents
       }
@@ -669,6 +673,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
     }
   });
 };
+
+
 
 // Process fee payment for a student
 exports.processFeePayment = async (req, res) => {
