@@ -491,8 +491,8 @@ exports.getTotalAmountOwed = async (req, res) => {
       const totalAmountOwed = totalFees - totalPayments;
 
       const response = {
-        academicYear: studentClass.Section.Class.AcademicYear ? studentClass.Section.Class.AcademicYear.name : 'N/A',
-        academicTerm: studentClass.Section.Class.AcademicTerm ? studentClass.Section.Class.AcademicTerm.name : 'N/A',
+        academicYear: currentBill.AcademicYear ? currentBill.AcademicYear.name : 'N/A',
+        academicTerm: currentBill.AcademicTerm ? currentBill.AcademicTerm.name : 'N/A',
         classSession: `${studentClass.Section.Class.name} (${studentClass.Section.name})`,
         studentId: studentClass.Student.id,
         fullName: studentClass.Student.middleName
