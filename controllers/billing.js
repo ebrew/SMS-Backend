@@ -500,8 +500,8 @@ exports.getTotalAmountOwed = async (req, res) => {
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
         currentBill: billingDetails,
-        totalFees: currentBill ? currentBill.totalFees : 0,
-        payable: currentBill ? currentBill.totalFees : 0 + totalAmountOwed
+        currentBillTotal: currentBill ? currentBill.totalFees : 0,
+        payable: currentBill.totalFees + totalAmountOwed
       };
 
       if (totalAmountOwed > 0) {
