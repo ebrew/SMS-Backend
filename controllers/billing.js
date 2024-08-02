@@ -656,8 +656,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       classStudents.sort((a, b) => b.previousOwed - a.previousOwed);
 
       const result = {
-        academicYear: currentBill.AcademicYear ? currentBill.AcademicYear.name : 'N/A',
-        academicTerm: currentBill.AcademicTerm ? currentBill.AcademicTerm.name : 'N/A',
+        academicYear: classStudents ? classStudents[0].AcademicYear.name : 'N/A',
+        academicTerm: classStudents ? classStudents[0].AcademicTerm.name : 'N/A',
         classSession: `${section.Class.name} (${section.name})`,
         classStudents
       }
