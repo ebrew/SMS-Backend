@@ -600,7 +600,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           where: { studentId: studentId },
           include: [
             { model: db.AcademicTerm, where: { status: 'Active' } },
-            { model: db.AcademicYear },
+            { model: db.AcademicYear, where: { status: 'Active' } },
             {
               model: db.BillingDetail,
               include: {
@@ -639,7 +639,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
           // currentBill: billingDetails,
-          totalFees: currentBill.totalFees,
+          currentBill: currentBill.totalFees,
           payable: currentBill.totalFees + totalAmountOwed
         };
 
@@ -656,8 +656,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       classStudents.sort((a, b) => b.previousOwed - a.previousOwed);
 
       const result = {
-        academicYear: section.Class.AcademicYear ? section.Class.AcademicYear.name : 'N/A',
-        academicTerm: section.Class.AcademicTerm ? section.Class.AcademicTerm.name : 'N/A',
+        academicYear: currentBill.AcademicYear ? currentBill.AcademicYear.name : 'N/A',
+        academicTerm: currentBill.AcademicTerm ? currentBill.AcademicTerm.name : 'N/A',
         classSession: `${section.Class.name} (${section.name})`,
         classStudents
       }
