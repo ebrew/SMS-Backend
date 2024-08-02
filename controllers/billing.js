@@ -454,7 +454,8 @@ exports.getTotalAmountOwed = async (req, res) => {
           name: detail.FeeType.name,
           amount: detail.amount
         }));
-        totalFees += currentBill.totalFees;
+        // Use currentBill.totalFees directly
+        totalFees = currentBill.totalFees;
       }
 
       // Fetch student's class details for the current academic year
@@ -497,14 +498,14 @@ exports.getTotalAmountOwed = async (req, res) => {
         academicYear: studentClass.Section.Class.AcademicYear ? studentClass.Section.Class.AcademicYear.name : 'N/A',
         academicTerm: studentClass.Section.Class.AcademicTerm ? studentClass.Section.Class.AcademicTerm.name : 'N/A',
         classSession: `${studentClass.Section.Class.name} (${studentClass.Section.name})`,
-        studentId: studentClass.studentId,
+        studentId: studentClass.Student.id,
         fullName: studentClass.Student.middleName
           ? `${studentClass.Student.firstName} ${studentClass.Student.middleName} ${studentClass.Student.lastName}`
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
         billing: billingDetails,
         totalFees: currentBill ? currentBill.totalFees : 0,
-        total: totalFees + totalAmountOwed
+        total: currentBill ? currentBill.totalFees : 0 + totalAmountOwed
       };
 
       if (totalAmountOwed > 0) {
@@ -641,9 +642,9 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          billing: billingDetails,
+          currentBill: billingDetails,
           totalFees: currentBill.totalFees,
-          total: totalFees + totalAmountOwed
+          total: currentBill.totalFees + totalAmountOwed
         };
 
         if (totalAmountOwed > 0) {
