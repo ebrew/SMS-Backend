@@ -27,10 +27,9 @@ router.get('/bills/class_students/:academicYearId/:classSessionId', billingContr
 router.get('/billings/student/owed/:id', billingController.getTotalAmountOwed)
 
 // Calculate total amount owed by class students and check for overpayment
-router.get('/billings/students/owed/:academicYearId/:classSessionId', billingController.classStudentsTotalAmountOwed)
+router.get('/billings/students/owed/:classSessionId', billingController.classStudentsTotalAmountOwed)
 
 // Process fee payment for a student
 router.post('/payments/student/process', billingController.processFeePayment);
-
 
 module.exports = router;

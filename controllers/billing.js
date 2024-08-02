@@ -273,7 +273,7 @@ exports.classStudentsBillings = async (req, res) => {
 
     try {
       let { academicYearId, academicTermId, classSessionId } = req.params;
-      
+
       // Convert academicTermId to null if not provided (for year-based billing)
       academicTermId = academicTermId ? parseInt(academicTermId, 10) : null;
       academicYearId = parseInt(academicYearId, 10);
@@ -424,6 +424,11 @@ exports.getTotalAmountOwed = async (req, res) => {
         raw: true
       });
 
+      let totalFees = 0;
+      if (totalFeesResult.length > 0) {
+        totalFees = parseFloat(totalFeesResult[0].totalFees) || 0;
+      }
+
       // Fetch the current bill for the active academic term
       const currentBill = await db.Billing.findOne({
         where: { studentId: studentIdParsed },
@@ -441,23 +446,20 @@ exports.getTotalAmountOwed = async (req, res) => {
       });
 
       let billingDetails = [];
-      let totalFees = parseFloat(totalFeesResult[0].totalFees) || 0;
 
-      if (!currentBill) {
-        currentBill = { totalFees: 0, BillingDetails: [] };
-        totalFees += currentBill.totalFees;
-      } else {
+      if (currentBill) {
         billingDetails = currentBill.BillingDetails.map(detail => ({
           id: detail.id,
           feeTypeId: detail.FeeType.id,
           name: detail.FeeType.name,
           amount: detail.amount
         }));
+        totalFees += currentBill.totalFees;
       }
 
       // Fetch student's class details for the current academic year
       const studentClass = await db.ClassStudent.findOne({
-        where: { studentId: studentIdParsed, academicYearId: currentBill.academicYearId },
+        where: { studentId: studentIdParsed, academicYearId: currentBill ? currentBill.academicYearId : null },
         include: [
           {
             model: db.Section,
@@ -484,13 +486,16 @@ exports.getTotalAmountOwed = async (req, res) => {
         raw: true
       });
 
-      const totalPayments = parseFloat(totalPaymentsResult[0].totalPayments) || 0;
+      let totalPayments = 0;
+      if (totalPaymentsResult.length > 0) {
+        totalPayments = parseFloat(totalPaymentsResult[0].totalPayments) || 0;
+      }
 
       const totalAmountOwed = totalFees - totalPayments;
 
       const response = {
-        academicYear: studentClass.Section.Class.AcademicYear.name,
-        academicTerm: studentClass.Section.Class.AcademicTerm.name,
+        academicYear: studentClass.Section.Class.AcademicYear ? studentClass.Section.Class.AcademicYear.name : 'N/A',
+        academicTerm: studentClass.Section.Class.AcademicTerm ? studentClass.Section.Class.AcademicTerm.name : 'N/A',
         classSession: `${studentClass.Section.Class.name} (${studentClass.Section.name})`,
         studentId: studentClass.studentId,
         fullName: studentClass.Student.middleName
@@ -498,11 +503,16 @@ exports.getTotalAmountOwed = async (req, res) => {
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
         billing: billingDetails,
-        totalFees: currentBill.totalFees,
+        totalFees: currentBill ? currentBill.totalFees : 0,
         total: totalFees + totalAmountOwed
       };
 
-      totalAmountOwed > 0 ? response.previousOwed = totalAmountOwed : response.previousBalance = totalAmountOwed;
+      if (totalAmountOwed > 0) {
+        response.previousOwed = totalAmountOwed;
+      } else {
+        response.previousBalance = totalAmountOwed;
+      }
+
       return res.status(200).json(response);
     } catch (error) {
       console.error('Error calculating total amount owed:', error);
@@ -517,21 +527,24 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      let { academicYearId, classSessionId } = req.params;
-
-      academicYearId = parseInt(academicYearId, 10);
+      let { classSessionId } = req.params;
       classSessionId = parseInt(classSessionId, 10);
 
       // Fetch academic year and class section
-      const year = await db.AcademicYear.findByPk(academicYearId);
-      const section = await db.Section.findByPk(classSessionId, {
-        include: {
-          model: db.Class,
-          attributes: ['name'],
-        },
-      });
+      const [year, section] = await Promise.all([
+        db.AcademicYear.findOne({ where: { status: 'Active' } }),
+        db.Section.findByPk(classSessionId, {
+          include: {
+            model: db.Class,
+            attributes: ['name'],
+          },
+        })
+      ]);
+
       if (!section) return res.status(400).json({ message: "Class section not found!" });
       if (!year) return res.status(400).json({ message: "Academic year not found!" });
+
+      const academicYearId = year.id;
 
       // Fetching class students
       const students = await db.ClassStudent.findAll({
@@ -547,64 +560,110 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
 
       const studentIds = students.map(student => student.Student.id);
 
-      // Fetch total fees from all billing records for the students
-      const totalFeesResult = await db.Billing.findAll({
-        where: { studentId: studentIds },
-        attributes: [
-          'studentId',
-          [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
-        ],
-        group: ['studentId'],
-        raw: true
-      });
-
-      // Fetch total payments made by the students
-      const totalPaymentsResult = await db.Payment.findAll({
-        where: { studentId: studentIds },
-        attributes: [
-          'studentId',
-          [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPayments']
-        ],
-        group: ['studentId'],
-        raw: true
-      });
+      // Fetch total fees from all billing records for the students excluding 'Pending' and 'Active' terms
+      const [totalFeesResult, totalPaymentsResult] = await Promise.all([
+        db.Billing.findAll({
+          where: { studentId: studentIds },
+          include: {
+            model: db.AcademicTerm,
+            where: {
+              status: { [Op.notIn]: ['Pending', 'Active'] }
+            },
+            attributes: [] // Exclude term attributes to optimize query
+          },
+          attributes: [
+            'studentId',
+            [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
+          ],
+          group: ['studentId'],
+          raw: true
+        }),
+        db.Payment.findAll({
+          where: { studentId: studentIds },
+          attributes: [
+            'studentId',
+            [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPayments']
+          ],
+          group: ['studentId'],
+          raw: true
+        })
+      ]);
 
       // Create maps for quick lookup
       const totalFeesMap = new Map(totalFeesResult.map(item => [item.studentId, item.totalFees]));
       const totalPaymentsMap = new Map(totalPaymentsResult.map(item => [item.studentId, item.totalPayments]));
 
-      const result = [];
+      const classStudents = [];
 
-      students.forEach(student => {
+      for (const student of students) {
         const studentId = student.Student.id;
-        const totalFees = parseFloat(totalFeesMap.get(studentId) || 0);
-        const totalPayments = parseFloat(totalPaymentsMap.get(studentId) || 0);
 
-        // Calculate total amount owed and determine overpayment
-        const isOverpaid = totalPayments > totalFees;
-        let totalAmountOwed = 0;
-        let overpaidAmount = 0;
+        // Fetch the current bill for the active academic term
+        const currentBill = await db.Billing.findOne({
+          where: { studentId: studentId },
+          include: [
+            { model: db.AcademicTerm, where: { status: 'Active' } },
+            { model: db.AcademicYear },
+            {
+              model: db.BillingDetail,
+              include: {
+                model: db.FeeType,
+                attributes: ['id', 'name']
+              }
+            }
+          ]
+        });
 
-        if (isOverpaid) {
-          overpaidAmount = totalPayments - totalFees;
+        let billingDetails = [];
+        let totalFees = parseFloat(totalFeesMap.get(studentId) || 0);
+
+        if (!currentBill) {
+          currentBill = { totalFees: 0, BillingDetails: [] };
         } else {
-          totalAmountOwed = totalFees - totalPayments;
+          billingDetails = currentBill.BillingDetails.map(detail => ({
+            id: detail.id,
+            feeTypeId: detail.FeeType.id,
+            name: detail.FeeType.name,
+            amount: detail.amount
+          }));
+          totalFees += currentBill.totalFees;
         }
 
-        result.push({
-          studentId,
-          firstName: student.Student.firstName,
-          middleName: student.Student.middleName,
-          lastName: student.Student.lastName,
-          passportPhoto: student.Student.passportPhoto,
-          isOverpaid: isOverpaid,
-          totalOwed: totalAmountOwed,
-          overpaidAmount: overpaidAmount
-        });
-      });
+        // Fetch total payments made by the student
+        const totalPayments = parseFloat(totalPaymentsMap.get(studentId) || 0);
+
+        // Calculate total amount owed
+        const totalAmountOwed = totalFees - totalPayments;
+
+        const response = {
+          studentId: student.Student.id,
+          fullName: student.Student.middleName
+            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+            : `${student.Student.firstName} ${student.Student.lastName}`,
+          photo: student.Student.passportPhoto,
+          billing: billingDetails,
+          totalFees: currentBill.totalFees,
+          total: totalFees + totalAmountOwed
+        };
+
+        if (totalAmountOwed > 0) {
+          response.previousOwed = totalAmountOwed;
+        } else {
+          response.previousBalance = totalAmountOwed;
+        }
+
+        classStudents.push(response);
+      }
 
       // Sort students based on the amount they owe in descending order
-      result.sort((a, b) => b.totalOwed - a.totalOwed);
+      classStudents.sort((a, b) => b.previousOwed - a.previousOwed);
+
+      const result = {
+        academicYear: section.Class.AcademicYear ? section.Class.AcademicYear.name : 'N/A',
+        academicTerm: section.Class.AcademicTerm ? section.Class.AcademicTerm.name : 'N/A',
+        classSession: `${section.Class.name} (${section.name})`,
+        classStudents
+      }
 
       return res.status(200).json(result);
     } catch (error) {

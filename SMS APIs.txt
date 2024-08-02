@@ -500,7 +500,7 @@ Method: GET
 Authorization: Bearer <token from login>
 
 87. // Calculate total amount owed by class students and check for overpayment
-API: << server >>/api/v1/billings/students/owed/academicYearId/classSessionId
+API: << server >>/api/v1/billings/students/owed/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
