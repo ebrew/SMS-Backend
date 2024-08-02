@@ -434,7 +434,7 @@ exports.getTotalAmountOwed = async (req, res) => {
         where: { studentId: studentIdParsed },
         include: [
           { model: db.AcademicTerm, where: { status: 'Active' } },
-          { model: db.AcademicYear },
+          { model: db.AcademicYear, where: { status: 'Active' } },
           {
             model: db.BillingDetail,
             include: {
@@ -454,8 +454,6 @@ exports.getTotalAmountOwed = async (req, res) => {
           name: detail.FeeType.name,
           amount: detail.amount
         }));
-        // Use currentBill.totalFees directly
-        totalFees = currentBill.totalFees;
       }
 
       // Fetch student's class details for the current academic year
@@ -474,9 +472,7 @@ exports.getTotalAmountOwed = async (req, res) => {
         ]
       });
 
-      if (!studentClass) {
-        return res.status(400).json({ message: 'Student class information not found' });
-      }
+      if (!studentClass) return res.status(400).json({ message: 'Student class information not found' });
 
       // Fetch total payments made by the student
       const totalPaymentsResult = await db.Payment.findAll({
@@ -503,9 +499,9 @@ exports.getTotalAmountOwed = async (req, res) => {
           ? `${studentClass.Student.firstName} ${studentClass.Student.middleName} ${studentClass.Student.lastName}`
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
-        billing: billingDetails,
+        currentBill: billingDetails,
         totalFees: currentBill ? currentBill.totalFees : 0,
-        total: currentBill ? currentBill.totalFees : 0 + totalAmountOwed
+        payable: currentBill ? currentBill.totalFees : 0 + totalAmountOwed
       };
 
       if (totalAmountOwed > 0) {
@@ -532,8 +528,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       classSessionId = parseInt(classSessionId, 10);
 
       // Fetch academic year and class section
-      const [year, section] = await Promise.all([
-        db.AcademicYear.findOne({ where: { status: 'Active' } }),
+      const section = await Promise.all([
+        // db.AcademicYear.findOne({ where: { status: 'Active' } }),
         db.Section.findByPk(classSessionId, {
           include: {
             model: db.Class,
@@ -543,7 +539,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       ]);
 
       if (!section) return res.status(400).json({ message: "Class section not found!" });
-      if (!year) return res.status(400).json({ message: "Academic year not found!" });
+      // if (!year) return res.status(400).json({ message: "No active academic year found!" });
 
       const academicYearId = year.id;
 
@@ -619,7 +615,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
         let totalFees = parseFloat(totalFeesMap.get(studentId) || 0);
 
         if (!currentBill) {
-          currentBill = { totalFees: 0, BillingDetails: [] };
+          currentBill = { totalFees: 0, billingDetails: [] };
         } else {
           billingDetails = currentBill.BillingDetails.map(detail => ({
             id: detail.id,
@@ -642,9 +638,9 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          currentBill: billingDetails,
+          // currentBill: billingDetails,
           totalFees: currentBill.totalFees,
-          total: currentBill.totalFees + totalAmountOwed
+          payable: currentBill.totalFees + totalAmountOwed
         };
 
         if (totalAmountOwed > 0) {
