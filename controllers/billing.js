@@ -528,8 +528,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       classSessionId = parseInt(classSessionId, 10);
 
       // Fetch academic year and class section
-      const section = await Promise.all([
-        // db.AcademicYear.findOne({ where: { status: 'Active' } }),
+      const [year, section ] = await Promise.all([
+        db.AcademicYear.findOne({ where: { status: 'Active' } }),
         db.Section.findByPk(classSessionId, {
           include: {
             model: db.Class,
@@ -539,7 +539,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       ]);
 
       if (!section) return res.status(400).json({ message: "Class section not found!" });
-      // if (!year) return res.status(400).json({ message: "No active academic year found!" });
+      if (!year) return res.status(400).json({ message: "No active academic year found!" });
 
       const academicYearId = year.id;
 
