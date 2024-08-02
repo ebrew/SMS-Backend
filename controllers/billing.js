@@ -434,16 +434,14 @@ exports.getTotalAmountOwed = async (req, res) => {
             model: db.BillingDetail,
             include: {
               model: db.FeeType,
-              attributes: ['name']
+              attributes: ['id', 'name']
             }
           }
         ]
       });
 
-      if (!currentBill) {
-        return res.status(400).json({ message: 'No bill for the active academic term' });
-      }
-
+      if (!currentBill) return res.status(400).json({ message: 'No bill for the active academic term' });
+      
       // Fetch student's class details for the current academic year
       const studentClass = await db.ClassStudent.findOne({
         where: { studentId: studentIdParsed, academicYearId: currentBill.academicYearId },
@@ -479,6 +477,13 @@ exports.getTotalAmountOwed = async (req, res) => {
 
       const totalAmountOwed = totalFees - totalPayments;
 
+      const billingDetails = currentBill.BillingDetails.map(detail => ({
+        id: detail.id,
+        feeTypeId: detail.FeeType.id,
+        name: detail.FeeType.name,
+        amount: detail.amount
+      }));
+
       const response = {
         academicYear: studentClass.Section.Class.AcademicYear.name,
         academicTerm: studentClass.Section.Class.AcademicTerm.name,
@@ -488,7 +493,7 @@ exports.getTotalAmountOwed = async (req, res) => {
           ? `${studentClass.Student.firstName} ${studentClass.Student.middleName} ${studentClass.Student.lastName}`
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
-        billing: currentBill.BillingDetails,
+        billing: billingDetails,
         totalFees: currentBill.totalFees,
         total: totalFees + totalAmountOwed
       };
@@ -501,6 +506,7 @@ exports.getTotalAmountOwed = async (req, res) => {
     }
   });
 };
+
 
 // Calculate total amount owed by class students and check for overpayment
 exports.classStudentsTotalAmountOwed = async (req, res) => {
