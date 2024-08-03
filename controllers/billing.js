@@ -565,37 +565,25 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       const studentIds = students.map(student => student.Student.id);
 
       // Fetch total fees from all billing records for the students excluding 'Pending' and 'Active' terms
-      const [totalFeesResult, totalPaymentsResult] = await Promise.all([
-        db.Billing.findAll({
-          where: { studentId: studentIds },
-          include: {
-            model: db.AcademicTerm,
-            where: {
-              status: { [Op.notIn]: ['Pending', 'Active'] }
-            },
-            attributes: [] // Exclude term attributes to optimize query
+      const totalFeesResult = await db.Billing.findAll({
+        where: { studentId: studentIds },
+        include: {
+          model: db.AcademicTerm,
+          where: {
+            status: { [Op.notIn]: ['Pending', 'Active'] }
           },
-          attributes: [
-            'studentId',
-            [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
-          ],
-          group: ['studentId'],
-          raw: true
-        }),
-        db.Payment.findAll({
-          where: { studentId: studentIds },
-          attributes: [
-            'studentId',
-            [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'totalPayments']
-          ],
-          group: ['studentId'],
-          raw: true
-        })
-      ]);
+          attributes: [] // Exclude term attributes to optimize query
+        },
+        attributes: [
+          'studentId',
+          [db.sequelize.fn('SUM', db.sequelize.col('remainingAmount')), 'totalFees']
+        ],
+        group: ['studentId'],
+        raw: true
+      })
 
       // Create maps for quick lookup
       const totalFeesMap = new Map(totalFeesResult.map(item => [item.studentId, item.totalFees]));
-      const totalPaymentsMap = new Map(totalPaymentsResult.map(item => [item.studentId, item.totalPayments]));
 
       const classStudents = [];
 
@@ -628,14 +616,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             name: detail.FeeType.name,
             amount: detail.amount
           }));
-          totalFees += currentBill.totalFees;
         }
-
-        // Fetch total payments made by the student
-        const totalPayments = parseFloat(totalPaymentsMap.get(studentId) || 0);
-
-        // Calculate total amount owed
-        const totalAmountOwed = totalFees - totalPayments;
 
         const response = {
           studentId: student.Student.id,
@@ -643,14 +624,14 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
-          currentBill: currentBill ? currentBill.totalFees : 0,
-          payable: (currentBill ? currentBill.totalFees : 0) + totalAmountOwed
+          currentBill: currentBill ? currentBill.remainingAmount : 0,
+          payable: (currentBill ? currentBill.remainingAmount : 0) + totalFees
         };
 
-        if (totalAmountOwed > 0) {
-          response.previousOwed = totalAmountOwed;
+        if (totalFees > 0) {
+          response.previousOwed = totalFees;
         } else {
-          response.previousBalance = totalAmountOwed;
+          response.previousBalance = totalFees;
         }
 
         classStudents.push(response);
