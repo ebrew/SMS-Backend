@@ -411,6 +411,13 @@ exports.getTotalAmountOwed = async (req, res) => {
       // Fetch total fees, total payments, and overpaid amounts in one query
       const billingSummary = await db.Billing.findAll({
         where: { studentId: studentIdParsed },
+        include: {
+          model: db.AcademicTerm,
+          where: {
+            status: { [Op.notIn]: ['Pending', 'Active'] }
+          },
+          attributes: [] // Exclude term attributes to optimize query
+        },
         attributes: [
           [db.sequelize.fn('SUM', db.sequelize.col('remainingAmount')), 'totalFees'],
           [db.sequelize.fn('SUM', db.sequelize.col('totalPaid')), 'totalPayments'],
@@ -475,9 +482,6 @@ exports.getTotalAmountOwed = async (req, res) => {
 
       if (!studentClass) return res.status(400).json({ message: 'Student class information not found' });
 
-      // // Calculate total amount owed
-      // const totalAmountOwed = totalFees - totalPayments;
-
       const response = {
         academicYear: currentBill?.AcademicYear?.name || 'N/A',
         academicTerm: currentBill?.AcademicTerm?.name || 'N/A',
@@ -488,7 +492,7 @@ exports.getTotalAmountOwed = async (req, res) => {
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
         currentBill: billingDetails,
-        currentBillTotal: currentBill ? currentBill.remainingAmount : 0,
+        currentBillTotal: currentBill ? currentBill.totalFees : 0,
         previousOwed: totalFees,
         overPaid: totalOverpaid,
         // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid,
@@ -617,7 +621,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           photo: student.Student.passportPhoto,
           previousOwed: totalFees,
           overPaid: totalOverpaid,
-          currentBill: currentBill ? currentBill.remainingAmount : 0,
+          currentBill: currentBill ? currentBill.totalFees : 0,
           // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid
         };
 
