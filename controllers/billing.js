@@ -475,8 +475,8 @@ exports.getTotalAmountOwed = async (req, res) => {
 
       if (!studentClass) return res.status(400).json({ message: 'Student class information not found' });
 
-      // Calculate total amount owed
-      const totalAmountOwed = totalFees - totalPayments;
+      // // Calculate total amount owed
+      // const totalAmountOwed = totalFees - totalPayments;
 
       const response = {
         academicYear: currentBill?.AcademicYear?.name || 'N/A',
@@ -489,15 +489,10 @@ exports.getTotalAmountOwed = async (req, res) => {
         photo: studentClass.Student.passportPhoto,
         currentBill: billingDetails,
         currentBillTotal: currentBill ? currentBill.remainingAmount : 0,
-        payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid,
-        overpaid: totalOverpaid
+        previousOwed: totalFees,
+        overPaid: totalOverpaid,
+        // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid,
       };
-
-      if (totalAmountOwed > 0) {
-        response.previousOwed = totalAmountOwed;
-      } else {
-        response.previousBalance = totalAmountOwed;
-      }
 
       return res.status(200).json(response);
     } catch (error) {
@@ -567,7 +562,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           'studentId',
           [db.sequelize.fn('SUM', db.sequelize.col('remainingAmount')), 'totalFees'],
           [db.sequelize.fn('SUM', db.sequelize.col('totalPaid')), 'totalPayments'],
-          [db.sequelize.fn('SUM', db.sequelize.col('overpaid')), 'totalOverpaid']
+          [db.sequelize.fn('SUM', db.sequelize.col('overPaid')), 'totalOverpaid']
         ],
         group: ['studentId'],
         raw: true
@@ -614,8 +609,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           totalOverpaid += currentBill.overPaid
         }
 
-        // Calculate total amount owed
-        const totalAmountOwed = totalFees - totalPayments;
+        // // Calculate total amount owed
+        // const totalAmountOwed = totalFees - totalPayments;
 
         const response = {
           studentId: student.Student.id,
@@ -623,17 +618,11 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
           photo: student.Student.passportPhoto,
+          previousOwed: totalFees,
+          overPaid: totalOverpaid,
           currentBill: currentBill ? currentBill.remainingAmount : 0,
-          payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid
+          // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid
         };
-
-        if (totalAmountOwed > 0) {
-          response.previousOwed = totalAmountOwed;
-        } else {
-          response.previousBalance = totalAmountOwed;
-        }
-
-        response.overpaid = totalOverpaid;
 
         classStudents.push(response);
       }
