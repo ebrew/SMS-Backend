@@ -495,7 +495,7 @@ exports.getTotalAmountOwed = async (req, res) => {
         currentBillTotal: currentBill ? currentBill.totalFees : 0,
         previousOwed: totalFees,
         overPaid: totalOverpaid,
-        payable: (currentBill ? currentBill.totalFees : 0) + totalFees - totalOverpaid
+        payable: (currentBill ? currentBill.remainingAmount : 0) + totalFees - totalOverpaid
       };
 
       return res.status(200).json(response);
@@ -621,8 +621,8 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           photo: student.Student.passportPhoto,
           previousOwed: totalFees,
           overPaid: totalOverpaid,
-          currentBill: currentBill ? currentBill.totalFees : 0,
-          payable: (currentBill ? currentBill.totalFees : 0) + totalFees - totalOverpaid
+          currentBill: currentBill ? currentBill.remainingAmount : 0,
+          payable: (currentBill ? currentBill.remainingAmount : 0) + totalFees - totalOverpaid
         };
 
         classStudents.push(response);
