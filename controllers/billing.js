@@ -495,7 +495,7 @@ exports.getTotalAmountOwed = async (req, res) => {
         currentBillTotal: currentBill ? currentBill.totalFees : 0,
         previousOwed: totalFees,
         overPaid: totalOverpaid,
-        // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid,
+        payable: (currentBill ? currentBill.totalFees : 0) + totalFees - overPaid
       };
 
       return res.status(200).json(response);
@@ -622,14 +622,14 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           previousOwed: totalFees,
           overPaid: totalOverpaid,
           currentBill: currentBill ? currentBill.totalFees : 0,
-          // payable: (currentBill ? currentBill.remainingAmount : 0) + totalAmountOwed - totalOverpaid
+          payable: (currentBill ? currentBill.totalFees : 0) + totalFees - overPaid
         };
 
         classStudents.push(response);
       }
 
       // Sort students based on the amount they owe in descending order
-      classStudents.sort((a, b) => b.previousOwed - a.previousOwed);
+      classStudents.sort((a, b) => b.payable - a.payable);
 
       const result = {
         academicYear: year.name || 'N/A',
