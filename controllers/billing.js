@@ -609,9 +609,6 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           totalOverpaid += currentBill.overPaid
         }
 
-        // // Calculate total amount owed
-        // const totalAmountOwed = totalFees - totalPayments;
-
         const response = {
           studentId: student.Student.id,
           fullName: student.Student.middleName
@@ -668,6 +665,13 @@ exports.processFeePayment = async (req, res) => {
       const billingRecords = await db.Billing.findAll({
         where: { studentId: studentIdParsed },
         order: [['id', 'ASC']], // Ensure consistent ordering
+        include: {
+          model: db.AcademicTerm,
+          where: {
+            status: { [Op.notIn]: ['Pending'] }
+          },
+          attributes: [] // Exclude term attributes to optimize query
+        },
         transaction
       });
 
@@ -697,7 +701,7 @@ exports.processFeePayment = async (req, res) => {
 
       // Update all billing records to set overpaid to 0 except the last one
       const lastBilling = billingRecords[billingRecords.length - 1];
-      updatePromises.push(lastBilling.update({ overpaid: overpaidAmount }, { transaction }));
+      updatePromises.push(lastBilling.update({ overPaid: overpaidAmount }, { transaction }));
 
       for (const billing of billingRecords.slice(0, -1)) {
         updatePromises.push(billing.update({ overpaid: 0 }, { transaction }));
