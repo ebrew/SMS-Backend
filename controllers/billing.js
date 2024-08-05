@@ -685,13 +685,13 @@ exports.processFeePayment = async (req, res) => {
       // Fetch billing records for the student
       const billingRecords = await db.Billing.findAll({
         where: { studentId: studentIdParsed },
-        order: [['id', 'ASC']], // Ensure consistent ordering
+        order: [['id', 'ASC']],
         include: {
           model: db.AcademicTerm,
           where: {
             status: { [Op.notIn]: ['Pending'] }
           },
-          attributes: [] // Exclude term attributes to optimize query
+          attributes: []
         },
         transaction
       });
@@ -702,63 +702,54 @@ exports.processFeePayment = async (req, res) => {
       }
 
       let remainingAmount = paymentAmount;
-      const updatePromises = [];
 
-      // Iterate through billing records and apply payments
-      for (const billing of billingRecords) {
-        if (remainingAmount <= 0) break;
+      // Create an array to batch update the billing records
+      const billingUpdates = billingRecords.map((billing, index) => {
+        if (remainingAmount <= 0) return null;
 
         const billingRemaining = billing.remainingAmount;
 
         if (billingRemaining > 0) {
-          const amountToDeduct = Math.min(remainingAmount, billingRemaining); // How much of the payment should be applied
+          const amountToDeduct = Math.min(remainingAmount, billingRemaining);
           billing.totalPaid += amountToDeduct;
           billing.remainingAmount -= amountToDeduct;
           remainingAmount -= amountToDeduct;
 
-          updatePromises.push(billing.save({ transaction }));
+          return billing.save({ transaction });
         }
-      }
+        return null;
+      }).filter(update => update !== null);
 
-      // If there's remaining amount after covering all dues, it's an overpayment
+      // Handle overpayment
       if (remainingAmount > 0) {
         const lastBilling = billingRecords[billingRecords.length - 1];
-        lastBilling.overPaid += remainingAmount; // Add new overpaid amount to existing one
-        updatePromises.push(lastBilling.save({ transaction }));
+        lastBilling.overPaid += remainingAmount;
 
-        // Set all other billing records' overPaid to 0 in bulk
+        billingUpdates.push(lastBilling.save({ transaction }));
+
+        // Set all other billing records' overPaid to 0
         const otherBillings = billingRecords.slice(0, -1).map(billing => {
-          return { id: billing.id, studentId: billing.studentId, overPaid: 0 };
+          billing.overPaid = 0;
+          return billing.save({ transaction });
         });
-
-        if (otherBillings.length > 0) {
-          updatePromises.push(db.Billing.bulkCreate(otherBillings, {
-            updateOnDuplicate: ['overPaid'],
-            transaction
-          }));
-        }
+        billingUpdates.push(...otherBillings);
       } else {
-        // Ensure all billing records' overPaid are set to 0 if there's no overpayment
-        const otherBillings = billingRecords.map(billing => {
-          return { id: billing.id, studentId: billing.studentId, overPaid: 0 };
+        // Set all billing records' overPaid to 0 if no overpayment
+        const zeroOverpaidBillings = billingRecords.map(billing => {
+          billing.overPaid = 0;
+          return billing.save({ transaction });
         });
-
-        if (otherBillings.length > 0) {
-          updatePromises.push(db.Billing.bulkCreate(otherBillings, {
-            updateOnDuplicate: ['overPaid'],
-            transaction
-          }));
-        }
+        billingUpdates.push(...zeroOverpaidBillings);
       }
 
       // Commit the transaction and wait for all updates to finish
-      await Promise.all(updatePromises);
+      await Promise.all(billingUpdates);
       await transaction.commit();
 
       return res.status(200).json({
         message: 'Payment processed successfully!',
         payment,
-        overpaidAmount: remainingAmount
+        overpaidAmount: paymentAmount - remainingAmount
       });
     } catch (error) {
       if (transaction) await transaction.rollback();
@@ -767,4 +758,6 @@ exports.processFeePayment = async (req, res) => {
     }
   });
 };
+
+
 
