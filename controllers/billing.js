@@ -426,7 +426,7 @@ exports.getTotalAmountOwed = async (req, res) => {
 
       let totalFees = 0;
       if (totalFeesResult.length > 0) {
-        totalFees = parseFloat(totalFeesResult[0].totalFees) || 0;
+        totalFees = parseFloat(totalFeesResult[0].remainingAmount) || 0;
       }
 
       // Fetch the current bill for the active academic term
@@ -500,8 +500,8 @@ exports.getTotalAmountOwed = async (req, res) => {
           : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
         photo: studentClass.Student.passportPhoto,
         currentBill: billingDetails,
-        currentBillTotal: currentBill ? currentBill.totalFees : 0,
-        payable: currentBill.totalFees + totalAmountOwed
+        currentBillTotal: currentBill ? currentBill.remainingAmount : 0,
+        payable: currentBill.remainingAmount + totalAmountOwed
       };
 
       if (totalAmountOwed > 0) {
@@ -534,7 +534,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           include: {
             model: db.AcademicTerm,
             where: { status: 'Active' },
-            attributes: ['name'] // Include any other attributes you need
+            attributes: ['name'] // Exclude any other attributes you need
           }
         }),
         db.Section.findByPk(classSessionId, {
@@ -577,7 +577,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           },
           attributes: [
             'studentId',
-            [db.sequelize.fn('SUM', db.sequelize.col('totalFees')), 'totalFees']
+            [db.sequelize.fn('SUM', db.sequelize.col('remainingAmount')), 'totalFees']
           ],
           group: ['studentId'],
           raw: true
@@ -628,7 +628,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
             name: detail.FeeType.name,
             amount: detail.amount
           }));
-          totalFees += currentBill.totalFees;
+          // totalFees += currentBill.totalFees; check well
         }
 
         // Fetch total payments made by the student
@@ -647,11 +647,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           payable: (currentBill ? currentBill.totalFees : 0) + totalAmountOwed
         };
 
-        if (totalAmountOwed > 0) {
-          response.previousOwed = totalAmountOwed;
-        } else {
-          response.previousBalance = totalAmountOwed;
-        }
+        totalAmountOwed > 0 ? response.previousOwed = totalAmountOwed : response.previousBalance = totalAmountOwed;
 
         classStudents.push(response);
       }
@@ -673,8 +669,6 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
     }
   });
 };
-
-
 
 // Process fee payment for a student
 exports.processFeePayment = async (req, res) => {
