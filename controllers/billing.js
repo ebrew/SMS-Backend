@@ -669,9 +669,10 @@ exports.processFeePayment = async (req, res) => {
           studentId: studentIdParsed,
           amount: paymentAmount,
           createdAt: {
-            [Op.gte]: db.sequelize.literal(`NOW() - INTERVAL ${recentPaymentThreshold} MINUTE`)
+            [Op.gte]: db.sequelize.literal(`NOW() - INTERVAL '${recentPaymentThreshold} MINUTE'`)
           }
-        }
+        },
+        transaction
       });
 
       if (recentPayments.length > 0) {
@@ -766,3 +767,4 @@ exports.processFeePayment = async (req, res) => {
     }
   });
 };
+
