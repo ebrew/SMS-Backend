@@ -647,7 +647,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
 };
 
 // Process fee payment for a student
-exports.processFeePayment = async (req, res) => {
+exports.processFeePayment1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -727,3 +727,92 @@ exports.processFeePayment = async (req, res) => {
     }
   });
 };
+
+// Process fee payment for a student
+exports.processFeePayment = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { studentId, amount } = req.body;
+
+    if (!studentId || isNaN(studentId) || parseInt(studentId, 10) <= 0) return res.status(400).json({ message: 'Valid Student ID is required!' });
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return res.status(400).json({ message: 'Valid amount is required!' });
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+      const studentIdParsed = parseInt(studentId, 10);
+      const paymentAmount = parseFloat(amount);
+
+      // Create a new payment record
+      const payment = await db.Payment.create({ studentId: studentIdParsed, amount: paymentAmount }, { transaction });
+
+      // Fetch billing records for the student
+      const billingRecords = await db.Billing.findAll({
+        where: { studentId: studentIdParsed },
+        order: [['id', 'ASC']], // Ensure consistent ordering
+        include: {
+          model: db.AcademicTerm,
+          where: {
+            status: { [Op.notIn]: ['Pending'] }
+          },
+          attributes: [] // Exclude term attributes to optimize query
+        },
+        transaction
+      });
+
+      if (!billingRecords.length) {
+        await transaction.commit();
+        return res.status(200).json({ message: 'No billing records found for the student.', payment });
+      }
+
+      let remainingAmount = paymentAmount;
+      let overpaidAmount = 0;
+
+      // Iterate through billing records and apply payments
+      for (const billing of billingRecords) {
+        if (remainingAmount <= 0) break;
+
+        const billingRemaining = billing.remainingAmount;
+
+        if (billingRemaining > 0) {
+          const amountToDeduct = Math.min(remainingAmount, billingRemaining); // How much of the payment should be applied
+          billing.totalPaid += amountToDeduct;
+          billing.remainingAmount -= amountToDeduct;
+          remainingAmount -= amountToDeduct;
+        }
+      }
+
+      // If there's remaining amount after covering all dues, it's an overpayment
+      if (remainingAmount > 0) {
+        overpaidAmount = remainingAmount;
+      }
+
+      // Update all billing records to set overpaid to 0 except the last one
+      const lastBilling = billingRecords[billingRecords.length - 1];
+      lastBilling.overPaid = overpaidAmount;
+      await lastBilling.save({ transaction });
+
+      const updatePromises = billingRecords.slice(0, -1).map(billing => {
+        billing.overPaid = 0;
+        return billing.save({ transaction });
+      });
+
+      await Promise.all(updatePromises);
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return res.status(200).json({
+        message: 'Payment processed successfully!',
+        payment,
+        overpaidAmount
+      });
+    } catch (error) {
+      if (transaction) await transaction.rollback();
+      console.error('Error processing payment:', error);
+      return res.status(500).json({ message: "Can't process payment at the moment!" });
+    }
+  });
+};
+
