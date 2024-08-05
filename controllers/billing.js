@@ -728,7 +728,7 @@ exports.processFeePayment = async (req, res) => {
 
         // Set all other billing records' overPaid to 0 in bulk
         const otherBillings = billingRecords.slice(0, -1).map(billing => {
-          return { id: billing.id, overPaid: 0 };
+          return { id: billing.id, studentId: billing.studentId, overPaid: 0 };
         });
 
         if (otherBillings.length > 0) {
@@ -740,7 +740,7 @@ exports.processFeePayment = async (req, res) => {
       } else {
         // Ensure all billing records' overPaid are set to 0 if there's no overpayment
         const otherBillings = billingRecords.map(billing => {
-          return { id: billing.id, overPaid: 0 };
+          return { id: billing.id, studentId: billing.studentId, overPaid: 0 };
         });
 
         if (otherBillings.length > 0) {
