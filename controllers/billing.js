@@ -721,9 +721,11 @@ exports.processFeePayment = async (req, res) => {
       }).filter(update => update !== null);
 
       // Handle overpayment
+      let overPaidAmount = 0
       if (remainingAmount > 0) {
         const lastBilling = billingRecords[billingRecords.length - 1];
         lastBilling.overPaid += remainingAmount;
+        overPaidAmount = lastBilling.overPaid
 
         billingUpdates.push(lastBilling.save({ transaction }));
 
@@ -749,7 +751,7 @@ exports.processFeePayment = async (req, res) => {
       return res.status(200).json({
         message: 'Payment processed successfully!',
         payment,
-        overpaidAmount: paymentAmount - remainingAmount
+        overpaidAmount: overPaidAmount
       });
     } catch (error) {
       if (transaction) await transaction.rollback();
