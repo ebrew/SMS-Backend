@@ -25,7 +25,8 @@ module.exports = (sequelize, DataTypes) => {
     academicYearId: { type: DataTypes.INTEGER, allowNull: false },
     totalFees: { type: DataTypes.FLOAT, allowNull: false },
     totalPaid: { type: DataTypes.FLOAT, defaultValue: 0 },
-    remainingAmount: { type: DataTypes.FLOAT, allowNull: false }
+    remainingAmount: { type: DataTypes.FLOAT, allowNull: false },
+    overPaid: { type: DataTypes.FLOAT, defaultValue: 0 },
   }, {
     sequelize,
     modelName: 'Billing',
