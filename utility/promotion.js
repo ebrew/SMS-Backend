@@ -81,7 +81,9 @@ const validateTermAndYear = async (term, year) => {
         const academicYear = await AcademicYear.findByPk(year);
 
         if (!academicYear) throw new Error('Academic year not found!');
+        if(academicYear.status === 'Pending') throw new Error("Academic year hasn't begun!");
         if (!academicTerm) throw new Error('Academic term not found!');
+        if(academicTerm.status === 'Pending') throw new Error("Academic term hasn't begun!");
 
         if (academicTerm.AcademicYear.id !== academicYear.id) {
             throw new Error('Academic term does not belong to the academic year!');
