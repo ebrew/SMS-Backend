@@ -3,7 +3,6 @@ const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Student, ClassStudent, AcademicTerm, Assessment, Grade, GradingSystem, Subject, ClassSubject, Section, Class, AcademicYear } = require("../db/models/index")
 
-
 // Function to fetch grade and remarks based on total score
 const getGradeAndRemarks = async (totalScore) => {
   const grading = await GradingSystem.findOne({
@@ -37,13 +36,13 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
         attributes: ['name'],
       },
     });
-    
+
     const term = await AcademicTerm.findByPk(academicTermId, {
       include: {
         model: AcademicYear,
         attributes: ['name'],
       },
-    });    
+    });
 
     if (!section) throw new Error("Class section not found!");
     if (!term) throw new Error("Academic term not found!");
@@ -203,13 +202,13 @@ exports.classStudentsResults = async (req, res) => {
           attributes: ['name'],
         },
       });
-      
+
       const term = await AcademicTerm.findByPk(academicTermId, {
         include: {
           model: AcademicYear,
           attributes: ['name'],
         },
-      }); 
+      });
 
       if (!section) return res.status(400).json({ message: "Class section not found!" });
       if (!term) return res.status(400).json({ message: "Academic term not found!" });
@@ -378,6 +377,7 @@ module.exports = {
   getPositionSuffix,
   classStudentsResults: exports.classStudentsResults,
   singleStudentResult: exports.singleStudentResult,
+  fetchClassResults
 };
 
 

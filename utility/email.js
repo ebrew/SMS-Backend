@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // this is sent to user after Admin has rest the password
-exports.sendPasswordResetSucessEmail = async (userEmail, salutation, message) => {
+const sendPasswordResetSucessEmail = async (userEmail, salutation, message) => {
   mailOptions = {
     from: process.env.EMAIL,
     to: userEmail,
@@ -38,7 +38,7 @@ exports.sendPasswordResetSucessEmail = async (userEmail, salutation, message) =>
 } 
 
 // this is to prompt Admins with a link to reset user's password to default
-exports.sendRequestMailToAdmin = async (userEmail, link, message, salutation) => {
+const sendRequestMailToAdmin = async (userEmail, link, message, salutation) => {
   mailOptions = {
     from: process.env.EMAIL,
     to: userEmail,
@@ -169,3 +169,9 @@ exports.sendPasswordResetEmail = async (userEmail, resetToken) => {
     res.status(200).json({ message: 'Reset email sent.' });
   });
 } 
+
+module.exports = {
+  transporter,
+  sendPasswordResetSucessEmail,
+  sendRequestMailToAdmin,
+};

@@ -663,7 +663,7 @@ exports.processFeePayment = async (req, res) => {
       const paymentAmount = parseFloat(amount);
 
       // Check for recent duplicate payments
-      const recentPaymentThreshold = 5; // Define the threshold time in minutes
+      const recentPaymentThreshold = 5; // threshold time in minutes
       const recentPayments = await db.Payment.findAll({
         where: {
           studentId: studentIdParsed,
