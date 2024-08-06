@@ -6,6 +6,7 @@ const fs = require('fs');
 const { fetchClassResults } = require('./result');
 const passport = require('../db/config/passport')
 
+
 // Forward list of students results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
