@@ -6,7 +6,6 @@ const fs = require('fs');
 const { fetchClassResults } = require('./result');
 const passport = require('../db/config/passport')
 
-
 // Forward list of students results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
@@ -50,9 +49,12 @@ exports.sendStudentResultsToParent = async (req, res) => {
             return;
           }
 
+          const fullName = student.middleName
+          ? `${student.firstName} ${student.middleName} ${student.lastName}`
+          : `${student.firstName} ${student.lastName}`
           const parentName = student.Parent.title
-            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
-            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`;
+            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${fullName}.\n\nBest regards,\nSchool Management System`
+            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${fullName}.\n\nBest regards,\nSchool Management System`;
 
           // Generate the PDF for the student result
           const pdfPath = await generateResultsPDF({
@@ -68,11 +70,11 @@ exports.sendStudentResultsToParent = async (req, res) => {
           const mailOptions = {
             from: process.env.EMAIL,
             to: student.Parent.email,
-            subject: `Results for ${student.fullName || 'Student'}`,
+            subject: `Results for ${fullName}`,
             text: parentName,
             attachments: [
               {
-                filename: `${(student.fullName || 'Student').replace(/ /g, '_')}_results.pdf`,
+                filename: `${fullName.replace(/ /g, '_')}_results.pdf`,
                 path: pdfPath,
                 contentType: 'application/pdf'
               }
@@ -100,5 +102,6 @@ exports.sendStudentResultsToParent = async (req, res) => {
     }
   });
 };
+
 
 
