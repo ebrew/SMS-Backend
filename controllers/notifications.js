@@ -4,6 +4,7 @@ const { transporter } = require('../utility/email');
 const generateResultsPDF = require('../utility/generateResultPDF');
 const fs = require('fs');
 const { fetchClassResults } = require('./result');
+const passport = require('../db/config/passport')
 
 // Forward student results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
@@ -91,6 +92,3 @@ exports.sendStudentResultsToParent = async (req, res) => {
     }
   });
 };
-
-
-
