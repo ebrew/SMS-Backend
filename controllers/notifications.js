@@ -84,7 +84,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
         }
       }));
 
-      return res.status(200).json(results);
+      return res.status(200).json({ message: 'Mail processed successfully', results});
 
     } catch (error) {
       console.error('Error processing request:', error);
