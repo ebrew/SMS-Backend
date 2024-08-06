@@ -60,7 +60,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
             academicYear: academicYearId,
             academicTerm: academicTermId,
             classSession: classSessionId,
-            fullName: student.fullName,
+            fullName: fullName,
             photo: student.photo
           });
 
