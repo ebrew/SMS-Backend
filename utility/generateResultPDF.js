@@ -6,7 +6,8 @@ const path = require('path');
 const generateResultsPDF = async (studentResult) => {
   return new Promise(async (resolve, reject) => {
     const doc = new PDFDocument();
-    const filePath = `/tmp/${studentResult.fullName.replace(/ /g, '_')}_results.pdf`;
+    const fullName = studentResult.fullName || 'Student';
+    const filePath = path.join('/tmp', `${fullName.replace(/ /g, '_')}_results.pdf`);
 
     // Pipe the PDF into a file
     doc.pipe(fs.createWriteStream(filePath));
@@ -16,15 +17,17 @@ const generateResultsPDF = async (studentResult) => {
     doc.fontSize(16).text(`Academic Year: ${studentResult.academicYear}`, { align: 'center' });
     doc.fontSize(16).text(`Academic Term: ${studentResult.academicTerm}`, { align: 'center' });
     doc.fontSize(16).text(`Class: ${studentResult.classSession}`, { align: 'center' });
-    doc.fontSize(16).text(`Student Name: ${studentResult.fullName}`, { align: 'center' });
+    doc.fontSize(16).text(`Student Name: ${fullName}`, { align: 'center' });
 
     // Add student photo
-    try {
-      const response = await axios.get(studentResult.photo.url, { responseType: 'arraybuffer' });
-      const image = response.data;
-      doc.image(image, { fit: [100, 100], align: 'center' });
-    } catch (error) {
-      console.error('Error loading image:', error);
+    if (studentResult.photo && studentResult.photo.url) {
+      try {
+        const response = await axios.get(studentResult.photo.url, { responseType: 'arraybuffer' });
+        const image = response.data;
+        doc.image(image, { fit: [100, 100], align: 'center' });
+      } catch (error) {
+        console.error('Error loading image:', error);
+      }
     }
 
     // Add table of subject scores
@@ -57,4 +60,6 @@ const generateResultsPDF = async (studentResult) => {
 };
 
 module.exports = generateResultsPDF;
+
+
 

@@ -6,12 +6,12 @@ const fs = require('fs');
 const { fetchClassResults } = require('./result');
 const passport = require('../db/config/passport')
 
-// Forward student results to parent for a particular academic term
+// Forward list of students results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-    let { studentIds, classSessionId, academicTermId } = req.body;
+    let { studentIds, classSessionId, academicTermId, academicYearId } = req.body;
     const results = [];
 
     try {
@@ -29,7 +29,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
         include: {
           model: db.Parent,
           as: 'Parent',
-          attributes: ['email', 'fullName']
+          attributes: ['email', 'fullName', 'title'] // added title
         }
       });
 
@@ -49,22 +49,22 @@ exports.sendStudentResultsToParent = async (req, res) => {
             return;
           }
 
+          const parentName = student.Parent.title
+            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
+            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`;
+
           // Generate the PDF for the student result
           const pdfPath = await generateResultsPDF(studentResult);
-
-          const parentName = student.Parent.title
-          ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
-          : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
 
           // Prepare email options
           const mailOptions = {
             from: process.env.EMAIL,
             to: student.Parent.email,
-            subject: `Results for ${student.fullName}`,
+            subject: `Results for ${student.fullName || 'Student'}`,
             text: parentName,
             attachments: [
               {
-                filename: `${student.fullName.replace(/ /g, '_')}_results.pdf`,
+                filename: `${(student.fullName || 'Student').replace(/ /g, '_')}_results.pdf`,
                 path: pdfPath,
                 contentType: 'application/pdf'
               }
@@ -84,7 +84,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
         }
       }));
 
-      return res.status(200).json({ message: 'Mail processed successfully', results});
+      return res.status(200).json(results);
 
     } catch (error) {
       console.error('Error processing request:', error);
@@ -92,3 +92,4 @@ exports.sendStudentResultsToParent = async (req, res) => {
     }
   });
 };
+

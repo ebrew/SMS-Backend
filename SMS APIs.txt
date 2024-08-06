@@ -511,7 +511,7 @@ Content: { studentId, amount }
 Authorization: Bearer <token from login>
 
 NOTIFICATIONS
-89. // Forward student results to parent for a particular academic term
+89. // Forward list of students' results to parents for a particular academic term
 API: << server >>/api/v1/notifications/student/results_parent
 Method: POST
 Content: { studentIds, classSessionId, academicTermId }
