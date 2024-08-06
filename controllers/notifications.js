@@ -87,7 +87,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
           // Clean up the temporary file
           fs.unlinkSync(pdfPath);
 
-          results.push({ studentId, status: 'Results sent successfully' });
+          results.push({ studentId, studentResult, status: 'Results sent successfully' });
         } catch (error) {
           console.error(`Error sending results for studentId ${studentId}:`, error);
           results.push({ studentId, status: `Error: ${error.message}` });
