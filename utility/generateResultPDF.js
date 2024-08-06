@@ -4,62 +4,64 @@ const axios = require('axios');
 const path = require('path');
 
 const generateResultsPDF = async (studentResult) => {
-  return new Promise(async (resolve, reject) => {
-    const doc = new PDFDocument();
-    const fullName = studentResult.fullName || 'Student';
-    const filePath = path.join('/tmp', `${fullName.replace(/ /g, '_')}_results.pdf`);
+  const doc = new PDFDocument();
 
-    // Pipe the PDF into a file
-    doc.pipe(fs.createWriteStream(filePath));
+  // Define the output path for the PDF
+  const pdfPath = path.join(__dirname, `${studentResult.fullName.replace(/ /g, '_')}_results.pdf`);
+  doc.pipe(fs.createWriteStream(pdfPath));
 
-    // Add headers
-    doc.fontSize(20).text('Student Results', { align: 'center' });
-    doc.fontSize(16).text(`Academic Year: ${studentResult.academicYear}`, { align: 'center' });
-    doc.fontSize(16).text(`Academic Term: ${studentResult.academicTerm}`, { align: 'center' });
-    doc.fontSize(16).text(`Class: ${studentResult.classSession}`, { align: 'center' });
-    doc.fontSize(16).text(`Student Name: ${fullName}`, { align: 'center' });
+  // Add a header with centered text
+  doc.fontSize(18).text('Student Results', { align: 'center' });
+  doc.moveDown();
 
-    // Add student photo
-    if (studentResult.photo && studentResult.photo.url) {
-      try {
-        const response = await axios.get(studentResult.photo.url, { responseType: 'arraybuffer' });
-        const image = response.data;
-        doc.image(image, { fit: [100, 100], align: 'center' });
-      } catch (error) {
-        console.error('Error loading image:', error);
-      }
-    }
-
-    // Add table of subject scores
+  // Add the student information
+  doc.fontSize(14).text(`Academic Year: ${studentResult.academicYear}`);
+  doc.text(`Academic Term: ${studentResult.academicTerm}`);
+  doc.text(`Class: ${studentResult.classSession}`);
+  doc.text(`Student Name: ${studentResult.fullName}`);
+  
+  // Add the student photo if available
+  if (studentResult.photo && studentResult.photo.url) {
     doc.moveDown();
-    doc.fontSize(14).text('Subject Scores:', { underline: true });
-    studentResult.subjectScores.forEach(score => {
-      doc.fontSize(12).text(`Subject: ${score.name}`);
-      doc.fontSize(12).text(`Score: ${score.score}`);
-      doc.fontSize(12).text(`Grade: ${score.grade}`);
-      doc.fontSize(12).text(`Remarks: ${score.remarks}`);
-      doc.fontSize(12).text(`Position: ${score.position}`);
-      doc.moveDown();
-    });
+    doc.image(studentResult.photo.url, { width: 100, height: 100, align: 'center' });
+  }
+  doc.moveDown();
 
-    // Add overall score and position
-    doc.fontSize(14).text(`Total Score: ${studentResult.totalScore}`);
-    doc.fontSize(14).text(`Overall Position: ${studentResult.position}`);
+  // Add a table for the subject scores
+  const tableTop = doc.y;
+  const itemCodeX = 50;
+  const descriptionX = 150;
+  const priceX = 280;
+  const quantityX = 350;
+  const totalX = 430;
 
-    doc.end();
+  doc.fontSize(12);
+  doc.text('Subject', itemCodeX, tableTop);
+  doc.text('Score', descriptionX, tableTop);
+  doc.text('Grade', priceX, tableTop);
+  doc.text('Remarks', quantityX, tableTop);
+  doc.text('Position', totalX, tableTop);
 
-    // Wait for the file to be written and then resolve the promise
-    doc.on('end', () => {
-      resolve(filePath);
-    });
-
-    doc.on('error', (err) => {
-      reject(err);
-    });
+  doc.moveDown();
+  let position = tableTop + 20;
+  studentResult.subjectScores.forEach((item) => {
+    doc.text(item.name, itemCodeX, position);
+    doc.text(item.score, descriptionX, position);
+    doc.text(item.grade, priceX, position);
+    doc.text(item.remarks, quantityX, position);
+    doc.text(item.position, totalX, position);
+    position += 20;
   });
+
+  // Add overall score and position
+  doc.moveDown();
+  doc.fontSize(14).text(`Total Score: ${studentResult.totalScore}`);
+  doc.text(`Overall Position: ${studentResult.position}`);
+
+  // End the document
+  doc.end();
+
+  return pdfPath;
 };
 
 module.exports = generateResultsPDF;
-
-
-

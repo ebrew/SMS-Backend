@@ -29,7 +29,7 @@ exports.sendStudentResultsToParent = async (req, res) => {
         include: {
           model: db.Parent,
           as: 'Parent',
-          attributes: ['email', 'fullName', 'title'] // added title
+          attributes: ['email', 'fullName', 'title']
         }
       });
 
@@ -54,7 +54,14 @@ exports.sendStudentResultsToParent = async (req, res) => {
             : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`;
 
           // Generate the PDF for the student result
-          const pdfPath = await generateResultsPDF(studentResult);
+          const pdfPath = await generateResultsPDF({
+            ...studentResult,
+            academicYear: academicYearId,
+            academicTerm: academicTermId,
+            classSession: classSessionId,
+            fullName: student.fullName,
+            photo: student.photo
+          });
 
           // Prepare email options
           const mailOptions = {
@@ -92,4 +99,5 @@ exports.sendStudentResultsToParent = async (req, res) => {
     }
   });
 };
+
 
