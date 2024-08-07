@@ -28,48 +28,46 @@ const generateResultsPDF = async (studentResult) => {
   
   doc.pipe(fs.createWriteStream(pdfPath));
 
-  doc.fontSize(16).text('Student Results', { align: 'center' });
-  doc.moveDown();
+  // Add document title
+  doc.fontSize(20).text('Student Results', { align: 'center' }).moveDown(1.5);
 
-  doc.fontSize(12).text(`Academic Year: ${studentResult.academicYear || 'N/A'}`);
+  // Add student information
+  doc.fontSize(14).text(`Academic Year: ${studentResult.academicYear || 'N/A'}`);
   doc.text(`Academic Term: ${studentResult.academicTerm || 'N/A'}`);
   doc.text(`Class: ${studentResult.classSession || 'N/A'}`);
   doc.text(`Student Name: ${studentResult.fullName || 'N/A'}`);
 
-  // Download the student photo
+  // Download and add student photo
   const photoPath = path.join(tempDir, 'photo.jpg');
   await downloadImage(studentResult.photo, photoPath);
+  doc.moveDown().image(photoPath, { width: 100, height: 100, align: 'center' }).moveDown(1.5);
 
-  // Add the student photo
-  doc.moveDown();
-  doc.image(photoPath, { width: 100, height: 100, align: 'center' });
-  doc.moveDown();
+  // Draw table headers
+  doc.fontSize(12).fillColor('#000000')
+    .text('Subject', 50, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Score', 150, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Grade', 250, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Remarks', 350, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Position', 450, doc.y, { width: 100, align: 'left', underline: true });
 
-  // Draw the table
-  const tableTop = 200;
-  const itemHeight = 20;
-  let y = tableTop;
-
-  doc.fontSize(12)
-    .text('Subject', 50, y, { width: 100 })
-    .text('Score', 150, y, { width: 100 })
-    .text('Grade', 250, y, { width: 100 })
-    .text('Remarks', 350, y, { width: 100 })
-    .text('Position', 450, y, { width: 100 });
-
-  y += itemHeight;
-
-  studentResult.subjectScores.forEach(score => {
-    doc.text(score.name || 'N/A', 50, y, { width: 100 });
-    doc.text(score.score || 'N/A', 150, y, { width: 100 });
-    doc.text(score.grade || 'N/A', 250, y, { width: 100 });
-    doc.text(score.remarks || 'N/A', 350, y, { width: 100 });
-    doc.text(score.position || 'N/A', 450, y, { width: 100 });
-    y += itemHeight;
+  // Draw table rows with alternate row colors
+  let y = doc.y + 5;
+  studentResult.subjectScores.forEach((score, index) => {
+    doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
+      .rect(50, y - 2, 500, 20).fill();
+    doc.fillColor('#000000')
+      .text(score.name || 'N/A', 50, y, { width: 100, align: 'left' })
+      .text(score.score || 'N/A', 150, y, { width: 100, align: 'left' })
+      .text(score.grade || 'N/A', 250, y, { width: 100, align: 'left' })
+      .text(score.remarks || 'N/A', 350, y, { width: 100, align: 'left' })
+      .text(score.position || 'N/A', 450, y, { width: 100, align: 'left' });
+    y += 20;
   });
 
-  doc.text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y);
-  doc.text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + itemHeight);
+  // Add total score and overall position
+  doc.moveDown().fillColor('#000000')
+    .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
+    .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
 
   doc.end();
 
@@ -80,4 +78,3 @@ const generateResultsPDF = async (studentResult) => {
 };
 
 module.exports = generateResultsPDF;
-
