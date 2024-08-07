@@ -32,15 +32,15 @@ const generateResultsPDF = async (studentResult) => {
   doc.fontSize(20).text('Student Results', { align: 'center' }).moveDown(1.5);
 
   // Add student information
-  doc.fontSize(14).text(`Academic Year: ${studentResult.academicYear || 'N/A'}`);
-  doc.text(`Academic Term: ${studentResult.academicTerm || 'N/A'}`);
-  doc.text(`Class: ${studentResult.classSession || 'N/A'}`);
-  doc.text(`Student Name: ${studentResult.fullName || 'N/A'}`);
+  doc.fontSize(14).text(`Academic Year: ${studentResult.academicYear || 'N/A'}`, { continued: true });
+  doc.text(`Academic Term: ${studentResult.academicTerm || 'N/A'}`, { continued: true });
+  doc.text(`Class: ${studentResult.classSession || 'N/A'}`, { continued: true });
+  doc.text(`Student Name: ${studentResult.fullName || 'N/A'}`, { continued: true });
 
-  // Download and add student photo
+  // Download and add student photo to the right
   const photoPath = path.join(tempDir, 'photo.jpg');
   await downloadImage(studentResult.photo.url, photoPath);
-  doc.moveDown().image(photoPath, { fit: [100, 100], align: 'left' }).moveDown(1.5);
+  doc.image(photoPath, doc.page.width - 150, doc.y - 70, { fit: [100, 100], align: 'right' }).moveDown(1.5);
 
   // Move the cursor down after the image to create space for headers
   doc.moveDown(1.5);
@@ -54,8 +54,8 @@ const generateResultsPDF = async (studentResult) => {
     .text('Position', 500, doc.y, { width: 100, align: 'left', underline: true });
 
   // Draw table rows with alternate row colors and increased height
-  let y = doc.y + 15; // starting y position for rows
-  const rowHeight = 30; 
+  let y = doc.y + 15; // Adjust the starting y position for rows
+  const rowHeight = 30; // Increase row height for better readability
   studentResult.subjectScores.forEach((score, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
       .rect(50, y - 5, 550, rowHeight).fill(); // Increase row height
@@ -69,7 +69,7 @@ const generateResultsPDF = async (studentResult) => {
   });
 
   // Add some space before adding the total score and overall position
-  y += 20;
+  y += 30;
 
   // Add total score and overall position
   doc.moveDown().fillColor('#000000')
