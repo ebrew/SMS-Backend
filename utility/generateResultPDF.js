@@ -39,7 +39,7 @@ const generateResultsPDF = async (studentResult) => {
 
   // Download and add student photo
   const photoPath = path.join(tempDir, 'photo.jpg');
-  await downloadImage(studentResult.photo, photoPath);
+  await downloadImage(studentResult.photo.url, photoPath);
   doc.moveDown().image(photoPath, { width: 100, height: 100, align: 'center' }).moveDown(1.5);
 
   // Draw table headers
