@@ -50,8 +50,8 @@ exports.sendStudentResultsToParent = async (req, res) => {
           }
 
           const parentName = student.Parent.title
-            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
-            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`;
+            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${studentResult.fullName}.\n\nBest regards,\nSchool Management System`
+            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${studentResult.fullName}.\n\nBest regards,\nSchool Management System`;
 
           // Generate the PDF for the student result
           const pdfPath = await generateResultsPDF(studentResult);

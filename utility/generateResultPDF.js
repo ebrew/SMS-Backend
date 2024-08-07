@@ -40,7 +40,10 @@ const generateResultsPDF = async (studentResult) => {
   // Download and add student photo
   const photoPath = path.join(tempDir, 'photo.jpg');
   await downloadImage(studentResult.photo.url, photoPath);
-  doc.moveDown().image(photoPath, { fit: [100, 100], align: 'center' }).moveDown(1.5);
+  doc.moveDown().image(photoPath, { fit: [100, 100], align: 'left' }).moveDown(1.5);
+
+  // Move the cursor down after the image to create space for headers
+  doc.moveDown(1.5);
 
   // Draw table headers
   doc.fontSize(12).fillColor('#000000')
@@ -51,17 +54,17 @@ const generateResultsPDF = async (studentResult) => {
     .text('Position', 500, doc.y, { width: 100, align: 'left', underline: true });
 
   // Draw table rows with alternate row colors and increased height
-  let y = doc.y + 5;
-  const rowHeight = 25;
+  let y = doc.y + 15; // starting y position for rows
+  const rowHeight = 30; 
   studentResult.subjectScores.forEach((score, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
-      .rect(50, y - 2, 550, rowHeight).fill();
+      .rect(50, y - 5, 550, rowHeight).fill(); // Increase row height
     doc.fillColor('#000000')
-      .text(score.name || 'N/A', 50, y, { width: 150, align: 'left' })
-      .text(score.score || 'N/A', 200, y, { width: 100, align: 'left' })
-      .text(score.grade || 'N/A', 300, y, { width: 100, align: 'left' })
-      .text(score.remarks || 'N/A', 400, y, { width: 100, align: 'left' })
-      .text(score.position || 'N/A', 500, y, { width: 100, align: 'left' });
+      .text(score.name || 'N/A', 55, y, { width: 145, align: 'left' }) // Adjust x positions for columns
+      .text(score.score || 'N/A', 205, y, { width: 95, align: 'left' })
+      .text(score.grade || 'N/A', 305, y, { width: 95, align: 'left' })
+      .text(score.remarks || 'N/A', 405, y, { width: 95, align: 'left' })
+      .text(score.position || 'N/A', 505, y, { width: 95, align: 'left' });
     y += rowHeight;
   });
 
