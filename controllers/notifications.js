@@ -6,11 +6,12 @@ const fs = require('fs');
 const { fetchClassResults } = require('./result');
 const passport = require('../db/config/passport')
 
+// Forward list of students results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 
-    let { studentIds, classSessionId, academicTermId, academicYearId } = req.body;
+    let { studentIds, classSessionId, academicTermId } = req.body;
     const results = [];
 
     try {
@@ -19,9 +20,10 @@ exports.sendStudentResultsToParent = async (req, res) => {
 
       // Fetch the class results first
       const classResults = await fetchClassResults(academicTermId, classSessionId);
+
       if (!classResults) return res.status(400).json({ message: "Class results not found!" });
 
-      // Fetch all required student and parent data
+      // Fetch all required student and parent data in a single query
       const students = await db.Student.findAll({
         where: { id: studentIds },
         include: {
@@ -32,9 +34,9 @@ exports.sendStudentResultsToParent = async (req, res) => {
       });
 
       // Process each student in parallel
-      const processingPromises = studentIds.map(async (studentId) => {
+      await Promise.all(studentIds.map(async (studentId) => {
         try {
-          const studentResult = classResults.classStudents.find(student => student.studentId === studentId);
+          const studentResult = classResults.classStudents.find(student => student.studentId == studentId);
           const student = students.find(s => s.id === studentId);
 
           if (!student) {
@@ -48,8 +50,8 @@ exports.sendStudentResultsToParent = async (req, res) => {
           }
 
           const parentName = student.Parent.title
-            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${studentResult.fullName}.\n\nBest regards,\nSchool Management System`
-            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${studentResult.fullName}.\n\nBest regards,\nSchool Management System`;
+            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`
+            : `Dear ${student.Parent.fullName},\n\nAttached are the results for ${student.fullName}.\n\nBest regards,\nSchool Management System`;
 
           // Generate the PDF for the student result
           const pdfPath = await generateResultsPDF(studentResult);
@@ -58,11 +60,11 @@ exports.sendStudentResultsToParent = async (req, res) => {
           const mailOptions = {
             from: process.env.EMAIL,
             to: student.Parent.email,
-            subject: `Results for ${studentResult.fullName}`,
+            subject: `Results for ${studentResult.fullName || 'Student'}`,
             text: parentName,
             attachments: [
               {
-                filename: `${studentResult.fullName.replace(/[^a-zA-Z0-9]/g, '_')}_results.pdf`,
+                filename: `${(studentResult.fullName || 'Student').replace(/ /g, '_')}_results.pdf`,
                 path: pdfPath,
                 contentType: 'application/pdf'
               }
@@ -75,17 +77,14 @@ exports.sendStudentResultsToParent = async (req, res) => {
           // Clean up the temporary file
           fs.unlinkSync(pdfPath);
 
-          results.push({ studentId, studentResult, status: 'Results sent successfully' });
+          results.push({ studentId, status: 'Results sent successfully' });
         } catch (error) {
           console.error(`Error sending results for studentId ${studentId}:`, error);
           results.push({ studentId, status: `Error: ${error.message}` });
         }
-      });
+      }));
 
-      // Wait for all processing promises to complete
-      await Promise.all(processingPromises);
-
-      return res.status(200).json(results);
+      res.status(200).json({ message: 'Email processed successfully!', results });
 
     } catch (error) {
       console.error('Error processing request:', error);
@@ -93,6 +92,8 @@ exports.sendStudentResultsToParent = async (req, res) => {
     }
   });
 };
+
+
 
 
 

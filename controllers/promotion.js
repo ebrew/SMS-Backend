@@ -131,19 +131,6 @@ exports.promoteClassStudents = async (req, res) => {
     } catch (error) {
       console.error('Error promoting class students:', error);
 
-      // // Check for specific error messages
-      // if (error.message === 'Academic year not found!') {
-      //   return res.status(400).json({ message: 'Academic year not found!' });
-      // } else if (error.message === 'No promotion academic year found!') {
-      //   return res.status(400).json({ message: 'No promotion academic year found!' });
-      // } else if (error.message === 'Current class session not found for the students!') {
-      //   return res.status(404).json({ message: 'Current class session not found for the students!' });
-      // } else if (error.message === 'Promotion class session not found!') {
-      //   return res.status(404).json({ message: 'Promotion class session not found!' });
-      // } else if (error.message === 'No students found for this class session and academic year!') {
-      //   return res.status(404).json({ message: 'No students found for this class session and academic year!' });
-      // }
-
       return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
   });
@@ -166,8 +153,6 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
         return res.status(400).json({ message: 'No valid student IDs provided!' });
       }
 
-      // // Validate current and promotional academic years
-      // const { activeYear, pendingYear } = await validateAcademicYears(nextAcademicYearId);
       let activeYear, pendingYear
       try {
         ({ activeYear, pendingYear } = await validateAcademicYears(nextAcademicYearId));
@@ -278,22 +263,6 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
       }
     } catch (error) {
       console.error('Error promoting class students:', error);
-
-      // // Check for specific error messages
-      // if (error.message === 'Promotional academic year provided is inactive!') {
-      //   return res.status(400).json({ message: 'Promotional academic year provided is inactive!' });
-      // } else if (error.message === 'Promotional academic year not found!') {
-      //   return res.status(400).json({ message: 'Promotional academic year not found!' });
-      // } else if (error.message === 'Promotional academic year provided is the same as the current academic year!') {
-      //   return res.status(400).json({ message: 'Promotional academic year provided is the same as the current academic year!' });
-      // } else if (error.message === 'Current class session not found for the students!') {
-      //   return res.status(404).json({ message: 'Current class session not found for the students!' });
-      // } else if (error.message === 'Promotion class session not found!') {
-      //   return res.status(404).json({ message: 'Promotion class session not found!' });
-      // } else if (error.message === 'No students found for this class session and academic year!') {
-      //   return res.status(404).json({ message: 'No students found for this class session and academic year!' });
-      // }
-
       return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
   });
@@ -425,19 +394,6 @@ exports.repeatClassStudents = async (req, res) => {
     } catch (error) {
       console.error('Error repeating class students:', error);
 
-      // // Check for specific error messages
-      // if (error.message === 'No active academic year found!') {
-      //   return res.status(400).json({ message: 'No active academic year found!' });
-      // } else if (error.message === 'No promotion academic year found!') {
-      //   return res.status(400).json({ message: 'No promotion academic year found!' });
-      // } else if (error.message === 'Current class session not found for the students!') {
-      //   return res.status(404).json({ message: 'Current class session not found for the students!' });
-      // } else if (error.message === 'Next class session not found!') {
-      //   return res.status(404).json({ message: 'Next class session not found!' });
-      // } else if (error.message === 'No students found for this class session and academic year!') {
-      //   return res.status(404).json({ message: 'No students found for this class session and academic year!' });
-      // }
-
       return res.status(500).json({ message: "Can't repeat class students at the moment!" });
     }
   });
@@ -459,8 +415,6 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
     }
 
     try {
-      // // Validate current and promotional academic years
-      // const { activeYear, pendingYear } = await validateAcademicYears(nextAcademicYearId);
       let activeYear, pendingYear
       try {
         ({ activeYear, pendingYear } = await validateAcademicYears(nextAcademicYearId));
@@ -567,21 +521,6 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
       }
     } catch (error) {
       console.error('Error repeating class students:', error);
-
-      // // Check for specific error messages
-      // if (error.message === 'Promotional academic year provided is inactive!') {
-      //   return res.status(400).json({ message: 'Promotional academic year provided is inactive!' });
-      // } else if (error.message === 'Promotional academic year not found!') {
-      //   return res.status(400).json({ message: 'Promotional academic year not found!' });
-      // } else if (error.message === 'Promotional academic year provided is the same as the current academic year!') {
-      //   return res.status(400).json({ message: 'Promotional academic year provided is the same as the current academic year!' });
-      // } else if (error.message === 'Current class session not found for the students!') {
-      //   return res.status(404).json({ message: 'Current class session not found for the students!' });
-      // } else if (error.message === 'Next class session not found!') {
-      //   return res.status(404).json({ message: 'Next class session not found!' });
-      // } else if (error.message === 'No students found for this class session and academic year!') {
-      //   return res.status(404).json({ message: 'No students found for this class session and academic year!' });
-      // }
 
       return res.status(500).json({ message: "Can't repeat class students at the moment!" });
     }
