@@ -1,8 +1,3 @@
-// 
-
-
-
-
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -24,56 +19,53 @@ const downloadImage = async (url, filepath) => {
 const generateResultsPDF = async (studentResult) => {
   const doc = new PDFDocument({ margin: 50 });
   const pdfPath = path.join(__dirname, `${studentResult.fullName.replace(/ /g, '_')}_results.pdf`);
-
+  
   // Ensure the directory exists
   const tempDir = path.dirname(pdfPath);
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
-
+  
   doc.pipe(fs.createWriteStream(pdfPath));
 
   // Add document title
   doc.fontSize(20).text('Student Results', { align: 'center' }).moveDown(1.5);
 
-  // Add student information and image side by side
-  const studentInfoY = doc.y;
+  // Add student information with photo aligned to the right
+  const photoPath = path.join(tempDir, 'photo.jpg');
+  await downloadImage(studentResult.photo.url, photoPath);
+
+  const infoY = doc.y;
   doc.fontSize(14)
     .text(`Academic Year: ${studentResult.academicYear || 'N/A'}`)
     .text(`Academic Term: ${studentResult.academicTerm || 'N/A'}`)
     .text(`Class: ${studentResult.classSession || 'N/A'}`)
-    .text(`Student Name: ${studentResult.fullName || 'N/A'}`, { continued: true });
+    .text(`Student Name: ${studentResult.fullName || 'N/A'}`);
 
-  const photoPath = path.join(tempDir, 'photo.jpg');
-  await downloadImage(studentResult.photo.url, photoPath);
-
-  const studentInfoHeight = doc.y - studentInfoY;
-  doc.image(photoPath, doc.page.width - 150, studentInfoY, { fit: [100, 100] });
-  doc.y = studentInfoY + studentInfoHeight;
+  doc.image(photoPath, doc.page.width - 150, infoY, { width: 100, height: 100 });
 
   // Move the cursor down after the image to create space for headers
-  doc.moveDown(1.5);
+  doc.moveDown(4);
 
   // Draw table headers
-  doc.fontSize(12).fillColor('#000000')
-    .text('Subject', 50, doc.y, { width: 150, align: 'left', underline: true })
-    .text('Score', 200, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Grade', 300, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Remarks', 400, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Position', 500, doc.y, { width: 100, align: 'left', underline: true });
+  doc.fontSize(12).fillColor('#000000');
+  const headers = ['Subject', 'Score', 'Grade', 'Remarks', 'Position'];
+  const headerX = [50, 200, 300, 400, 500];
+  headers.forEach((header, i) => {
+    doc.text(header, headerX[i], doc.y, { underline: true });
+  });
 
   // Draw table rows with alternate row colors and increased height
   let y = doc.y + 15; // Adjust the starting y position for rows
-  const rowHeight = 25; // Increase row height for better readability
+  const rowHeight = 30; // Increase row height for better readability
   studentResult.subjectScores.forEach((score, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
-      .rect(50, y - 2, 550, rowHeight).fill(); // Increase row height
-    doc.fillColor('#000000')
-      .text(score.name || 'N/A', 55, y, { width: 145, align: 'left' }) // Adjust x positions for columns
-      .text(score.score || 'N/A', 205, y, { width: 95, align: 'left' })
-      .text(score.grade || 'N/A', 305, y, { width: 95, align: 'left' })
-      .text(score.remarks || 'N/A', 405, y, { width: 95, align: 'left' })
-      .text(score.position || 'N/A', 505, y, { width: 95, align: 'left' });
+      .rect(50, y - 5, 550, rowHeight).fill(); // Increase row height
+    doc.fillColor('#000000');
+    const values = [score.name || 'N/A', score.score || 'N/A', score.grade || 'N/A', score.remarks || 'N/A', score.position || 'N/A'];
+    values.forEach((value, i) => {
+      doc.text(value, headerX[i], y, { width: headerX[i+1] ? headerX[i+1] - headerX[i] - 10 : 95, align: 'left' });
+    });
     y += rowHeight;
   });
 
@@ -81,7 +73,7 @@ const generateResultsPDF = async (studentResult) => {
   y += 20;
 
   // Add total score and overall position
-  doc.moveDown().fillColor('#000000')
+  doc.fillColor('#000000')
     .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
     .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
 
