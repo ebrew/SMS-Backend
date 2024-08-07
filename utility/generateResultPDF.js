@@ -31,45 +31,60 @@ const generateResultsPDF = async (studentResult) => {
   // Add document title
   doc.fontSize(20).text('Student Results', { align: 'center' }).moveDown(1.5);
 
-  // Add student information
-  doc.fontSize(14).text(`Academic Year: ${studentResult.academicYear || 'N/A'}`, { continued: true });
-  doc.text(`Academic Term: ${studentResult.academicTerm || 'N/A'}`, { continued: true });
-  doc.text(`Class: ${studentResult.classSession || 'N/A'}`, { continued: true });
-  doc.text(`Student Name: ${studentResult.fullName || 'N/A'}`, { continued: true });
-
-  // Download and add student photo to the right
+  // Add student information and photo
   const photoPath = path.join(tempDir, 'photo.jpg');
   await downloadImage(studentResult.photo.url, photoPath);
-  doc.image(photoPath, doc.page.width - 150, doc.y - 70, { fit: [100, 100], align: 'right' }).moveDown(1.5);
 
-  // Move the cursor down after the image to create space for headers
+  const studentInfo = [
+    `Academic Year: ${studentResult.academicYear || 'N/A'}`,
+    `Academic Term: ${studentResult.academicTerm || 'N/A'}`,
+    `Class: ${studentResult.classSession || 'N/A'}`,
+    `Student Name: ${studentResult.fullName || 'N/A'}`,
+  ];
+
+  const photoX = doc.page.width - 150;
+  doc.image(photoPath, photoX, doc.y, { fit: [100, 100], align: 'right' });
+
+  studentInfo.forEach((info, index) => {
+    doc.text(info, 50, doc.y + (index * 20));
+  });
+
   doc.moveDown(1.5);
 
   // Draw table headers
-  doc.fontSize(12).fillColor('#000000')
-    .text('Subject', 50, doc.y, { width: 150, align: 'left', underline: true })
-    .text('Score', 200, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Grade', 300, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Remarks', 400, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Position', 500, doc.y, { width: 100, align: 'left', underline: true });
+  const tableX = 50;
+  const tableHeaders = ['Subject', 'Score', 'Grade', 'Remarks', 'Position'];
+  const tableColumnWidths = [200, 100, 100, 100, 100];
+  
+  tableHeaders.forEach((header, index) => {
+    doc.text(header, tableX + tableColumnWidths.slice(0, index).reduce((a, b) => a + b, 0), doc.y, {
+      width: tableColumnWidths[index],
+      align: 'left',
+      underline: true
+    });
+  });
+
+  doc.moveDown(1.5);
 
   // Draw table rows with alternate row colors and increased height
-  let y = doc.y + 15; // Adjust the starting y position for rows
-  const rowHeight = 30; // Increase row height for better readability
+  let y = doc.y; // Adjust the starting y position for rows
+  const rowHeight = 25; // Increase row height for better readability
   studentResult.subjectScores.forEach((score, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
-      .rect(50, y - 5, 550, rowHeight).fill(); // Increase row height
+      .rect(tableX, y, tableColumnWidths.reduce((a, b) => a + b, 0), rowHeight).fill(); // Increase row height
+    
     doc.fillColor('#000000')
-      .text(score.name || 'N/A', 55, y, { width: 145, align: 'left' }) // Adjust x positions for columns
-      .text(score.score || 'N/A', 205, y, { width: 95, align: 'left' })
-      .text(score.grade || 'N/A', 305, y, { width: 95, align: 'left' })
-      .text(score.remarks || 'N/A', 405, y, { width: 95, align: 'left' })
-      .text(score.position || 'N/A', 505, y, { width: 95, align: 'left' });
+      .text(score.name || 'N/A', tableX, y + 5, { width: tableColumnWidths[0], align: 'left' })
+      .text(score.score || 'N/A', tableX + tableColumnWidths[0], y + 5, { width: tableColumnWidths[1], align: 'left' })
+      .text(score.grade || 'N/A', tableX + tableColumnWidths[0] + tableColumnWidths[1], y + 5, { width: tableColumnWidths[2], align: 'left' })
+      .text(score.remarks || 'N/A', tableX + tableColumnWidths[0] + tableColumnWidths[1] + tableColumnWidths[2], y + 5, { width: tableColumnWidths[3], align: 'left' })
+      .text(score.position || 'N/A', tableX + tableColumnWidths[0] + tableColumnWidths[1] + tableColumnWidths[2] + tableColumnWidths[3], y + 5, { width: tableColumnWidths[4], align: 'left' });
+
     y += rowHeight;
   });
 
   // Add some space before adding the total score and overall position
-  y += 30;
+  y += 20;
 
   // Add total score and overall position
   doc.moveDown().fillColor('#000000')
