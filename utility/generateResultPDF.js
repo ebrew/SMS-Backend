@@ -44,24 +44,25 @@ const generateResultsPDF = async (studentResult) => {
 
   // Draw table headers
   doc.fontSize(12).fillColor('#000000')
-    .text('Subject', 50, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Score', 150, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Grade', 250, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Remarks', 350, doc.y, { width: 100, align: 'left', underline: true })
-    .text('Position', 450, doc.y, { width: 100, align: 'left', underline: true });
+    .text('Subject', 50, doc.y, { width: 150, align: 'left', underline: true })
+    .text('Score', 200, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Grade', 300, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Remarks', 400, doc.y, { width: 100, align: 'left', underline: true })
+    .text('Position', 500, doc.y, { width: 100, align: 'left', underline: true });
 
-  // Draw table rows with alternate row colors
+  // Draw table rows with alternate row colors and increased height
   let y = doc.y + 5;
+  const rowHeight = 25;
   studentResult.subjectScores.forEach((score, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
-      .rect(50, y - 2, 500, 20).fill();
+      .rect(50, y - 2, 550, rowHeight).fill();
     doc.fillColor('#000000')
-      .text(score.name || 'N/A', 50, y, { width: 100, align: 'left' })
-      .text(score.score || 'N/A', 150, y, { width: 100, align: 'left' })
-      .text(score.grade || 'N/A', 250, y, { width: 100, align: 'left' })
-      .text(score.remarks || 'N/A', 350, y, { width: 100, align: 'left' })
-      .text(score.position || 'N/A', 450, y, { width: 100, align: 'left' });
-    y += 20;
+      .text(score.name || 'N/A', 50, y, { width: 150, align: 'left' })
+      .text(score.score || 'N/A', 200, y, { width: 100, align: 'left' })
+      .text(score.grade || 'N/A', 300, y, { width: 100, align: 'left' })
+      .text(score.remarks || 'N/A', 400, y, { width: 100, align: 'left' })
+      .text(score.position || 'N/A', 500, y, { width: 100, align: 'left' });
+    y += rowHeight;
   });
 
   // Add some space before adding the total score and overall position
