@@ -17,7 +17,7 @@ const downloadImage = async (url, filepath) => {
 };
 
 const generateResultsPDF = async (studentResult) => {
-  const doc = new PDFDocument();
+  const doc = new PDFDocument({ margin: 50 });
   const pdfPath = path.join(__dirname, `${studentResult.fullName.replace(/ /g, '_')}_results.pdf`);
   
   // Ensure the directory exists
@@ -40,7 +40,7 @@ const generateResultsPDF = async (studentResult) => {
   // Download and add student photo
   const photoPath = path.join(tempDir, 'photo.jpg');
   await downloadImage(studentResult.photo.url, photoPath);
-  doc.moveDown().image(photoPath, { width: 100, height: 100, align: 'center' }).moveDown(1.5);
+  doc.moveDown().image(photoPath, { fit: [100, 100], align: 'center' }).moveDown(1.5);
 
   // Draw table headers
   doc.fontSize(12).fillColor('#000000')
@@ -63,6 +63,9 @@ const generateResultsPDF = async (studentResult) => {
       .text(score.position || 'N/A', 450, y, { width: 100, align: 'left' });
     y += 20;
   });
+
+  // Add some space before adding the total score and overall position
+  y += 20;
 
   // Add total score and overall position
   doc.moveDown().fillColor('#000000')
