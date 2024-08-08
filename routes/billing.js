@@ -24,7 +24,7 @@ router.get('/bills/class_students/:academicYearId/:academicTermId/:classSessionI
 router.get('/bills/class_students/:academicYearId/:classSessionId', billingController.classStudentsBillings);
 
 // Calculate total amount owed by a student and check for overpayment
-router.get('/billings/student/owed/:id', billingController.getTotalAmountOwed)
+router.get('/billings/student/owed/:id', billingController.getSingleStudentTotalAmountOwed)
 
 // Calculate total amount owed by class students and check for overpayment
 router.get('/billings/students/owed/:classSessionId', billingController.classStudentsTotalAmountOwed)
