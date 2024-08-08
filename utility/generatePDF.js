@@ -119,7 +119,7 @@ exports.generateFeesPDF = async (studentFees) => {
   // Draw table headers
   doc.fontSize(12).fillColor('#000000');
   const headers = ['Item', 'Amount (GHS)'];
-  const headerX = [50, 200];
+  const headerX = [50, 400];  // Adjusted column position for better alignment
   headers.forEach((header, i) => {
     doc.text(header, headerX[i], doc.y, { underline: true });
   });
@@ -129,9 +129,9 @@ exports.generateFeesPDF = async (studentFees) => {
   const rowHeight = 30; // Increase row height for better readability
   studentFees.currentBill.forEach((bill, index) => {
     doc.fillColor(index % 2 === 0 ? '#F0F0F0' : '#FFFFFF')
-      .rect(50, y - 5, 550, rowHeight).fill(); // Increase row height
+      .rect(50, y - 5, 500, rowHeight).fill(); // Increase row height
     doc.fillColor('#000000');
-    const values = [bill.name, bill.amount];
+    const values = [bill.name, bill.amount.toFixed(2)];  // Ensure amounts are formatted to two decimal places
     values.forEach((value, i) => {
       doc.text(value, headerX[i], y, { width: headerX[i+1] ? headerX[i+1] - headerX[i] - 10 : 95, align: 'left' });
     });
@@ -143,9 +143,9 @@ exports.generateFeesPDF = async (studentFees) => {
 
   // Add totals and final details
   doc.fillColor('#000000')
-    .text(`Total Fees: ${studentFees.currentBillTotal || 'N/A'}`, 50, y)
-    .text(`Previous Balance: ${studentFees.overPaid + studentFees.previousOwed || 'N/A'}`, 50, y + 20)
-    .text(`Amount Payable: ${studentFees.payable || 'N/A'}`, 50, y + 40);
+    .text(`Total Fees: GHS ${studentFees.currentBillTotal?.toFixed(2) || 'N/A'}`, 50, y)
+    .text(`Previous Balance: GHS ${(studentFees.previousOwed + studentFees.overPaid).toFixed(2) || 'N/A'}`, 50, y + 20)
+    .text(`Amount Payable: GHS ${studentFees.payable?.toFixed(2) || 'N/A'}`, 50, y + 40);
 
   doc.end();
 
@@ -154,6 +154,7 @@ exports.generateFeesPDF = async (studentFees) => {
 
   return pdfPath;
 };
+
 
 
 
