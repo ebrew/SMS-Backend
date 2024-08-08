@@ -36,7 +36,7 @@ exports.generateResultsPDF = async (studentResult) => {
   doc.fontSize(12).fillColor('#000000')
     .text(`Department of ${studentResult.department || 'N/A'}`, { align: 'center' }).moveDown(0.5)
     .text(`Programme: ${studentResult.programme || 'N/A'}`, { align: 'center' }).moveDown(0.5)
-    .text(`Class: ${studentFees.classSession || 'N/A'}`, { align: 'center' }).moveDown(0.5)
+    .text(`Class: ${studentResult.classSession || 'N/A'}`, { align: 'center' }).moveDown(0.5)
 
   // Semester and Year
   doc.fontSize(12).fillColor('#000000')
@@ -89,7 +89,6 @@ exports.generateResultsPDF = async (studentResult) => {
 
   return pdfPath;
 };
-
 
 exports.generateFeesPDF = async (studentFees) => {
  
@@ -153,10 +152,8 @@ exports.generateFeesPDF = async (studentFees) => {
   y += 20;
   doc.fontSize(12).fillColor('#000000')
     .text(`Total Fees: GHS ${studentFees.currentBillTotal?.toFixed(2) || 'N/A'}`, 50, y)
-    .text(`Balance from previous academic year: GHS ${(studentFees.previousOwed + studentFees.overPaid).toFixed(2) || 'N/A'}`, 50, y + 20)
+    .text(`Previous Balance: GHS ${(studentFees.previousOwed + studentFees.overPaid).toFixed(2) || 'N/A'}`, 50, y + 20)
     .text(`Amount Paid: GHS ${studentFees.amountPaid?.toFixed(2) || 'N/A'}`, 50, y + 40)
-    .text(`Amount Exempted: GHS ${studentFees.amountExempted?.toFixed(2) || 'N/A'}`, 50, y + 60)
-    .text(`Amount Refunded: GHS ${studentFees.amountRefunded?.toFixed(2) || 'N/A'}`, 50, y + 80)
     .text(`Amount Payable: GHS ${studentFees.payable?.toFixed(2) || 'N/A'}`, 50, y + 100);
 
   // Add signature section
