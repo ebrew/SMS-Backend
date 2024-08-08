@@ -395,7 +395,136 @@ exports.classStudentsBillings = async (req, res) => {
 };
 
 // Calculate total amount owed by a student and check for overpayment
+exports.fetchSingleStudentBill = async (studentId) => {
+
+  try {
+    const studentIdParsed = parseInt(studentId, 10);
+
+    // Fetch total fees, total payments, and overpaid amounts in one query
+    const billingSummary = await db.Billing.findAll({
+      where: { studentId: studentIdParsed },
+      include: {
+        model: db.AcademicTerm,
+        where: {
+          status: { [Op.notIn]: ['Pending', 'Active'] }
+        },
+        attributes: [] // Exclude term attributes to optimize query
+      },
+      attributes: [
+        [db.sequelize.fn('SUM', db.sequelize.col('remainingAmount')), 'totalFees'],
+        [db.sequelize.fn('SUM', db.sequelize.col('totalPaid')), 'totalPayments'],
+        [db.sequelize.fn('SUM', db.sequelize.col('overPaid')), 'totalOverpaid']
+      ],
+      raw: true
+    });
+
+    let totalFees = 0;
+    let totalPayments = 0;
+    let totalOverpaid = 0;
+
+    if (billingSummary.length > 0) {
+      totalFees = parseFloat(billingSummary[0].totalFees) || 0;
+      totalPayments = parseFloat(billingSummary[0].totalPayments) || 0;
+      totalOverpaid = parseFloat(billingSummary[0].totalOverpaid) || 0;
+    }
+
+    // Fetch the current bill for the active academic term
+    const currentBill = await db.Billing.findOne({
+      where: { studentId: studentIdParsed },
+      include: [
+        { model: db.AcademicTerm, where: { status: 'Active' } },
+        { model: db.AcademicYear, where: { status: 'Active' } },
+        {
+          model: db.BillingDetail,
+          include: {
+            model: db.FeeType,
+            attributes: ['id', 'name']
+          }
+        }
+      ]
+    });
+
+    let billingDetails = [];
+
+    if (currentBill) {
+      billingDetails = currentBill.BillingDetails.map(detail => ({
+        id: detail.id,
+        feeTypeId: detail.FeeType.id,
+        name: detail.FeeType.name,
+        amount: detail.amount
+      }));
+      totalOverpaid += currentBill.overPaid;
+    }
+
+    // Fetch student's class details for the current academic year
+    const studentClass = await db.ClassStudent.findOne({
+      where: { studentId: studentIdParsed, academicYearId: currentBill ? currentBill.academicYearId : null },
+      include: [
+        {
+          model: db.Section,
+          attributes: ['name'],
+          include: { model: db.Class, attributes: ['name'] }
+        },
+        {
+          model: db.Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto']
+        }
+      ]
+    });
+
+    if (!studentClass) throw new Error('Student class information not found');
+
+    const response = {
+      academicYear: currentBill?.AcademicYear?.name || 'N/A',
+      academicTerm: currentBill?.AcademicTerm?.name || 'N/A',
+      classSession: `${studentClass.Section.Class.name} (${studentClass.Section.name})`,
+      studentId: studentClass.Student.id,
+      fullName: studentClass.Student.middleName
+        ? `${studentClass.Student.firstName} ${studentClass.Student.middleName} ${studentClass.Student.lastName}`
+        : `${studentClass.Student.firstName} ${studentClass.Student.lastName}`,
+      photo: studentClass.Student.passportPhoto,
+      currentBill: billingDetails,
+      currentBillTotal: currentBill ? currentBill.totalFees : 0,
+      previousOwed: totalFees,
+      overPaid: totalOverpaid,
+      payable: (currentBill ? currentBill.remainingAmount : 0) + totalFees - totalOverpaid
+    };
+
+    return response;
+  } catch (error) {
+    throw error; // Re-throw the error
+  }
+};
+
+// Calculate total amount owed by a student and check for overpayment
 exports.getTotalAmountOwed = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    const studentId = parseInt(req.params.id, 10);
+
+    if (!studentId || studentId <= 0) {
+      return res.status(400).json({ message: 'Valid Student ID is required!' });
+    }
+
+    try {
+      // Fetching the student's bill
+      const results = await this.fetchSingleStudentBill(studentId);
+      return res.status(200).json(results); 
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        console.error('Validation Error:', error.message);
+        return res.status(400).json({ message: error.message });
+      } else {
+        console.error('Internal Server Error:', error.message);
+        return res.status(500).json({ message: "Can't calculate the total amount owed at the moment!" });
+      }
+    }
+  });
+};
+
+// Calculate total amount owed by a student and check for overpayment
+exports.getTotalAmountOwed1 = async (req, res) => {
   passport.authenticate("jwt", { session: false })(req, res, async (err) => {
     if (err) return res.status(401).json({ message: 'Unauthorized' });
 

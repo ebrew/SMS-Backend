@@ -517,6 +517,12 @@ Method: POST
 Content: { studentIds, classSessionId, academicTermId }
 Authorization: Bearer <token from login>
 
+90. // Forward list of students' fees to parents
+API: << server >>/api/v1/notifications/student/fees_parent
+Method: POST
+Content: { studentIds }
+Authorization: Bearer <token from login>
+
 
 
 

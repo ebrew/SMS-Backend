@@ -1,9 +1,10 @@
 require('dotenv').config();
 const db = require("../db/models/index")
 const { transporter } = require('../utility/email');
-const generateResultsPDF = require('../utility/generateResultPDF');
+const { generateResultsPDF, generateFeesPDF } = require('../utility/generatePDF');
 const fs = require('fs');
 const { fetchClassResults } = require('./result');
+const { fetchSingleStudentBill } = require('./billing');
 const passport = require('../db/config/passport')
 
 // Forward list of students results to parent for a particular academic term
@@ -78,6 +79,88 @@ exports.sendStudentResultsToParent = async (req, res) => {
           fs.unlinkSync(pdfPath);
 
           results.push({ studentId, status: 'Results sent successfully' });
+        } catch (error) {
+          console.error(`Error sending results for studentId ${studentId}:`, error);
+          results.push({ studentId, status: `Error: ${error.message}` });
+        }
+      }));
+
+      res.status(200).json({ message: 'Email processed successfully!', results });
+
+    } catch (error) {
+      console.error('Error processing request:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  });
+};
+
+// Forward list of students fees to parent for a particular academic term
+exports.sendStudentFeesToParent = async (req, res) => {
+  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
+    if (err) return res.status(401).json({ message: 'Unauthorized' });
+
+    let { studentIds } = req.body;
+    const results = [];
+
+    try {
+      // Parse IDs as integers
+      studentIds = studentIds.map(id => parseInt(id, 10));
+
+      // Fetch all required student and parent data in a single query
+      const students = await db.Student.findAll({
+        where: { id: studentIds },
+        include: {
+          model: db.Parent,
+          as: 'Parent',
+          attributes: ['email', 'fullName', 'title']
+        }
+      });
+
+      // Process each student in parallel
+      await Promise.all(studentIds.map(async (studentId) => {
+        try {
+          const studentFees = await fetchSingleStudentBill(studentId)
+          const student = students.find(s => s.id === studentId);
+
+          if (!student) {
+            results.push({ studentId, status: 'Student not found' });
+            return;
+          }
+
+          if (!studentFees) {
+            results.push({ studentId, status: "Student bill not found!" });
+            return;
+          }
+
+          const parentName = student.Parent.title
+            ? `Dear ${student.Parent.title} ${student.Parent.fullName},\n\nAttached are the fees for your ward, ${studentFees.fullName}.\n\nBest regards,\nSchool Management System`
+            : `Dear ${student.Parent.fullName},\n\nAttached are the fees for your ward, ${studentFees.fullName}.\n\nBest regards,\nSchool Management System`;
+
+          // Generate the PDF for the student result
+          const pdfPath = await generateFeesPDF(studentFees);
+
+          // Prepare email options
+          const mailOptions = {
+            from: process.env.EMAIL,
+            to: student.Parent.email,
+            subject: `Fees for ${studentFees.fullName || 'Student'}`,
+            text: parentName,
+            attachments: [
+              {
+                filename: `${(studentFees.fullName || 'Student').replace(/ /g, '_')}_fees.pdf`,
+                path: pdfPath,
+                contentType: 'application/pdf'
+              }
+            ]
+          };
+
+          // Send the email with the PDF attachment
+          await transporter.sendMail(mailOptions);
+
+          // Clean up the temporary file
+          fs.unlinkSync(pdfPath);
+
+          results.push({ studentId, status: 'Fees sent successfully' });
         } catch (error) {
           console.error(`Error sending results for studentId ${studentId}:`, error);
           results.push({ studentId, status: `Error: ${error.message}` });
