@@ -92,6 +92,7 @@ exports.generateResultsPDF = async (studentResult) => {
 
 
 exports.generateFeesPDF = async (studentFees) => {
+ 
   const doc = new PDFDocument({ margin: 50 });
   const pdfPath = path.join(__dirname, `${studentFees.fullName.replace(/ /g, '_')}_fees.pdf`);
 
@@ -171,6 +172,7 @@ exports.generateFeesPDF = async (studentFees) => {
 
   return pdfPath;
 };
+
 
 
 
