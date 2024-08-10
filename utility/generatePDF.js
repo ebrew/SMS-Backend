@@ -30,30 +30,30 @@ exports.generateResultsPDF = async (studentResult) => {
 
   // University Header
   doc.fontSize(14).fillColor('#1a237e').text('St.Peters Junior High School', { align: 'center' });
-    doc.fontSize(12).fillColor('black').text('Student Results', { align: 'center' });
-    
-    doc.moveDown(2)
+  doc.fontSize(12).fillColor('black').text('Student Results', { align: 'center' });
 
-    doc.fontSize(12).fillColor('black')
-    .text(`Academic Year : 2024 / 2025`)
-    .text(`Academic Term : Term 1`)
+  doc.moveDown(2)
+
+  doc.fontSize(12).fillColor('black')
+    .text(`Academic Year : ${studentResult.academicYear || 'N/A'}`)
+    .text(`Academic Term : ${studentResult.academicTerm || 'N/A'}`)
     .text(`Class : ${studentResult.classSession || 'N/A'}`)
     .text(`Student : ${studentResult.fullName || 'N/A'}`);
 
 
-  doc.rect(40,205,pageWidth-80,rowHeight).fill('blue').stroke()
-    
+  doc.rect(40, 205, pageWidth - 80, rowHeight).fill('blue').stroke()
+
   // Draw headers
   doc.fontSize(12).font('Helvetica-Bold');
-  doc.fillColor("white").text("Subject",70,209)
+  doc.fillColor("white").text("Subject", 70, 209)
 
-  doc.fillColor("white").text("Score",230,209)
+  doc.fillColor("white").text("Score", 230, 209)
 
-  doc.fillColor("white").text("Grade",300,209)
+  doc.fillColor("white").text("Grade", 300, 209)
 
-  doc.fillColor("white").text("Remarks",370,209)
+  doc.fillColor("white").text("Remarks", 370, 209)
 
-  doc.fillColor("white").text("Position",490,209)
+  doc.fillColor("white").text("Position", 490, 209)
 
   doc.fontSize(10).font('Helvetica');
 
@@ -61,13 +61,13 @@ exports.generateResultsPDF = async (studentResult) => {
   studentResult.subjectScores.forEach((course, index) => {
     const rowColor = i % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
 
-    doc.rect(40,225 + 27 * i,pageWidth-80,25).fill(rowColor).stroke()
+    doc.rect(40, 225 + 27 * i, pageWidth - 80, 25).fill(rowColor).stroke()
 
-    doc.fillColor("black").text(data.name, 70 , 230 + 27 * i,{width:160});
-    doc.fillColor("black").text(data.score, 230 , 230 + 27 * i);
-    doc.fillColor("black").text(data.grade, 300 , 230 + 27 * i);
-    doc.fillColor("black").text(data.remarks, 370 , 230 + 27 * i);
-    doc.fillColor("black").text(data.position, 490 , 230 + 27 * i);
+    doc.fillColor("black").text(data.name, 70, 230 + 27 * i, { width: 160 });
+    doc.fillColor("black").text(data.score, 230, 230 + 27 * i);
+    doc.fillColor("black").text(data.grade, 300, 230 + 27 * i);
+    doc.fillColor("black").text(data.remarks, 370, 230 + 27 * i);
+    doc.fillColor("black").text(data.position, 490, 230 + 27 * i);
   });
 
   // Summary Information
