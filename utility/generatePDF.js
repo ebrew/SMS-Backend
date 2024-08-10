@@ -58,7 +58,7 @@ exports.generateResultsPDF = async (studentResult) => {
   doc.fontSize(10).font('Helvetica');
 
 
-  studentResult.subjectScores.forEach((course, index) => {
+  studentResult.subjectScores.forEach((data, i) => {
     const rowColor = i % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
 
     doc.rect(40, 225 + 27 * i, pageWidth - 80, 25).fill(rowColor).stroke()
