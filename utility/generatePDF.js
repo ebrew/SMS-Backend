@@ -32,9 +32,17 @@ exports.generateResultsPDF = async (studentResult) => {
   doc.fontSize(16).fillColor('#1a237e')
     .text('SCHOOL NAME', { align: 'center' }).moveDown(0.5);
 
-  // Doc title
+  // Document title
   doc.fontSize(14).fillColor('#000000')
     .text(`RESULTS SLIP`, { align: 'center' }).moveDown(1);
+
+  // Download and add student photo
+  const photoPath = path.join(tempDir, 'photo.jpg');
+  await downloadImage(studentResult.photo.url, photoPath);
+  
+  const photoX = doc.page.width - 150; // Position photo on the right side
+  const photoY = doc.y; // Align photo with the top of the student information
+  doc.image(photoPath, photoX, photoY, { width: 100, height: 100 });
 
   // Student Information
   doc.fontSize(12).fillColor('#000000')
@@ -47,22 +55,30 @@ exports.generateResultsPDF = async (studentResult) => {
   doc.moveDown(1);
 
   // Draw table headers
-  doc.fontSize(12).fillColor('#ffffff').rect(50, doc.y, 500, 25).fill('#1a237e');
+  const headerX = [50, 250, 350, 450, 550]; // Adjusted positions for proper alignment
+  doc.fontSize(12).fillColor('#ffffff')
+    .rect(50, doc.y, 500, 25).fill('#1a237e'); // Background for headers
+  doc.fontSize(12).fillColor('#ffffff');
   const headers = ['Subject', 'Score', 'Grade', 'Remarks', 'Position'];
-  const headerX = [50, 150, 320, 380, 450];
   headers.forEach((header, i) => {
-    doc.text(header, headerX[i], doc.y + 5, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
+    doc.text(header, headerX[i], doc.y + 5, { align: 'left' });
   });
 
   // Draw table rows
-  let y = doc.y + 30;
+  let y = doc.y + 30; // Start after the headers
   studentResult.subjectScores.forEach((course, index) => {
     const rowColor = index % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
     doc.fillColor(rowColor).rect(50, y - 5, 500, 20).fill();
     doc.fillColor('#000000');
-    const values = [course.name || 'N/A', course.score || 'N/A', course.grade || 'N/A', course.remarks || 'N/A', course.position || 'N/A'];
+    const values = [
+      course.name || 'N/A',
+      course.score || 'N/A',
+      course.grade || 'N/A',
+      course.remarks || 'N/A',
+      course.position || 'N/A'
+    ];
     values.forEach((value, i) => {
-      doc.text(value, headerX[i], y, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
+      doc.text(value, headerX[i], y, { align: 'left' });
     });
     y += 20;
   });
@@ -81,8 +97,12 @@ exports.generateResultsPDF = async (studentResult) => {
 
   doc.end();
 
+  // Clean up the downloaded photo
+  fs.unlinkSync(photoPath);
+
   return pdfPath;
 };
+
 
 
 exports.generateFeesPDF = async (studentFees) => {
