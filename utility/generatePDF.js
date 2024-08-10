@@ -90,11 +90,8 @@ exports.generateResultsPDF = async (studentResult) => {
   return pdfPath;
 };
 
-
-
-
 exports.generateFeesPDF = async (studentFees) => {
- 
+
   const doc = new PDFDocument({ margin: 50 });
   const pdfPath = path.join(__dirname, `${studentFees.fullName.replace(/ /g, '_')}_fees.pdf`);
 
@@ -135,7 +132,7 @@ exports.generateFeesPDF = async (studentFees) => {
   const headers = ['Sn', 'Item', 'Amount (GHS)'];
   const headerX = [50, 100, 400];
   headers.forEach((header, i) => {
-    doc.text(header, headerX[i], doc.y - 5, { width: headerX[i+1] ? headerX[i+1] - headerX[i] - 10 : 95, align: 'left' });
+    doc.text(header, headerX[i], doc.y - 5, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 95, align: 'left' });
   });
 
   // Draw table rows with alternate row colors
@@ -146,7 +143,7 @@ exports.generateFeesPDF = async (studentFees) => {
     doc.fillColor('#000000');
     const values = [(index + 1).toString(), bill.name, bill.amount.toFixed(2)];
     values.forEach((value, i) => {
-      doc.text(value, headerX[i], y, { width: headerX[i+1] ? headerX[i+1] - headerX[i] - 10 : 95, align: 'left' });
+      doc.text(value, headerX[i], y, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 95, align: 'left' });
     });
     y += 20;
   });
