@@ -28,45 +28,39 @@ exports.generateResultsPDF = async (studentResult) => {
 
   doc.pipe(fs.createWriteStream(pdfPath));
 
-  // University Header
-  doc.fontSize(14).fillColor('#1a237e')
+  // School name
+  doc.fontSize(16).fillColor('#1a237e')
     .text('SCHOOL NAME', { align: 'center' }).moveDown(0.5);
 
-  // Department and Program Info
-  doc.fontSize(12).fillColor('#000000')
-    .text(`Department of ${studentResult.department || 'N/A'}`, { align: 'center' }).moveDown(0.5)
-    .text(`Programme: ${studentResult.programme || 'N/A'}`, { align: 'center' }).moveDown(0.5)
-    .text(`Class: ${studentResult.classSession || 'N/A'}`, { align: 'center' }).moveDown(0.5)
-
-  // Semester and Year
-  doc.fontSize(12).fillColor('#000000')
-    .text(`RESULTS SLIP FOR THE ${studentResult.academicterm || 'N/A'}, ${studentResult.academicYear || 'N/A'} ACADEMIC YEAR`, { align: 'center' }).moveDown(1.5);
+  // Doc title
+  doc.fontSize(14).fillColor('#000000')
+    .text(`RESULTS SLIP`, { align: 'center' }).moveDown(1);
 
   // Student Information
   doc.fontSize(12).fillColor('#000000')
-    .text(`Date Printed: ${new Date().toLocaleDateString()}`, 50, doc.y)
-    .text(`StudentID: ${studentResult.studentId || 'N/A'}`, 50, doc.y + 20)
-    .text(`Index No.: ${studentResult.indexNumber || 'N/A'}`, 50, doc.y + 40)
-    .text(`Name: ${studentResult.fullName || 'N/A'}`, 50, doc.y + 60)
+    .text(`Academic Year: ${studentResult.academicYear || 'N/A'}`, 50)
+    .text(`Class: ${studentResult.classSession || 'N/A'}`, 50)
+    .text(`Student Name: ${studentResult.fullName || 'N/A'}`, 50)
+    .text(`Date Printed: ${new Date().toLocaleDateString()}`, 50);
 
-  // Move down before the table
-  doc.moveDown(2);
+  // Add some space before the table
+  doc.moveDown(1);
 
   // Draw table headers
-  doc.fontSize(10).fillColor('#ffffff').rect(50, doc.y - 5, 500, 25).fill('#1a237e');
+  doc.fontSize(12).fillColor('#ffffff').rect(50, doc.y, 500, 25).fill('#1a237e');
   const headers = ['Subject', 'Score', 'Grade', 'Remarks', 'Position'];
   const headerX = [50, 150, 320, 380, 450];
   headers.forEach((header, i) => {
-    doc.text(header, headerX[i], doc.y, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
+    doc.text(header, headerX[i], doc.y + 5, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
   });
 
   // Draw table rows
-  let y = doc.y + 20;
+  let y = doc.y + 30;
   studentResult.subjectScores.forEach((course, index) => {
     const rowColor = index % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
     doc.fillColor(rowColor).rect(50, y - 5, 500, 20).fill();
     doc.fillColor('#000000');
-    const values = [course.name || 'N/A', course.score || 'N/A', course.grade || 'N/A', course.remarks || 'N/A', course.position|| 'N/A'];
+    const values = [course.name || 'N/A', course.score || 'N/A', course.grade || 'N/A', course.remarks || 'N/A', course.position || 'N/A'];
     values.forEach((value, i) => {
       doc.text(value, headerX[i], y, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
     });
@@ -74,21 +68,22 @@ exports.generateResultsPDF = async (studentResult) => {
   });
 
   // Summary Information
-  y += 30;
+  doc.moveDown(2);
   doc.fontSize(12).fillColor('#000000')
-  .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
-  .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
+    .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50)
+    .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50);
 
   // Signature lines
-  y += 180;
+  doc.moveDown(4);
   doc.fontSize(12).fillColor('#000000')
-    .text('Student\'s Signature................................................', 50, y)
-    .text('Academic Supervisor/Exams Officer\'s Signature................................................', 50, y + 20);
+    .text('Student\'s Signature................................................', 50)
+    .text('Academic Supervisor/Exams Officer\'s Signature................................................', 50);
 
   doc.end();
 
   return pdfPath;
 };
+
 
 exports.generateFeesPDF = async (studentFees) => {
  
@@ -169,9 +164,3 @@ exports.generateFeesPDF = async (studentFees) => {
 
   return pdfPath;
 };
-
-
-
-
-
-
