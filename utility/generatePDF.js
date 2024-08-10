@@ -28,62 +28,59 @@ exports.generateResultsPDF = async (studentResult) => {
 
   doc.pipe(fs.createWriteStream(pdfPath));
 
-  // School name
-  doc.fontSize(16).fillColor('#1a237e')
-    .text('SCHOOL NAME', { align: 'center' }).moveDown(0.5);
+  // University Header
+  doc.fontSize(14).fillColor('#1a237e').text('St.Peters Junior High School', { align: 'center' });
+    doc.fontSize(12).fillColor('black').text('Student Results', { align: 'center' });
+    
+    doc.moveDown(2)
 
-  // Doc title
-  doc.fontSize(14).fillColor('#000000')
-    .text(`RESULTS SLIP`, { align: 'center' }).moveDown(1.5);
+    doc.fontSize(12).fillColor('black')
+    .text(`Academic Year : 2024 / 2025`)
+    .text(`Academic Term : Term 1`)
+    .text(`Class : ${studentResult.classSession || 'N/A'}`)
+    .text(`Student : ${studentResult.fullName || 'N/A'}`);
 
-  // Student Information
-  const infoY = doc.y;
-  doc.fontSize(12).fillColor('#000000')
-    .text(`Academic Year: ${studentResult.academicYear || 'N/A'}`, 50)
-    .text(`Class: ${studentResult.classSession || 'N/A'}`, 50)
-    .text(`Student Name: ${studentResult.fullName || 'N/A'}`, 50)
-    .text(`Date Printed: ${new Date().toLocaleDateString()}`, 50);
 
-  // Add the student's photo
-  const photoPath = path.join(tempDir, 'photo.jpg');
-  await downloadImage(studentResult.photo.url, photoPath);
-  doc.image(photoPath, doc.page.width - 150, infoY, { width: 100, height: 100 });
+  doc.rect(40,205,pageWidth-80,rowHeight).fill('blue').stroke()
+    
+  // Draw headers
+  doc.fontSize(12).font('Helvetica-Bold');
+  doc.fillColor("white").text("Subject",70,209)
 
-  // Move down before the table
-  doc.moveDown(2);
+  doc.fillColor("white").text("Score",230,209)
 
-  // Draw table headers with adjusted widths
-  doc.fontSize(12).fillColor('#ffffff').rect(50, doc.y, 500, 25).fill('#1a237e');
-  const headers = ['Subject', 'Score', 'Grade', 'Remarks', 'Position'];
-  const headerX = [50, 250, 320, 380, 450];
-  headers.forEach((header, i) => {
-    doc.text(header, headerX[i], doc.y + 8, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
-  });
+  doc.fillColor("white").text("Grade",300,209)
 
-  // Draw table rows with adjusted column widths
-  let y = doc.y + 30;
+  doc.fillColor("white").text("Remarks",370,209)
+
+  doc.fillColor("white").text("Position",490,209)
+
+  doc.fontSize(10).font('Helvetica');
+
+
   studentResult.subjectScores.forEach((course, index) => {
-    const rowColor = index % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
-    doc.fillColor(rowColor).rect(50, y - 5, 500, 20).fill();
-    doc.fillColor('#000000');
-    const values = [course.name || 'N/A', course.score || 'N/A', course.grade || 'N/A', course.remarks || 'N/A', course.position || 'N/A'];
-    values.forEach((value, i) => {
-      doc.text(value, headerX[i], y, { width: headerX[i + 1] ? headerX[i + 1] - headerX[i] - 10 : 80, align: 'left' });
-    });
-    y += 20;
+    const rowColor = i % 2 === 0 ? '#e8eaf6' : '#ffffff'; // Alternate row colors
+
+    doc.rect(40,225 + 27 * i,pageWidth-80,25).fill(rowColor).stroke()
+
+    doc.fillColor("black").text(data.name, 70 , 230 + 27 * i,{width:160});
+    doc.fillColor("black").text(data.score, 230 , 230 + 27 * i);
+    doc.fillColor("black").text(data.grade, 300 , 230 + 27 * i);
+    doc.fillColor("black").text(data.remarks, 370 , 230 + 27 * i);
+    doc.fillColor("black").text(data.position, 490 , 230 + 27 * i);
   });
 
   // Summary Information
-  y += 30;
-  doc.fontSize(12).fillColor('#000000')
-    .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
-    .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
+  // y += 30;
+  // doc.fontSize(12).fillColor('#000000')
+  // .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
+  // .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
 
   // Signature lines
-  y += 180;
-  doc.fontSize(12).fillColor('#000000')
-    .text('Student\'s Signature................................................', 50, y)
-    .text('Academic Supervisor/Exams Officer\'s Signature................................................', 50, y + 20);
+  // y += 180;
+  // doc.fontSize(12).fillColor('#000000')
+  //   .text('Student\'s Signature................................................', 50, y)
+  //   .text('Academic Supervisor/Exams Officer\'s Signature................................................', 50, y + 20);
 
   doc.end();
 
@@ -169,3 +166,9 @@ exports.generateFeesPDF = async (studentFees) => {
 
   return pdfPath;
 };
+
+
+
+
+
+
