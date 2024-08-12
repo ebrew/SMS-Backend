@@ -29,7 +29,7 @@ exports.allTeachers = async (req, res) => {
         // Calculate the number of subjects
         let subjectsCount = 0;
         assignedClasses.forEach((assignedClass) => {
-          subjectsCount += assignedClass.AssignedSubject ? 1 : 0; 
+          subjectsCount += assignedClass.AssignedSubject ? assignedClass.AssignedSubject.length : 0;
         });
 
         return {
