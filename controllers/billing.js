@@ -6,8 +6,8 @@ const logUserAction = require('../utility/logUserAction');
 
 // Create a new fee type
 exports.addFeeType = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, description } = req.body;
@@ -25,13 +25,13 @@ exports.addFeeType = async (req, res) => {
       console.error('Error creating fee type:', error);
       res.status(500).json({ message: "Can't create fee type at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Updating an existing fee type
 exports.updateFeeType = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     const transaction = await db.sequelize.transaction();
     try {
@@ -67,13 +67,13 @@ exports.updateFeeType = async (req, res) => {
       console.error('Error updating fee type:', error);
       res.status(500).json({ message: "Can't update fee type at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get all Fee Types for multi selection when billing
 exports.allFeeTypes = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const feeTypes = await db.FeeType.findAll({ order: [['name', 'ASC']] });
@@ -83,13 +83,13 @@ exports.allFeeTypes = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
-};
+  }) (req, res);
+}
 
 // Delete a Fee Type
 exports.deleteFeeType = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -112,13 +112,13 @@ exports.deleteFeeType = async (req, res) => {
       console.error('Error deleting fee type:', error);
       return res.status(500).json({ message: "Can't delete fee type at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Add fee type to billing records or create new records if not found
 exports.createOrUpdateBillingRecord = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     let { studentIds, feeDetails, academicYearId, academicTermId } = req.body;
 
@@ -263,13 +263,13 @@ exports.createOrUpdateBillingRecord = async (req, res) => {
       console.error('Error adding fee type to billing records:', error);
       res.status(500).json({ message: "Can't create or update billing records at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Fetch class students billing details for a particular academic term or year
 exports.classStudentsBillings = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       let { academicYearId, academicTermId, classSessionId } = req.params;
@@ -391,7 +391,7 @@ exports.classStudentsBillings = async (req, res) => {
 
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Helper function to calculate total amount owed by a student and check for overpayment
@@ -498,8 +498,8 @@ exports.fetchSingleStudentBill = async (studentId) => {
 
 // Calculate total amount owed by a student and check for overpayment
 exports.getSingleStudentTotalAmountOwed = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     const studentId = parseInt(req.params.id, 10);
 
@@ -520,13 +520,13 @@ exports.getSingleStudentTotalAmountOwed = async (req, res) => {
         return res.status(500).json({ message: "Can't calculate the total amount owed at the moment!" });
       }
     }
-  });
+  })(req, res);
 };
 
 // Calculate total amount owed by class students and check for overpayment
 exports.classStudentsTotalAmountOwed = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       let { classSessionId } = req.params;
@@ -660,13 +660,13 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
       console.error('Error fetching total amount owed by class students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Process fee payment for a student
 exports.processFeePayment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     const { studentId, amount } = req.body;
 
@@ -775,7 +775,7 @@ exports.processFeePayment = async (req, res) => {
       console.error('Error processing payment:', error);
       return res.status(500).json({ message: "Can't process payment at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 

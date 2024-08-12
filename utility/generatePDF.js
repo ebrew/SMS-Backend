@@ -27,6 +27,8 @@ exports.generateResultsPDF = async (studentResult) => {
   }
 
   doc.pipe(fs.createWriteStream(pdfPath));
+  const pageWidth = doc.page.width
+  const rowHeight = 20
 
   // University Header
   doc.fontSize(14).fillColor('#1a237e').text('St.Peters Junior High School', { align: 'center' });
@@ -38,7 +40,12 @@ exports.generateResultsPDF = async (studentResult) => {
     .text(`Academic Year : ${studentResult.academicYear || 'N/A'}`)
     .text(`Academic Term : ${studentResult.academicTerm || 'N/A'}`)
     .text(`Class : ${studentResult.classSession || 'N/A'}`)
-    .text(`Student : ${studentResult.fullName || 'N/A'}`);
+    .text(`Student Name: ${studentResult.fullName || 'N/A'}`);
+
+  // Add the student's photo
+  const photoPath = path.join(tempDir, 'photo.jpg');
+  await downloadImage(studentResult.photo.url, photoPath);
+  doc.image(photoPath, doc.page.width - 150, 110, { width: 100 });
 
 
   doc.rect(40, 205, pageWidth - 80, rowHeight).fill('blue').stroke()
@@ -70,17 +77,19 @@ exports.generateResultsPDF = async (studentResult) => {
     doc.fillColor("black").text(data.position, 490, 230 + 27 * i);
   });
 
-  // Summary Information
-  // y += 30;
-  // doc.fontSize(12).fillColor('#000000')
-  // .text(`Total Score: ${studentResult.totalScore || 'N/A'}`, 50, y)
-  // .text(`Overall Position: ${studentResult.position || 'N/A'}`, 50, y + 20);
 
-  // Signature lines
-  // y += 180;
+  // doc.moveDown(2)
+
+  // // Summary Information
   // doc.fontSize(12).fillColor('#000000')
-  //   .text('Student\'s Signature................................................', 50, y)
-  //   .text('Academic Supervisor/Exams Officer\'s Signature................................................', 50, y + 20);
+  // .text(`Total Score: ${studentResult.totalScore || 'N/A'}`)
+  // .text(`Overall Position: ${studentResult.position || 'N/A'}`);
+
+  // doc.moveDown(2)
+  // // Signature lines
+  // doc.fontSize(12).fillColor('#000000')
+  //   .text('Student\'s Signature................................................')
+  //   .text('Academic Supervisor/Exams Officer\'s Signature................................................');
 
   doc.end();
 
@@ -101,9 +110,9 @@ exports.generateFeesPDF = async (studentFees) => {
   doc.pipe(fs.createWriteStream(pdfPath));
 
   // Add document header with specific colors
-  doc.fontSize(16).fillColor('#1a237e').text('SCHOOL NAME', { align: 'center' }).moveDown(0.5);
-  doc.fontSize(14).fillColor('#1a237e').text('FINANCE OFFICE (STUDENTS\' SECTION)', { align: 'center' }).moveDown(0.5);
-  doc.fontSize(20).fillColor('#e65100').text('Bill Statement', { align: 'center' }).moveDown(1.5);
+  doc.fontSize(14).fillColor('#1a237e').text('SCHOOL NAME', { align: 'center' }).moveDown(0.5);
+  doc.fontSize(12).fillColor('#1a237e').text('FINANCE OFFICE (STUDENTS\' SECTION)', { align: 'center' }).moveDown(0.5);
+  doc.fontSize(12).fillColor('#e65100').text('Bill Statement', { align: 'center' }).moveDown(1.5);
 
   // Add student information with photo aligned to the right
   const photoPath = path.join(tempDir, 'photo.jpg');
@@ -111,16 +120,13 @@ exports.generateFeesPDF = async (studentFees) => {
 
   const infoY = doc.y;
   doc.fontSize(14).fillColor('#000000')
-    .text(`Student ID: ${studentFees.studentId || 'N/A'}`)
     .text(`Academic Year: ${studentFees.academicYear || 'N/A'}`)
     .text(`Class: ${studentFees.classSession || 'N/A'}`)
-    .text(`Index Number: ${studentFees.indexNumber || 'N/A'}`)
     .text(`Student Name: ${studentFees.fullName || 'N/A'}`)
-    .text(`Programme: ${studentFees.program || 'N/A'}`)
     .text(`Date: ${new Date().toLocaleDateString()}`)
     .moveDown(1.5);
 
-  doc.image(photoPath, doc.page.width - 150, infoY, { width: 100, height: 100 });
+  doc.image(photoPath, doc.page.width - 150, infoY, { width: 100 });
 
   doc.moveDown(4);
 

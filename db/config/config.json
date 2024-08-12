@@ -1,5 +1,5 @@
 {
-  "development1": {
+  "development": {
     "username": "postgres",
     "password": "ebrew",
     "database": "SMS",
@@ -13,7 +13,7 @@
     "host": "localhost",
     "dialect": "postgres"
   },
-  "development": {
+  "production": {
     "username": "ebrew",
     "password": "969jZhsq56kKla2hVTkiwMPJXXCAg50X",
     "database": "sms_lg7s",

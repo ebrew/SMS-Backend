@@ -4,8 +4,8 @@ const db = require("../db/models/index")
 const logUserAction = require('../utility/logUserAction');
 
 exports.promoteClassStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { students, nextClassSessionId } = req.body;
@@ -133,13 +133,13 @@ exports.promoteClassStudents = async (req, res) => {
 
       return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Promote class students by Admin (Complexity)
 exports.promoteClassStudentsByAdmin = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { students, nextAcademicYearId, nextClassSessionId } = req.body;
@@ -265,13 +265,13 @@ exports.promoteClassStudentsByAdmin = async (req, res) => {
       console.error('Error promoting class students:', error);
       return res.status(500).json({ message: "Can't promote class students at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Repeat class students by head teacher
 exports.repeatClassStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     const { students } = req.body;
     if (!students || !Array.isArray(students) || students.length === 0) {
@@ -396,13 +396,13 @@ exports.repeatClassStudents = async (req, res) => {
 
       return res.status(500).json({ message: "Can't repeat class students at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Repeat class students by Admin (Complexity)
 exports.repeatClassStudentsByAdmin = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     const { students, nextAcademicYearId } = req.body;
     if (!students || !nextAcademicYearId || !Array.isArray(students) || students.length === 0) {
@@ -524,7 +524,7 @@ exports.repeatClassStudentsByAdmin = async (req, res) => {
 
       return res.status(500).json({ message: "Can't repeat class students at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 

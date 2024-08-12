@@ -4,10 +4,9 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const passport = require('../db/config/passport')
 const { User, Student, Parent, Class, Section, ResetRequest, Department, AssignedTeacher, ClassStudent, AcademicYear } = require("../db/models/index")
+const db = require("../db/models/index")
 const Mail = require('../utility/email');
-const sendSMS = require('../utility/sendSMS');
 const { normalizeGhPhone, extractIdAndRoleFromToken, extractJsonFromToken } = require('../utility/cleaning');
-
 
 // Staff Login
 exports.login = async (req, res) => {
@@ -34,23 +33,8 @@ exports.login = async (req, res) => {
     if (!isPasswordValid)
       return res.status(400).json({ message: 'Invalid Credentials!' });
 
-    const token = jwt.sign({ id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role }, process.env.SECRET_KEY, { expiresIn: '5h' });
 
-    // let oldTokens = user.tokens || [];
-    // if (oldTokens.length) {
-    //   oldTokens = oldTokens.filter(t => {
-    //     const tokenCreationTime = parseInt(t.signedAt);
-    //     const currentTime = Date.now();
-    //     const timeDiff = (currentTime - tokenCreationTime) / 1000; // Difference in seconds
-    //     return timeDiff < 3600; // Filter out tokens created within the last hour
-    //   });
-    // }
-
-    // // Update the user document with the new tokens (filtered old tokens + new token)
-    // await User.update(
-    //   { tokens: [...oldTokens, { token, signedAt: Date.now().toString() }] },
-    //   { where: { id: user.id } }
-    // );
     const result = {
       message: 'Logged in successfully!', 
       "isPasswordReset": user.isPasswordReset, 
@@ -132,8 +116,8 @@ exports.loginPendingLogoutMethod = async (req, res) => {
 
 // Logout Method
 exports.logout = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
 
     try {
       const token = req.header('Authorization').replace('Bearer ', '');
@@ -150,14 +134,13 @@ exports.logout = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't log out at the moment!" });
     }
-  });
+  })(req, res) 
 };
 
 // Staff Registration
 exports.register = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId, address } = req.body;
@@ -188,14 +171,13 @@ exports.register = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot register at the moment!' });
     }
-  })
+  })(req, res) 
 }
 
 // Get a particular teacher's or student details
 exports.getUser = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
 
     try {
       const { id, role } = req.params;
@@ -246,15 +228,13 @@ exports.getUser = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res) 
 };
 
 // Update an existing staff
 exports.updateStaff = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
 
     try {
       const { userName, firstName, lastName, email, phone, role, staffID, gender, departmentId, address, dob } = req.body;
@@ -311,14 +291,13 @@ exports.updateStaff = async (req, res) => {
       console.error('Error updating staff:', error);
       return res.status(500).json({ message: 'Unable to update staff at the moment!' });
     }
-  });
+  }) (req, res) 
 };
 
 // Deleting an existing staff
 exports.deleteStaff = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
 
     try {
       const staffId = req.params.id;
@@ -340,15 +319,13 @@ exports.deleteStaff = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete staff at the moment' });
     }
-  });
+  })(req, res) 
 };
 
 // Reset staff account DEFAULT PASSWORD after account creation
 exports.defaultReset = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
-
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
     try {
       const userId = req.user.id;
       const { password } = req.body;
@@ -383,7 +360,7 @@ exports.defaultReset = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot reset password at the moment!' });
     }
-  });
+  })(req, res) 
 };
 
 // Request Password Reset from Admin
@@ -574,9 +551,8 @@ exports.adminResetPassword = async (req, res) => {
 
 // List of pending Password reset requests
 exports.pendingResetRequest = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' })
 
     try {
       const pending = await ResetRequest.findAll({
@@ -622,27 +598,25 @@ exports.pendingResetRequest = async (req, res) => {
       console.error('Error fetching resetRequests:', error);
       return res.status(500).json({ error: 'Sorry, request failed!' })
     }
-  })
+  })(req, res) 
 };
 
 // Get all staff
 exports.allStaff = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const staff = await User.findAll({
         order: [['firstName', 'ASC']],
         attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
-      })
-      return res.status(200).json({ 'staff': staff });
+      });
+      return res.status(200).json({ staff });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
-
+  })(req, res);  
 };
 
 // Developer registering Admin
@@ -677,4 +651,34 @@ exports.devAddAdmin = async (req, res) => {
     return res.status(500).json({ message: 'Cannot create Admin at the moment!' });
   }
 }
+
+// Admin Dashboard summary
+exports.adminDashboardSummary = async (req, res) => {
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }) 
+
+    try {
+      // Fetch counts in parallel
+      let [studentsCount, teachersCount, classCount, subjectsCount] = await Promise.all([
+        db.Student.count(),
+        db.User.count({ where: { role: 'Teacher' } }),
+        db.Class.count(),
+        db.Subject.count()
+      ]);
+
+      const summary = {
+        students: studentsCount,
+        teachers: teachersCount,
+        class: classCount,
+        subjects: subjectsCount
+      };
+
+      return res.status(200).json(summary);
+    } catch (error) {
+      console.error('Error fetching dashboard summary:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  })(req, res)  
+};
+
 

@@ -5,9 +5,8 @@ const { ClassSubject, Subject, AssignedSubject, Class } = require("../db/models/
 
 // Get all subjects
 exports.allSubjects = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const subjects = await Subject.findAll({ order: [['name', 'ASC']] })
@@ -16,14 +15,13 @@ exports.allSubjects = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Get a particular subject    
 exports.getSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -39,14 +37,13 @@ exports.getSubject = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Get all class subjects
 exports.allClassSubjects = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const classId = req.params.id;
@@ -81,14 +78,13 @@ exports.allClassSubjects = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Create a new subject
 exports.addSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, code, description } = req.body;
@@ -116,15 +112,13 @@ exports.addSubject = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: 'Cannot create subject at the moment!' });
     }
-  })
+  })(req, res);
 };
 
 // Update an existing subject
 exports.updateSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, code, description } = req.body;
@@ -164,15 +158,14 @@ exports.updateSubject = async (req, res) => {
       console.error('Error updating subject:', error);
       return res.status(500).json({ message: 'Unable to update subject at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 
 // Delete a subject
 exports.deleteSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const subjectId = req.params.id;
@@ -195,7 +188,7 @@ exports.deleteSubject = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete subject at the moment' });
     }
-  });
+  })(req, res);
 };
 
 

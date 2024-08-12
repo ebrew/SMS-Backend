@@ -1,14 +1,14 @@
 require('dotenv').config();
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const passport = require('../db/config/passport')
 const { Class, ClassSubject, Section, Subject, User, AssignedTeacher, AssignedSubject } = require("../db/models/index");
 const Mail = require('../utility/email');
+const { fetchAcademicYears } = require('../utility/promotion');
 
 // Assign a class to a teacher
 exports.assignClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { teacherId, classSectionId } = req.body;
@@ -34,14 +34,13 @@ exports.assignClass = async (req, res) => {
       console.error('Error creating class:', error);
       res.status(500).json({ message: "Can't assign the class at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Assign a subject to a teacher
 exports.assignSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { assignedTeacherId, subjectId } = req.body;
@@ -50,9 +49,6 @@ exports.assignSubject = async (req, res) => {
 
       if (!assignedTeacherId || !subjectId)
         return res.status(400).json({ message: 'Incomplete field!' });
-
-      // if (assignedTeacherId === '0' || subjectId === '0')
-      //   return res.status(400).json({ message: 'You must select the necessary fields!' });
 
       // Check if the assigned teacher record already exists for this class
       const isExist = await AssignedSubject.findOne({ where: { subjectId, assignedTeacherId } });
@@ -87,14 +83,13 @@ exports.assignSubject = async (req, res) => {
       console.error('Error assigning subject:', error);
       res.status(500).json({ message: "Can't assign the subject at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Deleting an assigned class for a particular teacher
 exports.deleteAssignedClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const assignedTeacherId = req.params.assignedTeacherId;
@@ -122,14 +117,13 @@ exports.deleteAssignedClass = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot assigned class at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Deleting an assigned subject for a particular teacher
 exports.deleteAssignedSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { assignedTeacherId, subjectId } = req.params;
@@ -144,14 +138,13 @@ exports.deleteAssignedSubject = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete assigned subject at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Get a specific teacher's assigned classes and subjects
 exports.assignedTeacher = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const teacherId = req.params.id;
@@ -208,14 +201,13 @@ exports.assignedTeacher = async (req, res) => {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Assign a subject to a class
 exports.assignClassSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classId, subjectId } = req.body;
@@ -238,14 +230,13 @@ exports.assignClassSubject = async (req, res) => {
       console.error('Error creating class:', error);
       res.status(500).json({ message: "Can't assign the subject at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Deleting an assigned subject to class 
 exports.deleteAssignedClassSubject = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classId, subjectId } = req.params;
@@ -268,14 +259,13 @@ exports.deleteAssignedClassSubject = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete at the moment' });
     }
-  });
+  })(req, res);
 };
 
-// Get all assigned teachers ????
+// Get all assigned teachers ???? not in use
 exports.assignedTeachers = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const activeAssignedTeachers = await AssignedTeacher.findAll({
@@ -336,6 +326,6 @@ exports.assignedTeachers = async (req, res) => {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 

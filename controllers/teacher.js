@@ -2,32 +2,66 @@ require('dotenv').config();
 const passport = require('../db/config/passport')
 const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear } = require("../db/models/index")
 
-
 // Get all teachers
 exports.allTeachers = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
+      // Fetch all teachers
       const teachers = await User.findAll({
         where: { role: 'Teacher' },
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
-      })
-      return res.status(200).json({ 'teachers': teachers });
+        attributes: ['id', 'userName', 'firstName', 'middleName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
+      });
+
+      // Process each teacher to fetch assigned classes and subjects
+      const promises = teachers.map(async (teacher) => {
+        // Fetch assigned classes and include the count of assigned subjects
+        const assignedClasses = await AssignedTeacher.findAll({
+          where: { teacherId: teacher.id },
+          include: {
+            model: AssignedSubject,
+            attributes: ['id'], 
+          }
+        });
+
+        // Calculate the number of subjects
+        let subjectsCount = 0;
+        assignedClasses.forEach((assignedClass) => {
+          subjectsCount += assignedClass.AssignedSubject ? 1 : 0; 
+        });
+
+        return {
+          id: teacher.id,
+          fullName: teacher.middleName
+            ? `${teacher.firstName} ${teacher.middleName} ${teacher.lastName}`
+            : `${teacher.firstName} ${teacher.lastName}`,
+          email: teacher.email,
+          phone: teacher.phone,
+          address: teacher.address,
+          dob: teacher.dob,
+          assignedClassCount: assignedClasses.length, 
+          assignedSubjectCount: subjectsCount
+        };
+      });
+
+      // Execute all promises concurrently and await their results
+      const assignmentSummary = await Promise.all(promises);
+
+      return res.status(200).json({ teachers: assignmentSummary });
     } catch (error) {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
+
 
 // Get a teacher's assigned classes after login
 exports.getAssignedTeacherClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const teacherId = req.params.id;
@@ -56,14 +90,13 @@ exports.getAssignedTeacherClass = async (req, res) => {
       console.error('Error fetching active assigned teachers:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get a teacher's assigned class's students
 exports.teacherClassStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const classSessionId = req.params.id;
@@ -106,8 +139,8 @@ exports.teacherClassStudents = async (req, res) => {
           address: student.Student.address,
           photo: student.Student.passportPhoto,
           status: student.status,
-          promotedTo: student.PromotedTo 
-            ? `${student.PromotedTo.Class.name} (${student.PromotedTo.name})` 
+          promotedTo: student.PromotedTo
+            ? `${student.PromotedTo.Class.name} (${student.PromotedTo.name})`
             : null
         };
       }).filter(student => student !== null);
@@ -122,15 +155,13 @@ exports.teacherClassStudents = async (req, res) => {
       console.error('Error fetching teacher class students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get a teacher's assigned class's subjects
 exports.teacherClassSubjects = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { teacherId, classSessionId } = req.params;
@@ -164,6 +195,48 @@ exports.teacherClassSubjects = async (req, res) => {
       console.error('Error fetching teacher class subjects and students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
+
+// Teacher subject assignment summary
+exports.subjectAssignmentSummary = async (req, res) => {
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { assignedTeacherId, classSessionId } = req.params;
+
+      // Find active academic year
+      const year = await db.AcademicYear.findOne({
+        where: { status: 'Active' },
+        attributes: ['id']
+      });
+
+      // Ensure the academic year is found
+      if (!year) {
+        return res.status(404).json({ message: 'Active academic year not found.' });
+      }
+
+      const academicYearId = year.id;
+
+      // Fetch counts in parallel
+      let [studentsCount, subjectsCount] = await Promise.all([
+        ClassStudent.count({ where: { classSessionId, academicYearId } }),
+        AssignedSubject.count({ where: { assignedTeacherId } })
+      ]);
+
+      const summary = {
+        studentsCount: studentsCount || 0,
+        subjectsCount: subjectsCount || 0
+      };
+
+      return res.status(200).json(summary);
+    } catch (error) {
+      console.error('Error fetching dashboard summary:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  })(req, res);
+};
+
+
 

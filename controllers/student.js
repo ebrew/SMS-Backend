@@ -7,9 +7,8 @@ const cloudinary = require('../db/config/cloudinaryConfig');
 
 // Student admission
 exports.admitStudent = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { student, parent, parentEmployment, emergency, classInfo } = req.body;
@@ -97,14 +96,13 @@ exports.admitStudent = async (req, res) => {
       console.error('Error saving admission data:', error);
       res.status(500).json({ message: "Can't save admission data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update a student's DP url
 exports.updateStudentDP = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { passportPhoto } = req.body;
@@ -141,15 +139,13 @@ exports.updateStudentDP = async (req, res) => {
       console.error('Error updating image:', error);
       return res.status(500).json({ message: 'Unable to update image at the moment!' });
     }
-  });
+  }) (req, res);
 };
 
 // Get all students
 exports.allStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       // Find the active academic year and update its status if necessary
@@ -206,15 +202,13 @@ exports.allStudents = async (req, res) => {
       console.error('Error fetching students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update student details
 exports.updateStudentDetails = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { firstName, middleName, lastName, email, phone, address, dob, gender, nationality } = req.body;
@@ -246,15 +240,13 @@ exports.updateStudentDetails = async (req, res) => {
       console.error('Error updating student:', error);
       return res.status(500).json({ message: 'Unable to update student at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Update student emegency contact info
 exports.updateStudentEmergencyContact = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { emergencyName, emergencyTitle, emergencyAddress, emergencyPhone } = req.body;
@@ -281,15 +273,13 @@ exports.updateStudentEmergencyContact = async (req, res) => {
       console.error('Error updating student:', error);
       return res.status(500).json({ message: 'Unable to update student at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Update student's parent's info
 exports.updateStudentParentDetails = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { parentFullName, title, relationship, parentAddress, parentEmail, parentPhone, homePhone } = req.body;
@@ -319,15 +309,13 @@ exports.updateStudentParentDetails = async (req, res) => {
       console.error('Error updating parent:', error);
       return res.status(500).json({ message: 'Unable to update parent record at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Update student's parent's employment info
 exports.updateParentEmployment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { occupation, employer, employerAddress, workPhone } = req.body;
@@ -354,15 +342,13 @@ exports.updateParentEmployment = async (req, res) => {
       console.error('Error updating parent:', error);
       return res.status(500).json({ message: 'Unable to update parent record at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Update student's class
 exports.updateStudentClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classSessionId } = req.body;
@@ -385,13 +371,13 @@ exports.updateStudentClass = async (req, res) => {
       console.error('Error updating class:', error);
       return res.status(500).json({ message: 'Unable to update class record at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Fetch academic year classSession students
 exports.classStudents = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { academicYearId, classSessionId } = req.params;
@@ -435,5 +421,5 @@ exports.classStudents = async (req, res) => {
       console.error('Error fetching students:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };

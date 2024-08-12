@@ -5,10 +5,8 @@ const { GradingSystem } = require("../db/models/index")
 
 // Create a new Grading point
 exports.addGradePoint = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { minScore, maxScore, grade, remarks } = req.body;
@@ -16,6 +14,11 @@ exports.addGradePoint = async (req, res) => {
       // Check for missing fields
       if (minScore == null || maxScore == null || !grade || !remarks) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
+
+      // Validate score ranges
+      if (minScore < 0 || maxScore > 100 || minScore > maxScore) {
+        return res.status(400).json({ message: 'Invalid score range! Scores must be between 0 and 100, and minScore must be less than or equal to maxScore.' });
       }
 
       // Check if grade already exists
@@ -71,15 +74,13 @@ exports.addGradePoint = async (req, res) => {
       console.error('Error creating grading point:', error);
       return res.status(500).json({ message: "Can't create grading point at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Update an already created GradePoint
 exports.updateGradePoint = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const { minScore, maxScore, grade, remarks } = req.body;
@@ -88,6 +89,16 @@ exports.updateGradePoint = async (req, res) => {
       // Check for missing fields
       if (minScore == null || maxScore == null || !grade || !remarks) {
         return res.status(400).json({ message: 'Incomplete field!' });
+      }
+
+      // Validation: Ensure scores are within the range of 0 to 100
+      if (minScore < 0 || maxScore > 100) {
+        return res.status(400).json({ message: 'Scores must be between 0 and 100!' });
+      }
+
+      // Validation: Ensure minScore is less than or equal to maxScore
+      if (minScore > maxScore) {
+        return res.status(400).json({ message: 'minScore cannot be greater than maxScore!' });
       }
 
       const gradePoint = await GradingSystem.findByPk(id);
@@ -146,15 +157,13 @@ exports.updateGradePoint = async (req, res) => {
       console.error('Error updating GradePoint:', error);
       return res.status(500).json({ message: "Can't update GradePoint at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Delete Grade Point
 exports.deleteGradePoint = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -174,15 +183,13 @@ exports.deleteGradePoint = async (req, res) => {
       console.error('Error deleting Grade Point:', error);
       return res.status(500).json({ message: 'Cannot delete Grade Point at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Fetch all GradePoints in descending order of grade
 exports.getAllGradePoints = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       // Fetch all grade points in descending order of grade
@@ -195,7 +202,7 @@ exports.getAllGradePoints = async (req, res) => {
       console.error('Error fetching grade points:', error);
       return res.status(500).json({ message: "Can't fetch grade points at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 

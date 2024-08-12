@@ -8,10 +8,8 @@ const { getGradeAndRemarks, getPositionSuffix } = require('../controllers/result
 
 // Create a new Assessment
 exports.addAssessment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, description, academicTermId, teacherId, classSessionId, subjectId, weight, marks } = req.body;
@@ -20,6 +18,9 @@ exports.addAssessment = async (req, res) => {
       if (!name || !academicTermId || !teacherId || !classSessionId || !subjectId || weight === undefined || marks === undefined) {
         return res.status(400).json({ message: 'Incomplete field!' });
       }
+
+      // Ensure the weight value does not exceed 100
+      if (parseFloat(weight) > 100.00) return res.status(400).json({ message: 'Weight value cannot exceed 100%' });
 
       // Check if the assessment already exists
       const alreadyExist = await Assessment.findOne({
@@ -59,15 +60,13 @@ exports.addAssessment = async (req, res) => {
       console.error('Error creating assessment:', error);
       return res.status(500).json({ message: "Can't create assessment at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update an already created Assessment
 exports.updateAssessment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, description, academicTermId, classSessionId, subjectId, weight, marks } = req.body;
@@ -114,15 +113,13 @@ exports.updateAssessment = async (req, res) => {
       console.error('Error updating assessment:', error);
       return res.status(500).json({ message: "Can't update assessment at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Delete assessment
 exports.deleteAssessment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -149,14 +146,13 @@ exports.deleteAssessment = async (req, res) => {
       console.error('Error deleting assessment:', error);
       return res.status(500).json({ message: 'Cannot delete assessment at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Get a particular subject assessment   
 exports.getAssessment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -172,15 +168,13 @@ exports.getAssessment = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get all subject assessments for active academic term
 exports.allSubjectAssessments = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classSessionId, subjectId } = req.params;
@@ -210,15 +204,13 @@ exports.allSubjectAssessments = async (req, res) => {
       console.error('Error fetching assessments:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Grade a student
 exports.gradeStudent = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { assessmentId, studentId, score } = req.body;
@@ -259,15 +251,13 @@ exports.gradeStudent = async (req, res) => {
       console.error('Error grading student:', error);
       return res.status(500).json({ message: "Can't grade student at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update student grade   || Not in use
 exports.updateStudentGrade = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { score } = req.body;
@@ -305,14 +295,13 @@ exports.updateStudentGrade = async (req, res) => {
       console.error('Error updating grade:', error);
       return res.status(500).json({ message: "Can't update grade at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Students' grades for a particular assessment
 exports.studentsAssessmentGrades = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const assessmentId = req.params.id;
@@ -380,15 +369,13 @@ exports.studentsAssessmentGrades = async (req, res) => {
       console.error('Error fetching teacher class students assessment:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Students' grades for a particular subject's assessments for a teacher
 exports.subjectAssessmentsGrades = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { academicTermId, classSessionId, subjectId } = req.params;
@@ -510,7 +497,7 @@ exports.subjectAssessmentsGrades = async (req, res) => {
       console.error('Error fetching students assessments:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 

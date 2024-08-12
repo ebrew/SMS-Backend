@@ -5,9 +5,8 @@ const { AcademicYear, AcademicTerm, ClassStudent } = require("../db/models/index
 
 // Get all academic years
 exports.allAcademicYears = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
     try {
       // updating active status if necessary
       let all = await AcademicYear.findOne({ where: { status: 'Active' } });
@@ -24,14 +23,13 @@ exports.allAcademicYears = async (req, res) => {
       console.error('Error fetching academic year:', error);
       res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Create a new academic year
 exports.addAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, startDate, endDate } = req.body;
@@ -113,14 +111,13 @@ exports.addAcademicYear = async (req, res) => {
       console.error('Error creating academic year:', error);
       res.status(500).json({ message: "Can't create academic year at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update an existing academic year
 exports.updateAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
     try {
       const { name, startDate, endDate } = req.body;
       const academicYearId = req.params.id;
@@ -182,14 +179,13 @@ exports.updateAcademicYear = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Get the active academic year
 exports.activeAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       // Find the active academic year and update its status if necessary
@@ -203,14 +199,13 @@ exports.activeAcademicYear = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get a particular academic year with its terms
 exports.getAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -227,15 +222,13 @@ exports.getAcademicYear = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Delete an academic year
 exports.deleteAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
       const ayId = req.params.id;
@@ -264,15 +257,13 @@ exports.deleteAcademicYear = async (req, res) => {
       console.error('Error deleting academic year:', error);
       return res.status(500).json({ message: 'Cannot delete at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // End academic year
 exports.endAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const ayId = req.params.id;
@@ -305,13 +296,13 @@ exports.endAcademicYear = async (req, res) => {
       console.error('Error ending academic year:', error);
       return res.status(500).json({ message: 'Cannot end at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Activate pending academic term
 exports.activatePendingAcademicYear = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = parseInt(req.params.id, 10);
@@ -340,6 +331,6 @@ exports.activatePendingAcademicYear = async (req, res) => {
       console.error('Error activating academic year:', error);
       return res.status(500).json({ message: 'Cannot activate academic year at the moment' });
     }
-  });
+  })(req, res);
 };
 

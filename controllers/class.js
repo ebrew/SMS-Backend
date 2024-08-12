@@ -5,9 +5,8 @@ const { Class, ClassSubject, Subject, Section, User, AssignedTeacher } = require
 
 // Create a new class with sections
 exports.addClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { className, grade, headTeacherId, sections } = req.body;
@@ -68,14 +67,13 @@ exports.addClass = async (req, res) => {
       console.error('Error creating class and sections:', error);
       res.status(500).json({ message: "Can't create class at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Add a class section to a class
 exports.addClassSection = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classId, name, capacity } = req.body;
@@ -104,14 +102,13 @@ exports.addClassSection = async (req, res) => {
       console.error('Error creating class:', error);
       res.status(500).json({ message: "Can't create class section at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Update an existing class section
 exports.updateClassSection = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, capacity } = req.body;
@@ -144,15 +141,14 @@ exports.updateClassSection = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update class section at the moment!' });
     }
-  });
+  }) (req, res);
 };
 
 
 // Deleting a class section 
 exports.deleteClassSection = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { classId, sectionId } = req.params;
@@ -173,14 +169,13 @@ exports.deleteClassSection = async (req, res) => {
       console.error('Error deleting subject:', error);
       return res.status(500).json({ message: 'Cannot delete at the moment' });
     }
-  });
+  })(req, res);
 };
 
 // Get all Classes
 exports.allClasses = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const classes = await Class.findAll({ order: [['grade', 'ASC']], include: { model: User, attributes: ['id', 'firstName', 'lastName'] } });
@@ -212,14 +207,13 @@ exports.allClasses = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Get a particular class with its sections for teacher assignment   
 exports.getClassWithSections = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const classId = req.params.id;
@@ -266,14 +260,13 @@ exports.getClassWithSections = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Get a particular section for teacher assignment   
 exports.getSection = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const id = req.params.id;
@@ -292,14 +285,13 @@ exports.getSection = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Get all Class Sections in different formats
 exports.allClassSections = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const classSections = await Section.findAll({
@@ -326,14 +318,13 @@ exports.allClassSections = async (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Update an existing class
 exports.updateClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { className, grade, headTeacherId } = req.body;
@@ -365,14 +356,13 @@ exports.updateClass = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update class at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 // Deleting a class
 exports.deleteClass = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const classId = req.params.id;
@@ -407,5 +397,5 @@ exports.deleteClass = async (req, res) => {
       console.error('Error deleting class:', error);
       return res.status(500).json({ message: 'Cannot delete class at the moment' });
     }
-  });
+  })(req, res);
 };

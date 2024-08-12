@@ -35,6 +35,8 @@ router.get('/all', staffController.allStaff)
 // Developer registering admin
 router.post('/dev', staffController.devAddAdmin);
 
+// Admin Dashboard summary
+router.get('/admin/dashboard_summary', staffController.adminDashboardSummary);
 
 // // Forgot Password
 // router.post('/forgot-password', Mail.forgotPassword);

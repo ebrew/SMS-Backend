@@ -188,10 +188,8 @@ const fetchClassResults = async (academicTermId, classSessionId) => {
 
 // Fetch students results for a class section subjects a particular academic term
 exports.classStudentsResults = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { academicTermId, classSessionId } = req.params;
@@ -298,10 +296,6 @@ exports.classStudentsResults = async (req, res) => {
           fullName: student.Student.middleName
             ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
             : `${student.Student.firstName} ${student.Student.lastName}`,
-          // photo: {
-          //   url: student.Student.passportPhoto,
-          //   public_id: `SMS/students/${student.Student.id}`
-          // },
           photo: student.Student.passportPhoto,
           subjectScores: subjectScores,
           totalScore: totalScore.toFixed(2)
@@ -339,15 +333,13 @@ exports.classStudentsResults = async (req, res) => {
       console.error('Error fetching students assessments:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  }) (req, res);
 };
 
 // Fetch a single student results for a particular academic term
 exports.singleStudentResult = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { studentId, classSessionId, academicTermId } = req.params;
@@ -369,7 +361,7 @@ exports.singleStudentResult = async (req, res) => {
       console.error('Error fetching student result:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 module.exports = {

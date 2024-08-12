@@ -5,9 +5,8 @@ const { Department, User } = require("../db/models/index");
 
 // Get all departments
 exports.allDepartments = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const departments = await Department.findAll({
@@ -24,14 +23,13 @@ exports.allDepartments = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  });
+  })(req, res);
 };
 
 // Create a new department
 exports.addDepartment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, description, hodId } = req.body;
@@ -58,14 +56,13 @@ exports.addDepartment = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot create department at the moment!' });
     }
-  })
+  })(req, res);
 };
 
 // Update an existing department
 exports.updateDepartment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const { name, description, hodId } = req.body;
@@ -113,15 +110,14 @@ exports.updateDepartment = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot update department at the moment!' });
     }
-  });
+  })(req, res);
 };
 
 
 // Delete a department
 exports.deleteDepartment = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err)
-      return res.status(401).json({ message: 'Unauthorized' });
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
 
     try {
       const departmentId = req.params.id; 
@@ -138,5 +134,5 @@ exports.deleteDepartment = async (req, res) => {
       console.error('Error:', error.message);
       return res.status(500).json({ message: 'Cannot delete department at the moment!' });
     }
-  });
+  }) (req, res);
 };
