@@ -204,9 +204,9 @@ const sendEmail = async (email, studentId, subject, content) => {
 };
 
 async function sendHubtelSMS(phoneNumber, message) {
-  const apiUrl = process.env.API_URL
-  const apiKey = process.env.API_KEY
-  const senderId = process.env.SENDER_ID
+  const apiUrl = process.env.API_URL;
+  const apiKey = process.env.API_KEY;
+  const senderId = process.env.SENDER_ID;
 
   try {
     const response = await axios.post(apiUrl, {
@@ -217,14 +217,21 @@ async function sendHubtelSMS(phoneNumber, message) {
       headers: {
         Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 10000 // 10 seconds timeout
     });
-    console.log('SMS sent successfully:', response.data);
+
+    if (response.status === 200) {
+      console.log('SMS sent successfully:', response.data);
+    } else {
+      console.error('Unexpected response:', response.status, response.data);
+    }
   } catch (error) {
     console.error('Failed to send SMS:', error.response ? error.response.data : error.message);
     throw error; // rethrow to be caught
   }
 }
+
 
 // Function to send SMS (implementation needed)
 const sendSMS = async (parent, studentId, content) => {
@@ -387,7 +394,7 @@ exports.sendReminder = async (req, res) => {
               include: {
                 model: db.Parent,
                 as: 'Parent',
-                attributes: ['email', 'fullName', 'title', 'phone']
+                attributes: ['id', 'email', 'fullName', 'title', 'phone']
               }
             }
           ]
@@ -398,7 +405,7 @@ exports.sendReminder = async (req, res) => {
           include: {
             model: db.Parent,
             as: 'Parent',
-            attributes: ['email', 'fullName', 'title', 'phone']
+            attributes: ['id', 'email', 'fullName', 'title', 'phone']
           },
           attributes: ['id', 'parentId']
         });
@@ -407,7 +414,7 @@ exports.sendReminder = async (req, res) => {
           include: {
             model: db.Parent,
             as: 'Parent',
-            attributes: ['email', 'fullName', 'title', 'phone']
+            attributes: ['id', 'email', 'fullName', 'title', 'phone']
           },
           attributes: ['id', 'parentId']
         });
@@ -421,10 +428,11 @@ exports.sendReminder = async (req, res) => {
       const parentsMap = new Map();
 
       students.forEach(student => {
-        const parent = student.Student ? student.Student.Parent : student.Parent;
+        const parent = student.Parent; // Use student.Parent directly as the alias is already 'Parent'
         if (parent) {
+          // Check if parent is already in the map
           if (!parentsMap.has(parent.id)) {
-            parentsMap.set(parent.id, parent);
+            parentsMap.set(parent.id, parent); // Use parent.id to ensure uniqueness
           }
         }
       });
@@ -462,6 +470,7 @@ exports.sendReminder = async (req, res) => {
     }
   })(req, res);
 };
+
 
 
 
