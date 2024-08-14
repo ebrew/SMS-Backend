@@ -232,7 +232,6 @@ async function sendHubtelSMS(phoneNumber, message) {
   }
 }
 
-
 // Function to send SMS (implementation needed)
 const sendSMS = async (parent, studentId, content) => {
   try {
@@ -255,110 +254,6 @@ const sendSMS = async (parent, studentId, content) => {
     console.error(`Error sending SMS to parent of studentId ${studentId}:`, error);
     return { studentId, status: `Error: ${error.message}` };
   }
-};
-
-// Send general reminder to parents
-exports.sendReminder1 = async (req, res) => {
-  passport.authenticate("jwt", { session: false })(req, res, async (err) => {
-    if (err) return res.status(401).json({ message: 'Unauthorized' });
-
-    let { subject, classId, studentId, all, content, method } = req.body;
-
-    if (!subject || !content || !method) return res.status(400).json({ message: 'Incomplete fields!' });
-
-    try {
-      let students = [];
-      const activeAcademicYear = await db.AcademicYear.findOne({ where: { status: 'Active' }, attributes: ['id'] });
-
-      if (classId) {
-        classId = parseInt(classId, 10);
-        if (isNaN(classId)) return res.status(400).json({ message: 'Invalid classId!' });
-
-        students = await db.ClassStudent.findAll({
-          where: { academicYearId: activeAcademicYear.id },
-          include: [
-            {
-              model: db.Section,
-              include: {
-                model: db.Class,
-                where: { id: classId }
-              }
-            },
-            {
-              model: db.Student,
-              attributes: ['id'],
-              include: {
-                model: db.Parent,
-                as: 'Parent', 
-                attributes: ['email', 'fullName', 'title', 'phone']
-              }
-            }
-          ]
-        });
-      } else if (studentId) {
-        students = await db.Student.findAll({
-          where: { id: studentId },
-          include: {
-            model: db.Parent,
-            as: 'Parent',
-            attributes: ['email', 'fullName', 'title', 'phone']
-          },
-          attributes: ['id']
-        });
-      } else if (all) {
-        students = await db.Student.findAll({
-          include: {
-            model: db.Parent,
-            as: 'Parent',
-            attributes: ['email', 'fullName', 'title', 'phone']
-          },
-          attributes: ['id']
-        });
-      } else {
-        return res.status(400).json({ message: 'Specify studentId, classId, or all!' });
-      }
-
-      if (students.length === 0) return res.status(404).json({ message: 'No students found!' });
-
-      const results = [];
-
-      if (method === 'Email') {
-        await Promise.all(students.map(student => {
-          // Check how the Parent data is nested
-          const parent = student.Student ? student.Student.Parent : student.Parent;
-          if (!parent) {
-            console.error('Parent information is missing for student ID:', student.id);
-            return;
-          }
-
-          const emailContent = parent.title
-            ? `Dear ${parent.title} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`
-            : `Dear ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
-
-          return limiter.schedule(() => sendEmail(parent.email, student.id, subject, emailContent));
-        }));
-        res.status(200).json({ message: 'Emails processed successfully!', results });
-      } else if (method === 'SMS') {
-        try {
-          await Promise.all(students.map(student => {
-            const parent = student.Parent;
-            const message = `Dear ${parent.title || ''} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
-            return limiter.schedule(() => sendHubtelSMS(parent.phone, message));
-          }));
-          res.status(200).json({ message: 'SMS sent successfully!', results });
-        } catch (error) {
-          console.error('Error sending SMS:', error);
-          res.status(500).json({ message: 'Failed to send SMS!' });
-        }
-      } else {
-        return res.status(400).json({ message: 'Specify the medium of sending the reminder!' });
-      }
-
-    } catch (error) {
-      console.error('Error processing request:', error);
-      return res.status(500).json({ message: "Can't process the reminder at the moment!" });
-    }
-  });
 };
 
 // Send general reminder to parents
@@ -428,12 +323,9 @@ exports.sendReminder = async (req, res) => {
       const parentsMap = new Map();
 
       students.forEach(student => {
-        const parent = student.Parent; // Use student.Parent directly as the alias is already 'Parent'
-        if (parent) {
-          // Check if parent is already in the map
-          if (!parentsMap.has(parent.id)) {
-            parentsMap.set(parent.id, parent); // Use parent.id to ensure uniqueness
-          }
+        const parent = student.Parent; // Directly using student.Parent
+        if (parent && !parentsMap.has(parent.id)) {
+          parentsMap.set(parent.id, parent); // Use parent.id as the key
         }
       });
 
@@ -470,6 +362,7 @@ exports.sendReminder = async (req, res) => {
     }
   })(req, res);
 };
+
 
 
 
