@@ -540,13 +540,17 @@ Content: { subject, classId, studentId, all, content, method }
 Authorization: Bearer <token from login>
 
 
+ATTENDANCE
+94. // Mark attendance
+API: << server >>/api/v1/attendance/mark
+Method: POST
+Content: { students, academicTermId, status }
+Authorization: Bearer <token from login>
 
-
-
-
-
-
-
+95. // Fetch today's attendence
+API: << server >>/api/v1/attendance/class/today/academicTermId/classSessionId
+Method: GET
+Authorization: Bearer <token from login>
 
 
 

@@ -22,14 +22,14 @@ exports.allTeachers = async (req, res) => {
           where: { teacherId: teacher.id },
           include: {
             model: AssignedSubject,
-            attributes: ['id'],
+            attributes: ['id'], 
           }
         });
 
         // Calculate the number of subjects
         let subjectsCount = 0;
         assignedClasses.forEach((assignedClass) => {
-          subjectsCount += assignedClass.AssignedSubject ? assignedClass.AssignedSubject.length : 0;
+          subjectsCount += assignedClass.AssignedSubjects ? assignedClass.AssignedSubjects.length : 0;
         });
 
         return {
@@ -54,7 +54,6 @@ exports.allTeachers = async (req, res) => {
     }
   })(req, res);
 };
-
 
 // Get a teacher's assigned classes after login
 exports.getAssignedTeacherClass = async (req, res) => {
@@ -205,13 +204,13 @@ exports.subjectAssignmentSummary = async (req, res) => {
       const { teacherId, classSessionId } = req.params;
 
       // Find active academic year
-      const year = await db.AcademicYear.findOne({
+      const year = await AcademicYear.findOne({
         where: { status: 'Active' },
         attributes: ['id']
       });
 
       // Ensure the academic year is found
-      if (!year) return res.status(404).json({ message: 'Active academic year not found.' });
+      if (!year) return res.status(404).json({ message: 'Active academic year not found!' });
 
       const academicYearId = year.id;
 
@@ -228,20 +227,20 @@ exports.subjectAssignmentSummary = async (req, res) => {
         where: { teacherId },
         include: {
           model: AssignedSubject,
-          attributes: ['id'],
+          attributes: ['id'], 
         }
       });
 
-      // Calculate the total number of subjects assigned to the teacher
+      // Calculate the number of subjects
       let subjectsCount = 0;
       assignedClasses.forEach((assignedClass) => {
-        subjectsCount += assignedClass.AssignedSubject ? assignedClass.AssignedSubject.length : 0;
+        subjectsCount += assignedClass.AssignedSubjects ? assignedClass.AssignedSubjects.length : 0;
       });
 
       // Create the summary object
       const summary = {
         studentsCount: studentsCount || 0,
-        assignedClassesCount: assignedClasses.length || 0,
+        assignedClassesCount: assignedClasses ? assignedClasses.length : 0,
         subjectsCount: subjectsCount 
       };
 

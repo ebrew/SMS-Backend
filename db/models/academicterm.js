@@ -7,16 +7,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.belongsTo(models.AcademicYear, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate:'CASCADE' });
       this.hasMany(models.Assessment, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });  
-      this.hasMany(models.Billing, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });     
+      this.hasMany(models.Billing, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
+      this.hasMany(models.Attendance, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
+           
     }
 
-    // async setInactiveIfEndDateDue() {
-    //   if (this.status === 'Active' && new Date() > this.endDate) {
-    //     this.status = 'Inactive';
-    //     await this.save();
-    //   }
-    // }
-    
     // Method to update status based on the current date
     async setInactiveIfEndDateDue() {
       const now = new Date();

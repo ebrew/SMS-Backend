@@ -21,6 +21,7 @@ var resultRouter = require('./routes/result');
 var promotionRouter = require('./routes/promotion');
 var billingRouter = require('./routes/billing');
 var notificationsRouter = require('./routes/notifications');
+var attendanceRouter = require('./routes/attendance');
 
 var app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/v1/result', resultRouter);
 app.use('/api/v1/promotion', promotionRouter);
 app.use('/api/v1', billingRouter);
 app.use('/api/v1/notifications', notificationsRouter);
+app.use('/api/v1/attendance', attendanceRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
