@@ -381,7 +381,7 @@ Method: GET
 Authorization: Bearer <token from login>
 
 67. // Teacher sybject assignment summary
-API: << server >>/api/v1/teacher/subject_assignment_summary/assignedTeacherId/classSessionId
+API: << server >>/api/v1/teacher/subject_assignment_summary/teacherId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 

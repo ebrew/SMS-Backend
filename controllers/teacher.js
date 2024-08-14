@@ -12,7 +12,7 @@ exports.allTeachers = async (req, res) => {
       const teachers = await User.findAll({
         where: { role: 'Teacher' },
         order: [['firstName', 'ASC']],
-        attributes: ['id', 'userName', 'firstName', 'middleName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
+        attributes: ['id', 'userName', 'firstName', 'lastName', 'role', 'email', 'phone', 'address', 'staffID', 'dob'],
       });
 
       // Process each teacher to fetch assigned classes and subjects
@@ -22,7 +22,7 @@ exports.allTeachers = async (req, res) => {
           where: { teacherId: teacher.id },
           include: {
             model: AssignedSubject,
-            attributes: ['id'], 
+            attributes: ['id'],
           }
         });
 
@@ -34,14 +34,12 @@ exports.allTeachers = async (req, res) => {
 
         return {
           id: teacher.id,
-          fullName: teacher.middleName
-            ? `${teacher.firstName} ${teacher.middleName} ${teacher.lastName}`
-            : `${teacher.firstName} ${teacher.lastName}`,
+          fullName: `${teacher.firstName} ${teacher.lastName}`,
           email: teacher.email,
           phone: teacher.phone,
           address: teacher.address,
           dob: teacher.dob,
-          assignedClassCount: assignedClasses.length, 
+          assignedClassCount: assignedClasses.length,
           assignedSubjectCount: subjectsCount
         };
       });
@@ -51,8 +49,8 @@ exports.allTeachers = async (req, res) => {
 
       return res.status(200).json({ teachers: assignmentSummary });
     } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+      console.error('Error:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!", error: error.message });
     }
   })(req, res);
 };
@@ -204,7 +202,7 @@ exports.subjectAssignmentSummary = async (req, res) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { assignedTeacherId, classSessionId } = req.params;
+      const { teacherId, classSessionId } = req.params;
 
       // Find active academic year
       const year = await db.AcademicYear.findOne({
@@ -213,30 +211,49 @@ exports.subjectAssignmentSummary = async (req, res) => {
       });
 
       // Ensure the academic year is found
-      if (!year) {
-        return res.status(404).json({ message: 'Active academic year not found.' });
-      }
+      if (!year) return res.status(404).json({ message: 'Active academic year not found.' });
 
       const academicYearId = year.id;
 
-      // Fetch counts in parallel
-      let [studentsCount, subjectsCount] = await Promise.all([
-        ClassStudent.count({ where: { classSessionId, academicYearId } }),
-        AssignedSubject.count({ where: { assignedTeacherId } })
-      ]);
+      // Count the number of students in the class session for the active academic year
+      const studentsCount = await ClassStudent.count({ 
+        where: { 
+          classSessionId, 
+          academicYearId 
+        } 
+      });
 
+      // Find the assigned classes and subjects for the teacher
+      const assignedClasses = await AssignedTeacher.findAll({
+        where: { teacherId },
+        include: {
+          model: AssignedSubject,
+          attributes: ['id'],
+        }
+      });
+
+      // Calculate the total number of subjects assigned to the teacher
+      let subjectsCount = 0;
+      assignedClasses.forEach((assignedClass) => {
+        subjectsCount += assignedClass.AssignedSubject ? assignedClass.AssignedSubject.length : 0;
+      });
+
+      // Create the summary object
       const summary = {
         studentsCount: studentsCount || 0,
-        subjectsCount: subjectsCount || 0
+        assignedClassesCount: assignedClasses.length || 0,
+        subjectsCount: subjectsCount 
       };
 
+      // Return the summary as a response
       return res.status(200).json(summary);
     } catch (error) {
-      console.error('Error fetching dashboard summary:', error);
+      console.error('Error fetching subject assignment summary:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   })(req, res);
 };
+
 
 
 

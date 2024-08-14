@@ -18,7 +18,7 @@ const limiter = new Bottleneck({
 // Forward list of students results to parent for a particular academic term
 exports.sendStudentResultsToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
-    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     let { studentIds, classSessionId, academicTermId } = req.body;
     const results = [];
@@ -99,13 +99,13 @@ exports.sendStudentResultsToParent = async (req, res) => {
       console.error('Error processing request:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
-  }) (req, res);
+  })(req, res);
 };
 
 // Forward list of students fees to parent for a particular academic term
 exports.sendStudentFeesToParent = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
-    if (err || !user) return res.status(401).json({ message: 'Unauthorized' }); 
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     let { studentIds } = req.body;
     const results = [];
@@ -187,7 +187,6 @@ exports.sendStudentFeesToParent = async (req, res) => {
 // Helper function for sending email
 const sendEmail = async (email, studentId, subject, content) => {
   try {
-
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
@@ -218,7 +217,7 @@ async function sendHubtelSMS(phoneNumber, message) {
         Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
         'Content-Type': 'application/json'
       },
-      timeout: 10000 // 10 seconds timeout
+      timeout: 10000 
     });
 
     if (response.status === 200) {
@@ -227,8 +226,14 @@ async function sendHubtelSMS(phoneNumber, message) {
       console.error('Unexpected response:', response.status, response.data);
     }
   } catch (error) {
-    console.error('Failed to send SMS:', error.response ? error.response.data : error.message);
-    throw error; // rethrow to be caught
+    if (error.response) {
+      console.error('Failed to send SMS:', error.response.data);
+    } else if (error.request) {
+      console.error('No response received:', error.message);
+    } else {
+      console.error('Error during request setup:', error.message);
+    }
+    throw error; 
   }
 }
 
@@ -242,7 +247,7 @@ const sendSMS = async (parent, studentId, content) => {
 
     const sendSMSResponse = await sendSMS.json()
 
-    if(!sendSMSResponse.ok){
+    if (!sendSMSResponse.ok) {
       // Error sending SMS here...
       return
     }
@@ -272,7 +277,9 @@ exports.sendReminder = async (req, res) => {
       if (classId) {
         classId = parseInt(classId, 10);
         if (isNaN(classId)) return res.status(400).json({ message: 'Invalid classId!' });
-
+      
+        console.log(`Fetching students for classId: ${classId} and academicYearId: ${activeAcademicYear.id}`);
+      
         students = await db.ClassStudent.findAll({
           where: { academicYearId: activeAcademicYear.id },
           include: [
@@ -293,7 +300,12 @@ exports.sendReminder = async (req, res) => {
               }
             }
           ]
-        });
+        });        
+      
+        console.log('Students fetched:', students);
+      
+        // Check if students are fetched and proceed
+        if (students.length === 0) return res.status(404).json({ message: 'No students found!' });     
       } else if (studentId) {
         students = await db.Student.findAll({
           where: { id: studentId },
@@ -323,9 +335,12 @@ exports.sendReminder = async (req, res) => {
       const parentsMap = new Map();
 
       students.forEach(student => {
-        const parent = student.Parent; // Directly using student.Parent
-        if (parent && !parentsMap.has(parent.id)) {
-          parentsMap.set(parent.id, parent); // Use parent.id as the key
+        const parent = student.Parent;
+        if (parent) {
+          const email = parent.email.toLowerCase(); 
+          if (!parentsMap.has(email)) {
+            parentsMap.set(email, parent); 
+          }
         }
       });
 
@@ -333,19 +348,42 @@ exports.sendReminder = async (req, res) => {
       const results = [];
 
       if (method === 'Email') {
-        await Promise.all(parents.map(parent => {
+        // Deduplicate parents
+        const uniqueParents = Array.from(new Map(parents.map(parent => [parent.email.toLowerCase(), parent])).values());
+
+        const emailResults = await Promise.all(uniqueParents.map(async parent => {
           const emailContent = parent.title
             ? `Dear ${parent.title} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`
             : `Dear ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
 
-          return limiter.schedule(() => sendEmail(parent.email, parent.id, subject, emailContent));
+          try {
+            await limiter.schedule(() => sendEmail(parent.email, parent.id, subject, emailContent));
+            console.log(`Email sent to: ${parent.email}`);
+            return { email: parent.email, status: 'Success' };
+          } catch (error) {
+            console.error(`Failed to send email to ${parent.email}:`, error);
+            return { email: parent.email, status: 'Failed', error: error.message };
+          }
         }));
-        res.status(200).json({ message: 'Emails processed successfully!', results });
-      } else if (method === 'SMS') {
+
+        const failedResults = emailResults.filter(result => result.status === 'Failed');
+        if (failedResults.length > 0) {
+          res.status(500).json({ message: 'Some emails failed to send', results: failedResults });
+        } else {
+          res.status(200).json({ message: 'Emails processed successfully!', results: emailResults });
+        }
+      }
+      else if (method === 'SMS') {
         try {
-          await Promise.all(parents.map(parent => {
+          await Promise.all(parents.map(async parent => {
             const message = `Dear ${parent.title || ''} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
-            return limiter.schedule(() => sendHubtelSMS(parent.phone, message));
+
+            try {
+              await limiter.schedule(() => sendHubtelSMS(parent.phone, message));
+              console.log(`SMS sent to: ${parent.phone}`);
+            } catch (error) {
+              console.error(`Failed to send SMS to ${parent.phone}:`, error);
+            }
           }));
           res.status(200).json({ message: 'SMS sent successfully!', results });
         } catch (error) {
@@ -362,6 +400,7 @@ exports.sendReminder = async (req, res) => {
     }
   })(req, res);
 };
+
 
 
 

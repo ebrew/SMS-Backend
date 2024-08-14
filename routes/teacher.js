@@ -15,7 +15,7 @@ router.get('/class_students/:id', teacherController.teacherClassStudents)
 router.get('/class_subjects/:teacherId/:classSessionId', teacherController.teacherClassSubjects)
 
 // Teacher sybject assignment summary
-router.get('/subject_assignment_summary/:assignedTeacherId/:classSessionId', teacherController.subjectAssignmentSummary);
+router.get('/subject_assignment_summary/:teacherId/:classSessionId', teacherController.subjectAssignmentSummary);
 
 
 module.exports = router;
