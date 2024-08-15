@@ -13,7 +13,7 @@ exports.markAttendance = async (req, res) => {
       // Validate request body
       if (!students || !academicTermId || !status) return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-      if (status !== 'Present' || status !== 'Absent') return res.status(400).json({ message: 'Unexpected field input!' });
+      if (status !== 'Present' && status !== 'Absent') return res.status(400).json({ message: 'Unexpected field input!' });
 
       // Ensure there are student IDs to process
       if (students.length === 0) return res.status(400).json({ message: 'No valid student IDs provided!' });
@@ -71,7 +71,7 @@ exports.todaysClassStudentsAttendance = async (req, res) => {
       const [section, term] = await Promise.all([
         db.Section.findByPk(classSessionId, {
           include: {
-            model: Class,
+            model: db.Class,
             attributes: ['name'],
           },
         }),
