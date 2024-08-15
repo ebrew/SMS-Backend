@@ -59,46 +59,44 @@ exports.markAttendance = async (req, res) => {
   })(req, res);
 };
 
-// fetch a class students' attendance  for a particular date
+// Fetch a class students' attendance for a particular date
 exports.ClassStudentsAttendance = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { academicTermId, classSessionId, date } = req.params;
+      const { classSessionId, date } = req.params;
 
       // Validate date format (YYYY-MM-DD)
       const isValidDate = (dateString) => {
         const regex = /^\d{4}-\d{2}-\d{2}$/;
-        return dateString.match(regex) && !isNaN(Date.parse(dateString));
+        return regex.test(dateString) && !isNaN(Date.parse(dateString));
       };
 
       if (!isValidDate(date)) return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
 
-      // Fetch section and term data concurrently
-      const [section, term] = await Promise.all([
+      // Fetch section and active academic year data concurrently
+      const [section, activeYear] = await Promise.all([
         db.Section.findByPk(classSessionId, {
           include: {
             model: db.Class,
             attributes: ['name'],
           },
         }),
-        db.AcademicTerm.findByPk(academicTermId, {
-          include: {
-            model: db.AcademicYear,
-            attributes: ['name'],
-          },
+        db.AcademicYear.findOne({
+          where: { status: 'Active' },
+          attributes: ['id'],
         })
       ]);
 
       if (!section) return res.status(400).json({ message: "Class section not found!" });
-      if (!term) return res.status(400).json({ message: "Academic term not found!" });
+      if (!activeYear) return res.status(400).json({ message: "No active academic year running!" });
 
       // Fetch students in the class session for the academic year
       const students = await db.ClassStudent.findAll({
         where: {
           classSessionId,
-          academicYearId: term.academicYearId
+          academicYearId: activeYear.id
         },
         include: {
           model: db.Student,
@@ -108,12 +106,11 @@ exports.ClassStudentsAttendance = async (req, res) => {
 
       if (students.length === 0) return res.status(404).json({ message: "No students found!" });
 
-      // Fetch attendance records for all students in the class session and term
+      // Fetch attendance records for all students in the class session and date
       const attendanceRecords = await db.Attendance.findAll({
         where: {
           studentId: students.map(s => s.studentId),
-          academicTermId,
-          date: date, 
+          date, // Assuming the academicTermId logic is elsewhere
         },
         attributes: ['studentId', 'status'],
       });
@@ -147,6 +144,7 @@ exports.ClassStudentsAttendance = async (req, res) => {
     }
   })(req, res);
 };
+
 
 // Fetch a student's attendance for a particular period
 exports.periodicStudentsAttendance = async (req, res) => {

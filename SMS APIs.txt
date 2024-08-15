@@ -549,7 +549,7 @@ status = "Present" || "Absent"
 Authorization: Bearer <token from login>
 
 95. // fetch a class students' attendance  for a particular date
-API: << server >>/api/v1/attendance/class/date/academicTermId/classSessionId/Date
+API: << server >>/api/v1/attendance/class/date/classSessionId/Date
 Method: GET
 Authorization: Bearer <token from login>
 

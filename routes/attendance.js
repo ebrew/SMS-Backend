@@ -6,7 +6,7 @@ const attendance = require('../controllers/attendance');
 router.post('/mark', attendance.markAttendance);
 
 // fetch a class students' attendance  for a particular date
-router.get('/class/date/:academicTermId/:classSessionId/:date', attendance.ClassStudentsAttendance);
+router.get('/class/date/:classSessionId/:date', attendance.ClassStudentsAttendance);
 
 // Fetch a student's attendance for a particular period
 router.post('/student/period', attendance.periodicStudentsAttendance);
