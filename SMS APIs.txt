@@ -548,15 +548,15 @@ Content: { students, academicTermId, status }
 status = "Present" || "Absent"
 Authorization: Bearer <token from login>
 
-95. // Fetch today's attendence
-API: << server >>/api/v1/attendance/class/today/academicTermId/classSessionId
+95. // fetch a class students' attendance  for a particular date
+API: << server >>/api/v1/attendance/class/date/academicTermId/classSessionId/Date
 Method: GET
 Authorization: Bearer <token from login>
 
 96. // Fetch class students' attendance for a particular period
-API: << server >>/api/v1/attendance/class/period
+API: << server >>/api/v1/attendance/student/period
 Method: POST
-Content: { startDate, endDate, classSessionId }
+Content: { startDate, endDate, studentId }
 Authorization: Bearer <token from login>
 
 

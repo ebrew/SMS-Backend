@@ -5,10 +5,10 @@ const attendance = require('../controllers/attendance');
 // Create or update a new Grading point
 router.post('/mark', attendance.markAttendance);
 
-// Fetch today's attendence
-router.get('/class/today/:academicTermId/:classSessionId', attendance.todaysClassStudentsAttendance);
+// fetch a class students' attendance  for a particular date
+router.get('/class/date/:academicTermId/:classSessionId/:date', attendance.ClassStudentsAttendance);
 
-// Fetch class students' attendance for a particular period
-router.post('/class/period', attendance.periodicClassStudentsAttendance);
+// Fetch a student's attendance for a particular period
+router.post('/student/period', attendance.periodicStudentsAttendance);
 
 module.exports = router;

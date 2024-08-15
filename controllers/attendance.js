@@ -59,13 +59,21 @@ exports.markAttendance = async (req, res) => {
   })(req, res);
 };
 
-// Fetch class students' attendance for a particular academic term
-exports.todaysClassStudentsAttendance = async (req, res) => {
+// fetch a class students' attendance  for a particular date
+exports.ClassStudentsAttendance = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { academicTermId, classSessionId } = req.params;
+      const { academicTermId, classSessionId, date } = req.params;
+
+      // Validate date format (YYYY-MM-DD)
+      const isValidDate = (dateString) => {
+        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        return dateString.match(regex) && !isNaN(Date.parse(dateString));
+      };
+
+      if (!isValidDate(date)) return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
 
       // Fetch section and term data concurrently
       const [section, term] = await Promise.all([
@@ -100,35 +108,35 @@ exports.todaysClassStudentsAttendance = async (req, res) => {
 
       if (students.length === 0) return res.status(404).json({ message: "No students found!" });
 
-      // Get today's date without time component
-      const today = new Date().toISOString().slice(0, 10);
-
-      // Fetch attendance for all students concurrently
+      // Fetch attendance records for all students in the class session and term
       const attendanceRecords = await db.Attendance.findAll({
         where: {
           studentId: students.map(s => s.studentId),
           academicTermId,
-          date: today,
+          date: date, 
         },
         attributes: ['studentId', 'status'],
       });
 
+      // Create a map for quick lookup of attendance status
       const attendanceMap = attendanceRecords.reduce((acc, record) => {
         acc[record.studentId] = record.status;
         return acc;
       }, {});
 
-      // Process the students' attendance
+      // Generate attendance summary
       const attendanceSummary = students.map((student) => {
         if (!student.Student) return null;
 
+        const fullName = student.Student.middleName
+          ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
+          : `${student.Student.firstName} ${student.Student.lastName}`;
+
         return {
           studentId: student.Student.id,
-          fullName: student.Student.middleName
-            ? `${student.Student.firstName} ${student.Student.middleName} ${student.Student.lastName}`
-            : `${student.Student.firstName} ${student.Student.lastName}`,
+          fullName,
           photo: student.Student.passportPhoto,
-          status: attendanceMap[student.Student.id] || 'Not Yet',  
+          status: attendanceMap[student.Student.id] || 'Not Yet',
         };
       }).filter(Boolean);
 
@@ -140,78 +148,51 @@ exports.todaysClassStudentsAttendance = async (req, res) => {
   })(req, res);
 };
 
-// Fetch class students' attendance for a particular period
-exports.periodicClassStudentsAttendance = async (req, res) => {
+// Fetch a student's attendance for a particular period
+exports.periodicStudentsAttendance = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { startDate, endDate, classSessionId } = req.body;
+      const { startDate, endDate, studentId } = req.body;
 
-      // Fetch section and active academic year concurrently
-      const [section, activeYear] = await Promise.all([
-        db.Section.findByPk(classSessionId, {
-          include: {
-            model: db.Class,
-            attributes: ['name'],
-          },
-        }),
-        db.AcademicYear.findOne({ where: { status: 'Active' }, attributes: ['id'] })
-      ]);
-
-      if (!section) return res.status(400).json({ message: "Class section not found!" });
-      if (!activeYear) return res.status(400).json({ message: "No active academic year found!" });
-
-      // Fetch students in the class session for the active academic year
-      const students = await db.ClassStudent.findAll({
-        where: {
-          classSessionId,
-          academicYearId: activeYear.id,
-        },
-        include: {
-          model: db.Student,
-          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
-        }
+      // Fetch student data
+      const student = await db.Student.findByPk(studentId, {
+        attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto']
       });
 
-      if (students.length === 0) return res.status(404).json({ message: "No students found!" });
+      if (!student) return res.status(404).json({ message: "Student not found!" });
 
       // Fetch attendance records for the given date range
       const attendanceRecords = await db.Attendance.findAll({
-        where: {
-          studentId: students.map(s => s.studentId),
+        where: { 
+          studentId,
           date: {
             [Op.between]: [startDate, endDate],
           },
         },
-        attributes: ['studentId', 'status'],
+        attributes: ['date', 'status'],
+        order: [['date', 'ASC']] 
       });
-
-      // Map attendance records by student ID
-      const attendanceMap = attendanceRecords.reduce((acc, record) => {
-        acc[record.studentId] = record.status;
-        return acc;
-      }, {});
 
       // Prepare the attendance summary
-      const attendanceSummary = students.map((student) => {
-        const { id, firstName, middleName, lastName, passportPhoto } = student.Student;
-        const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
-        return {
-          studentId: id,
-          fullName,
-          photo: passportPhoto,
-          status: attendanceMap[id] || 'Not Yet',  
-        };
-      });
+      const attendanceSummary = {
+        studentId: student.id,
+        fullName: student.middleName
+          ? `${student.firstName} ${student.middleName} ${student.lastName}`
+          : `${student.firstName} ${student.lastName}`,
+        photo: student.passportPhoto,
+        attendanceRecords 
+      };
 
       return res.status(200).json({ attendance: attendanceSummary });
     } catch (error) {
-      console.error('Error fetching students attendance:', error);
+      console.error('Error fetching student attendance:', error);
       return res.status(500).json({ message: "Can't fetch data at the moment!" });
     }
   })(req, res);
 };
+
 
 
 
