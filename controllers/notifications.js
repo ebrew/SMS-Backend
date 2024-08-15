@@ -217,7 +217,7 @@ async function sendHubtelSMS(phoneNumber, message) {
         Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
         'Content-Type': 'application/json'
       },
-      timeout: 10000 
+      timeout: 10000
     });
 
     if (response.status === 200) {
@@ -233,7 +233,7 @@ async function sendHubtelSMS(phoneNumber, message) {
     } else {
       console.error('Error during request setup:', error.message);
     }
-    throw error; 
+    throw error;
   }
 }
 
@@ -277,25 +277,36 @@ exports.sendReminder = async (req, res) => {
       if (classId) {
         classId = parseInt(classId, 10);
         if (isNaN(classId)) return res.status(400).json({ message: 'Invalid classId!' });
+        const classExists = await db.Class.findOne({ where: { id: classId } });
+        if (!classExists) return res.status(404).json({ message: 'Class not found!' });
+        if (!activeAcademicYear) return res.status(404).json({ message: 'No academic year running!' });
 
-        students = await db.ClassStudent.findAll({
-          where: { academicYearId: activeAcademicYear.id },
+        // Proceed with fetching students
+        students = await db.Student.findAll({
+          attributes: ['id', 'parentId'],
           include: [
             {
-              model: db.Section,
-              include: {
-                model: db.Class,
-                where: { id: classId }
-              }
+              model: db.ClassStudent,
+              where: { academicYearId: activeAcademicYear.id },
+              include: [
+                {
+                  model: db.Section,
+                  include: [
+                    {
+                      model: db.Class,
+                      where: { id: classId },
+                      attributes: [],
+                    }
+                  ],
+                  attributes: [],
+                }
+              ],
+              attributes: [],
             },
             {
-              model: db.Student,
-              attributes: ['id', 'parentId'],
-              include: {
-                model: db.Parent,
-                as: 'Parent',
-                attributes: ['id', 'email', 'fullName', 'title', 'phone']
-              }
+              model: db.Parent,
+              as: 'Parent',
+              attributes: ['id', 'email', 'fullName', 'title', 'phone'],
             }
           ]
         });

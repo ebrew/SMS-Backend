@@ -545,6 +545,7 @@ ATTENDANCE
 API: << server >>/api/v1/attendance/mark
 Method: POST
 Content: { students, academicTermId, status }
+status = "Present" || "Absent"
 Authorization: Bearer <token from login>
 
 95. // Fetch today's attendence
@@ -552,6 +553,11 @@ API: << server >>/api/v1/attendance/class/today/academicTermId/classSessionId
 Method: GET
 Authorization: Bearer <token from login>
 
+96. // Fetch class students' attendance for a particular period
+API: << server >>/api/v1/attendance/class/period
+Method: POST
+Content: { startDate, endDate, classSessionId }
+Authorization: Bearer <token from login>
 
 
 

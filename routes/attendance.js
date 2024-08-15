@@ -8,4 +8,7 @@ router.post('/mark', attendance.markAttendance);
 // Fetch today's attendence
 router.get('/class/today/:academicTermId/:classSessionId', attendance.todaysClassStudentsAttendance);
 
+// Fetch class students' attendance for a particular period
+router.post('/class/period', attendance.periodicClassStudentsAttendance);
+
 module.exports = router;

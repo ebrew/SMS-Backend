@@ -1,6 +1,6 @@
 const passport = require('../db/config/passport');
-const attendance = require('../db/models/attendance');
 const db = require("../db/models/index")
+const { Op } = require('sequelize');
 
 // Mark attendance
 exports.markAttendance = async (req, res) => {
@@ -98,6 +98,8 @@ exports.todaysClassStudentsAttendance = async (req, res) => {
         }
       });
 
+      if (students.length === 0) return res.status(404).json({ message: "No students found!" });
+
       // Get today's date without time component
       const today = new Date().toISOString().slice(0, 10);
 
@@ -137,5 +139,79 @@ exports.todaysClassStudentsAttendance = async (req, res) => {
     }
   })(req, res);
 };
+
+// Fetch class students' attendance for a particular period
+exports.periodicClassStudentsAttendance = async (req, res) => {
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+      const { startDate, endDate, classSessionId } = req.body;
+
+      // Fetch section and active academic year concurrently
+      const [section, activeYear] = await Promise.all([
+        db.Section.findByPk(classSessionId, {
+          include: {
+            model: db.Class,
+            attributes: ['name'],
+          },
+        }),
+        db.AcademicYear.findOne({ where: { status: 'Active' }, attributes: ['id'] })
+      ]);
+
+      if (!section) return res.status(400).json({ message: "Class section not found!" });
+      if (!activeYear) return res.status(400).json({ message: "No active academic year found!" });
+
+      // Fetch students in the class session for the active academic year
+      const students = await db.ClassStudent.findAll({
+        where: {
+          classSessionId,
+          academicYearId: activeYear.id,
+        },
+        include: {
+          model: db.Student,
+          attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+        }
+      });
+
+      if (students.length === 0) return res.status(404).json({ message: "No students found!" });
+
+      // Fetch attendance records for the given date range
+      const attendanceRecords = await db.Attendance.findAll({
+        where: {
+          studentId: students.map(s => s.studentId),
+          date: {
+            [Op.between]: [startDate, endDate],
+          },
+        },
+        attributes: ['studentId', 'status'],
+      });
+
+      // Map attendance records by student ID
+      const attendanceMap = attendanceRecords.reduce((acc, record) => {
+        acc[record.studentId] = record.status;
+        return acc;
+      }, {});
+
+      // Prepare the attendance summary
+      const attendanceSummary = students.map((student) => {
+        const { id, firstName, middleName, lastName, passportPhoto } = student.Student;
+        const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
+        return {
+          studentId: id,
+          fullName,
+          photo: passportPhoto,
+          status: attendanceMap[id] || 'Not Yet',  
+        };
+      });
+
+      return res.status(200).json({ attendance: attendanceSummary });
+    } catch (error) {
+      console.error('Error fetching students attendance:', error);
+      return res.status(500).json({ message: "Can't fetch data at the moment!" });
+    }
+  })(req, res);
+};
+
 
 
