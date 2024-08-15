@@ -544,12 +544,12 @@ ATTENDANCE
 94. // Mark attendance
 API: << server >>/api/v1/attendance/mark
 Method: POST
-Content: { students, academicTermId, status }
+Content: { students, status }
 status = "Present" || "Absent"
 Authorization: Bearer <token from login>
 
 95. // fetch a class students' attendance  for a particular date
-API: << server >>/api/v1/attendance/class/date/classSessionId/Date
+API: << server >>/api/v1/attendance/class/date/classSessionId/RequiredDate
 Method: GET
 Authorization: Bearer <token from login>
 

@@ -8,16 +8,24 @@ exports.markAttendance = async (req, res) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-      const { students, academicTermId, status } = req.body;
+      const { students, status } = req.body;
 
       // Validate request body
-      if (!students || !academicTermId || !status) return res.status(400).json({ message: 'Incomplete or invalid field!' });
+      if (!students || !status) return res.status(400).json({ message: 'Incomplete or invalid field!' });
 
-      if (status !== 'Present' && status !== 'Absent') return res.status(400).json({ message: 'Unexpected field input!' });
+      const validStatuses = ['present', 'absent'];
+      if (!validStatuses.includes(status.toLowerCase())) return res.status(400).json({ message: 'Unexpected field input!' });
 
       // Ensure there are student IDs to process
       if (students.length === 0) return res.status(400).json({ message: 'No valid student IDs provided!' });
-      
+
+      // Fetch the active academic term
+      const activeTerm = await db.AcademicTerm.findOne({
+        where: { status: 'Active' },
+        attributes: ['id'],
+      });
+
+      if (!activeTerm) return res.status(400).json({ message: "No active academic term running!" });
 
       // Start a transaction to ensure atomicity
       const transaction = await db.sequelize.transaction();
@@ -26,15 +34,15 @@ exports.markAttendance = async (req, res) => {
         // Get today's date without time component
         const today = new Date().toISOString().slice(0, 10);
 
-        // Process each student
+        // Process each student's attendance
         const attendancePromises = students.map(async (studentId) => {
           const [attendance, created] = await db.Attendance.findOrCreate({
-            where: { studentId, academicTermId, date: today },
+            where: { studentId, academicTermId: activeTerm.id, date: today },
             defaults: { status },
-            transaction
+            transaction,
           });
 
-          // update the status if not created
+          // Update the status if the record was not newly created
           if (!created) {
             await attendance.update({ status }, { transaction });
           }
@@ -58,6 +66,7 @@ exports.markAttendance = async (req, res) => {
     }
   })(req, res);
 };
+
 
 // Fetch a class students' attendance for a particular date
 exports.ClassStudentsAttendance = async (req, res) => {
@@ -144,7 +153,6 @@ exports.ClassStudentsAttendance = async (req, res) => {
     }
   })(req, res);
 };
-
 
 // Fetch a student's attendance for a particular period
 exports.periodicStudentsAttendance = async (req, res) => {

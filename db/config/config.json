@@ -1,5 +1,5 @@
 {
-  "development": {
+  "development1": {
     "username": "postgres",
     "password": "ebrew",
     "database": "SMS",
