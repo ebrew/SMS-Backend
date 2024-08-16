@@ -1,8 +1,7 @@
 require('dotenv').config();
 const passport = require('../db/config/passport')
 const { Op } = require('sequelize');
-const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, Attendance } = require("../db/models/index")
-const db = require("../db/models/index")
+const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, Attendance, Sequelize } = require("../db/models/index")
 
 // Get all teachers
 exports.allTeachers = async (req, res) => {
@@ -231,14 +230,14 @@ exports.subjectAssignmentSummary = async (req, res) => {
           where: {
             date: new Date().toISOString().split('T')[0], // today's date in YYYY-MM-DD format
             studentId: {
-              [Op.in]: db.Sequelize.literal(`(SELECT "studentId" FROM "ClassStudents" WHERE "classSessionId" = ${classSessionId} AND "academicYearId" = ${academicYearId})`)
+              [Op.in]: Sequelize.literal(`(SELECT "studentId" FROM "ClassStudents" WHERE "classSessionId" = ${classSessionId} AND "academicYearId" = ${academicYearId})`)
             }
           },
           attributes: ['studentId', 'status']
         })
       ]);
 
-      if (students.length === 0) return res.status(404).json({ message: "No students found!" });
+      // if (students.length === 0) return res.status(404).json({ message: "No students found!" });
 
       // Count students with different attendance statuses
       const presentCount = attendanceRecords.filter(record => record.status === 'Present').length;
