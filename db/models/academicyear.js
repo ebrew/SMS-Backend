@@ -9,13 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.Billing, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate:'CASCADE'  }); 
     }
 
-    // async setInactiveIfEndDateDue() {
-    //   if (this.status === 'Active' && new Date() >= this.endDate) {
-    //     this.status = 'Inactive';
-    //     await this.save();
-    //   }
-    // }
-    
     // Method to update status based on the current date
     async setInactiveIfEndDateDue() {
       const now = new Date();
@@ -27,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
         await this.save();
       }
     }
-    
   }
 
   AcademicYear.init({
@@ -37,7 +29,21 @@ module.exports = (sequelize, DataTypes) => {
     endDate: DataTypes.DATEONLY
   }, {
     sequelize,
-    modelName: 'AcademicYear'
+    modelName: 'AcademicYear',
+    hooks: {
+      // Hook after any AcademicYear instance is retrieved from the database
+      async afterFind(result) {
+        if (Array.isArray(result)) {
+          // Handle multiple instances
+          for (const instance of result) {
+            await instance.setInactiveIfEndDateDue();
+          }
+        } else if (result) {
+          // Handle single instance
+          await result.setInactiveIfEndDateDue();
+        }
+      }
+    }
   });
 
   return AcademicYear;

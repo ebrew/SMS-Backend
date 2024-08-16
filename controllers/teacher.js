@@ -1,6 +1,8 @@
 require('dotenv').config();
 const passport = require('../db/config/passport')
-const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear } = require("../db/models/index")
+const { Op } = require('sequelize');
+const { User, Student, Section, Class, AssignedTeacher, AssignedSubject, Subject, ClassStudent, AcademicYear, Attendance } = require("../db/models/index")
+const db = require("../db/models/index")
 
 // Get all teachers
 exports.allTeachers = async (req, res) => {
@@ -203,45 +205,63 @@ exports.subjectAssignmentSummary = async (req, res) => {
     try {
       const { teacherId, classSessionId } = req.params;
 
-      // Find active academic year
+      // Fetch active academic year and validate
       const year = await AcademicYear.findOne({
         where: { status: 'Active' },
         attributes: ['id']
       });
-
-      // Ensure the academic year is found
       if (!year) return res.status(404).json({ message: 'Active academic year not found!' });
 
       const academicYearId = year.id;
 
-      // Count the number of students in the class session for the active academic year
-      const studentsCount = await ClassStudent.count({ 
-        where: { 
-          classSessionId, 
-          academicYearId 
-        } 
-      });
+      // Fetch students and attendance in parallel for faster execution
+      const [students, attendanceRecords] = await Promise.all([
+        ClassStudent.findAll({
+          where: {
+            classSessionId,
+            academicYearId
+          },
+          include: {
+            model: Student,
+            attributes: ['id', 'firstName', 'middleName', 'lastName', 'passportPhoto'],
+          },
+          attributes: ['studentId'] 
+        }),
+        Attendance.findAll({
+          where: {
+            date: new Date().toISOString().split('T')[0], // today's date in YYYY-MM-DD format
+            studentId: {
+              [Op.in]: db.Sequelize.literal(`(SELECT "studentId" FROM "ClassStudents" WHERE "classSessionId" = ${classSessionId} AND "academicYearId" = ${academicYearId})`)
+            }
+          },
+          attributes: ['studentId', 'status']
+        })
+      ]);
 
-      // Find the assigned classes and subjects for the teacher
-      const assignedClasses = await AssignedTeacher.findAll({
-        where: { teacherId },
+      if (students.length === 0) return res.status(404).json({ message: "No students found!" });
+
+      // Count students with different attendance statuses
+      const presentCount = attendanceRecords.filter(record => record.status === 'Present').length;
+      const absentCount = attendanceRecords.filter(record => record.status === 'Absent').length;
+      const notMarkedCount = students.length - attendanceRecords.length;
+
+      // Fetch the assigned classes and subjects for the teacher
+      const assignedClass = await AssignedTeacher.findOne({
+        where: { teacherId, classId: classSessionId },
         include: {
           model: AssignedSubject,
-          attributes: ['id'], 
-        }
-      });
-
-      // Calculate the number of subjects
-      let subjectsCount = 0;
-      assignedClasses.forEach((assignedClass) => {
-        subjectsCount += assignedClass.AssignedSubjects ? assignedClass.AssignedSubjects.length : 0;
+          attributes: ['id']
+        },
+        attributes: ['id']
       });
 
       // Create the summary object
       const summary = {
-        studentsCount: studentsCount || 0,
-        assignedClassesCount: assignedClasses ? assignedClasses.length : 0,
-        subjectsCount: subjectsCount 
+        studentsCount: students.length,
+        subjectsCount: assignedClass?.AssignedSubjects?.length || 0,
+        present: presentCount,
+        absent: absentCount,
+        notMarked: notMarkedCount
       };
 
       // Return the summary as a response
@@ -252,6 +272,7 @@ exports.subjectAssignmentSummary = async (req, res) => {
     }
   })(req, res);
 };
+
 
 
 

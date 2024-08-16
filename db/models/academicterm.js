@@ -1,7 +1,6 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class AcademicTerm extends Model {
     static associate(models) {
@@ -9,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.Assessment, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });  
       this.hasMany(models.Billing, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
       this.hasMany(models.Attendance, { foreignKey: 'academicTermId', onDelete: 'CASCADE', onUpdate:'CASCADE'  });
-           
     }
 
     // Method to update status based on the current date
@@ -34,6 +32,20 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'AcademicTerm',
+    hooks: {
+      // Hook after any AcademicTerm instance is retrieved from the database
+      async afterFind(result) {
+        if (Array.isArray(result)) {
+          // Handle multiple instances
+          for (const instance of result) {
+            await instance.setInactiveIfEndDateDue();
+          }
+        } else if (result) {
+          // Handle single instance
+          await result.setInactiveIfEndDateDue();
+        }
+      }
+    }
   });
 
   return AcademicTerm;

@@ -67,7 +67,6 @@ exports.markAttendance = async (req, res) => {
   })(req, res);
 };
 
-
 // Fetch a class students' attendance for a particular date
 exports.ClassStudentsAttendance = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
@@ -119,7 +118,7 @@ exports.ClassStudentsAttendance = async (req, res) => {
       const attendanceRecords = await db.Attendance.findAll({
         where: {
           studentId: students.map(s => s.studentId),
-          date, // Assuming the academicTermId logic is elsewhere
+          date, 
         },
         attributes: ['studentId', 'status'],
       });
