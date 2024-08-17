@@ -207,7 +207,7 @@ exports.subjectAssignmentSummary = async (req, res) => {
       // Fetch active academic year and validate
       const year = await AcademicYear.findOne({
         where: { status: 'Active' },
-        attributes: ['id']
+        // attributes: ['id']
       });
       if (!year) return res.status(404).json({ message: 'Active academic year not found!' });
 
@@ -236,8 +236,6 @@ exports.subjectAssignmentSummary = async (req, res) => {
           attributes: ['studentId', 'status']
         })
       ]);
-
-      // if (students.length === 0) return res.status(404).json({ message: "No students found!" });
 
       // Count students with different attendance statuses
       const presentCount = attendanceRecords.filter(record => record.status === 'Present').length;

@@ -4,6 +4,7 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class AcademicYear extends Model {
     static associate(models) {
+      // Define associations here
       this.hasMany(models.AcademicTerm, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
       this.hasMany(models.ClassStudent, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate: 'CASCADE' }); 
       this.hasMany(models.Billing, { foreignKey: 'academicYearId', onDelete: 'CASCADE', onUpdate:'CASCADE'  }); 
@@ -12,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
     // Method to update status based on the current date
     async setInactiveIfEndDateDue() {
       const now = new Date();
+
       if (this.status === 'Active' && now > new Date(this.endDate)) {
         this.status = 'Inactive';
         await this.save();
