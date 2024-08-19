@@ -202,10 +202,15 @@ const sendEmail = async (email, studentId, subject, content) => {
   }
 };
 
+// Function to send SMS using Hubtel API
 async function sendHubtelSMS(phoneNumber, message) {
   const apiUrl = process.env.API_URL;
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.CLIENT_SECRET; // Use CLIENT_SECRET instead of API_KEY
   const senderId = process.env.SENDER_ID;
+
+  if (!apiUrl || !apiKey || !senderId) {
+    throw new Error('Missing environment variables: API_URL, CLIENT_SECRET, or SENDER_ID.');
+  }
 
   try {
     const response = await axios.post(apiUrl, {
@@ -215,46 +220,76 @@ async function sendHubtelSMS(phoneNumber, message) {
     }, {
       headers: {
         Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      timeout: 10000
+      timeout: 10000,
     });
 
     if (response.status === 200) {
       console.log('SMS sent successfully:', response.data);
+      return { status: 'SMS sent successfully' };
     } else {
       console.error('Unexpected response:', response.status, response.data);
+      throw new Error(`Unexpected response: ${response.status} - ${JSON.stringify(response.data)}`);
     }
   } catch (error) {
+    let errorMessage = 'Unknown error';
+
     if (error.response) {
-      console.error('Failed to send SMS:', error.response.data);
+      // Extract detailed error from response
+      const responseData = error.response.data;
+      const errorDetails = {
+        messageId: responseData.messageId || 'N/A',
+        status: responseData.status || 'N/A',
+        statusDescription: responseData.statusDescription || 'N/A',
+        networkId: responseData.networkId || 'N/A',
+      };
+      
+      errorMessage = `Failed to send SMS: ${JSON.stringify(errorDetails)}`;
+      console.error('Failed to send SMS:', errorMessage);
     } else if (error.request) {
-      console.error('No response received:', error.message);
+      // Error occurred while sending request
+      errorMessage = `No response received: ${error.message}`;
+      console.error('No response received:', errorMessage);
     } else {
-      console.error('Error during request setup:', error.message);
+      // Error occurred in setting up the request
+      errorMessage = `Error during request setup: ${error.message}`;
+      console.error('Error during request setup:', errorMessage);
     }
-    throw error;
+
+    throw new Error(errorMessage); // Re-throw the formatted error message
   }
 }
 
-// Function to send SMS (implementation needed)
+// Function to send SMS using Hubtel API
 const sendSMS = async (parent, studentId, content) => {
+  const apiUrl = 'https://smsc.hubtel.com/v1/messages/send';
+  const clientSecret = process.env.CLIENT_SECRET; // Use CLIENT_SECRET for authorization
+  const clientId = process.env.CLIENT_ID;
+  const senderId = process.env.SENDER_ID;
+
+  if (!clientSecret || !clientId || !senderId) {
+    console.error('Missing environment variables: CLIENT_SECRET, CLIENT_ID, or SENDER_ID.');
+    return { studentId, status: 'Error: Missing environment variables' };
+  }
+
   try {
-    // Implement SMS sending logic here
-    // limiter.schedule(() => sendEmail(parent.email, student.id, subject, emailContent));
+    const response = await fetch(`${apiUrl}?clientsecret=${clientSecret}&clientid=${clientId}&from=${senderId}&to=${parent.phone}&content=${content}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-    const sendSMS = await fetch(`https://smsc.hubtel.com/v1/messages/send?clientsecret=gbonbwlk&clientid=aehfvfdv&from=SaveUp&to=${parent.phone}&content=${content}`)
+    const responseData = await response.json();
 
-    const sendSMSResponse = await sendSMS.json()
-
-    if (!sendSMSResponse.ok) {
-      // Error sending SMS here...
-      return
+    if (response.ok) {
+      console.log('SMS sent successfully:', responseData);
+      return { studentId, status: 'SMS sent successfully' };
+    } else {
+      console.error('Failed to send SMS:', responseData);
+      return { studentId, status: `Error: ${responseData.statusDescription || 'Unknown error'}` };
     }
-
-    // successfully sent
-
-    return { studentId, status: 'SMS sent successfully' };
   } catch (error) {
     console.error(`Error sending SMS to parent of studentId ${studentId}:`, error);
     return { studentId, status: `Error: ${error.message}` };
@@ -262,7 +297,7 @@ const sendSMS = async (parent, studentId, content) => {
 };
 
 // Send general reminder to parents
-exports.sendReminder = async (req, res) => {
+exports.sendReminder1 = async (req, res) => {
   passport.authenticate("jwt", { session: false }, async (err, user, info) => {
     if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -310,6 +345,7 @@ exports.sendReminder = async (req, res) => {
             }
           ]
         });
+
       } else if (studentId) {
         students = await db.Student.findAll({
           where: { id: studentId },
@@ -401,6 +437,149 @@ exports.sendReminder = async (req, res) => {
         } catch (error) {
           console.error('Error processing SMS:', error);
           res.status(500).json({ message: 'Failed to send SMS!' });
+        }
+      } else {
+        return res.status(400).json({ message: 'Specify the medium of sending the reminder!' });
+      }
+    } catch (error) {
+      console.error('Error processing reminder:', error);
+      return res.status(500).json({ message: "Can't process the reminder at the moment!" });
+    }
+  })(req, res);
+};
+
+// Send general reminder to parents
+exports.sendReminder = async (req, res) => {
+  passport.authenticate("jwt", { session: false }, async (err, user, info) => {
+    if (err || !user) return res.status(401).json({ message: 'Unauthorized' });
+
+    let { subject, classId, studentId, all, content, method } = req.body;
+
+    if (!subject || !content || !method) return res.status(400).json({ message: 'Incomplete fields!' });
+
+    try {
+      let students = [];
+      const activeAcademicYear = await db.AcademicYear.findOne({ where: { status: 'Active' } });
+
+      if (!activeAcademicYear) return res.status(404).json({ message: 'No academic year running!' });
+
+      if (classId) {
+        classId = parseInt(classId, 10);
+        if (isNaN(classId)) return res.status(400).json({ message: 'Invalid classId!' });
+        students = await db.Student.findAll({
+          attributes: ['id', 'parentId'],
+          include: [
+            {
+              model: db.ClassStudent,
+              where: { academicYearId: activeAcademicYear.id },
+              include: [
+                {
+                  model: db.Section,
+                  required: true, // Makes the join an INNER JOIN
+                  include: [
+                    {
+                      model: db.Class,
+                      where: { id: classId },
+                      required: true, // Makes the join an INNER JOIN
+                      attributes: [],
+                    }
+                  ],
+                  attributes: [],
+                }
+              ],
+              attributes: [],
+            },
+            {
+              model: db.Parent,
+              as: 'Parent',
+              attributes: ['id', 'email', 'fullName', 'title', 'phone'],
+            }
+          ]
+        });        
+      } else if (studentId) {
+        students = await db.Student.findAll({
+          where: { id: studentId },
+          include: {
+            model: db.Parent,
+            as: 'Parent',
+            attributes: ['id', 'email', 'fullName', 'title', 'phone']
+          },
+          attributes: ['id', 'parentId']
+        });
+      } else if (all) {
+        students = await db.Student.findAll({
+          include: {
+            model: db.Parent,
+            as: 'Parent',
+            attributes: ['id', 'email', 'fullName', 'title', 'phone']
+          },
+          attributes: ['id', 'parentId']
+        });
+      } else {
+        return res.status(400).json({ message: 'Specify studentId, classId, or all!' });
+      }
+
+      if (students.length === 0) return res.status(404).json({ message: 'No students found!' });
+
+      // Group students by parentId to ensure one message per parent
+      const parentsMap = new Map();
+
+      students.forEach(student => {
+        const parent = student.Parent;
+        if (parent) {
+          const email = parent.email.toLowerCase();
+          if (!parentsMap.has(email)) {
+            parentsMap.set(email, parent);
+          }
+        }
+      });
+
+      const parents = Array.from(parentsMap.values());
+      const results = [];
+
+      if (method === 'Email') {
+        for (const parent of parents) {
+          const emailContent = parent.title
+            ? `Dear ${parent.title} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`
+            : `Dear ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
+
+          try {
+            console.log(`Sending email to: ${parent.email}`);
+            await limiter.schedule(() => sendEmail(parent.email, parent.id, subject, emailContent));
+            console.log(`Email sent to: ${parent.email}`);
+            results.push({ email: parent.email, status: 'Success' });
+          } catch (error) {
+            console.error(`Failed to send email to ${parent.email}:`, error);
+            results.push({ email: parent.email, status: 'Failed', error: error.message });
+          }
+        }
+
+        const failedResults = results.filter(result => result.status === 'Failed');
+        if (failedResults.length > 0) {
+          res.status(500).json({ message: 'Some emails failed to send', results: failedResults });
+        } else {
+          res.status(200).json({ message: 'Emails processed successfully!', results });
+        }
+      } else if (method === 'SMS') {
+        for (const parent of parents) {
+          const message = `Dear ${parent.title || ''} ${parent.fullName},\n\n${content}\n\nBest regards,\nSchool Management System`;
+
+          try {
+            console.log(`Sending SMS to: ${parent.phone}`);
+            await limiter.schedule(() => sendHubtelSMS(parent.phone, message));
+            console.log(`SMS sent to: ${parent.phone}`);
+            results.push({ phone: parent.phone, status: 'Success' });
+          } catch (error) {
+            console.error(`Failed to send SMS to ${parent.phone}:`, error);
+            results.push({ phone: parent.phone, status: 'Failed', error: error.message });
+          }
+        }
+
+        const failedSMSResults = results.filter(result => result.status === 'Failed');
+        if (failedSMSResults.length > 0) {
+          res.status(500).json({ message: 'Some SMS messages failed to send', results: failedSMSResults });
+        } else {
+          res.status(200).json({ message: 'SMS sent successfully!', results });
         }
       } else {
         return res.status(400).json({ message: 'Specify the medium of sending the reminder!' });

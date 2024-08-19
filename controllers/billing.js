@@ -539,7 +539,7 @@ exports.classStudentsTotalAmountOwed = async (req, res) => {
           include: {
             model: db.AcademicTerm,
             where: { status: 'Active' },
-            attributes: ['name']
+            // attributes: ['name']
           }
         }),
         db.Section.findByPk(classSessionId, {
